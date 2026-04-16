@@ -1,9 +1,10 @@
-import { logger } from '../../../../Utils/Logger';
+import { logger } from '../../utils/Logger';
 import { ContainerLifecycle, DependencyContainer } from '../../../DependencyContainer';
 import { IModuleBootstrap } from '../../core/contracts/IModuleBootstrap';
 import { ngfServiceContainerFacade } from '../../core/facades/ServiceContainerFacade';
 import { ngfOhosContextBridgeFacade } from './OhosContextBridgeFacade';
 import { ngfPageWindowPolicyResolverFacade } from './PageWindowPolicyResolverFacade';
+import { ngfPlatformWindowManagerFacade } from './PlatformWindowManagerFacade';
 import { ngfPlatformWindowControllerFacade } from './PlatformWindowControllerFacade';
 
 const TAG = 'NGFPlatformOhosIntegrationFacade';
@@ -23,6 +24,11 @@ class NGFPlatformServiceRegistration {
 export class NGFPlatformOhosIntegrationFacade implements IModuleBootstrap {
   private bootstrapped: boolean = false;
   private registrations: NGFPlatformServiceRegistration[] = [
+    new NGFPlatformServiceRegistration(
+      'ngf.platform.window_manager',
+      'PlatformWindowManagerFacade',
+      ngfPlatformWindowManagerFacade as object
+    ),
     new NGFPlatformServiceRegistration(
       'ngf.platform.window_controller',
       'PlatformWindowControllerFacade',

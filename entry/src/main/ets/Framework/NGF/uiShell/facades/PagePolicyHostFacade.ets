@@ -1,8 +1,7 @@
 import { logger } from '../../utils/Logger';
-import { DisplayMode } from '../../../../Utils/WindowManager';
-import { PageWindowCoordinator } from '../../../../Utils/PageWindowCoordinator';
-import { uiContextManager } from '../../../Managers/UIContextManager';
 import { IPagePolicyHost } from '../contracts/IPagePolicyHost';
+import { NGFDisplayMode } from '../../platformOhos/contracts/IPlatformWindowController';
+import { ngfPlatformWindowManagerFacade } from '../../platformOhos/facades/PlatformWindowManagerFacade';
 
 const TAG: string = 'NGFPagePolicyHostFacade';
 
@@ -10,8 +9,7 @@ export class PagePolicyHostFacade implements IPagePolicyHost {
   applyPolicy(pageName: string): void {
     logger.info(TAG, `apply page policy: page=${pageName}`);
     try {
-      const uiContext = uiContextManager.getUIContext();
-      PageWindowCoordinator.applyPagePolicy(pageName, uiContext ?? undefined);
+      ngfPlatformWindowManagerFacade.activatePage(pageName);
     } catch (error) {
       logger.error(TAG, `applyPolicy failed: page=${pageName}, error=${this.errorToString(error as Object | string | number | boolean)}`);
       throw error as Error;
@@ -21,8 +19,12 @@ export class PagePolicyHostFacade implements IPagePolicyHost {
   reapplyPolicy(pageName: string): void {
     logger.info(TAG, `reapply page policy: page=${pageName}`);
     try {
-      const uiContext = uiContextManager.getUIContext();
-      PageWindowCoordinator.reapplyPagePolicy(pageName, uiContext ?? undefined);
+      const profile = ngfPlatformWindowManagerFacade.resolvePageProfile(pageName);
+      if (ngfPlatformWindowManagerFacade.getActivePageName() !== pageName) {
+        ngfPlatformWindowManagerFacade.activatePage(pageName);
+      }
+      const delayMs = profile ? profile.reapplyDelayMs : 0;
+      ngfPlatformWindowManagerFacade.reapplyActivePage(delayMs);
     } catch (error) {
       logger.error(TAG, `reapplyPolicy failed: page=${pageName}, error=${this.errorToString(error as Object | string | number | boolean)}`);
       throw error as Error;
@@ -30,8 +32,8 @@ export class PagePolicyHostFacade implements IPagePolicyHost {
   }
 
   resolveDisplayMode(pageName: string): string {
-    const mode = PageWindowCoordinator.resolveDisplayModeForPage(pageName);
-    const resolvedMode = mode ? mode : DisplayMode.DEFAULT;
+    const profile = ngfPlatformWindowManagerFacade.resolvePageProfile(pageName);
+    const resolvedMode = profile ? profile.displayMode : NGFDisplayMode.DEFAULT;
     logger.debug(TAG, `resolveDisplayMode: page=${pageName}, mode=${resolvedMode}`);
     return resolvedMode;
   }
