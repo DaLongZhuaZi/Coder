@@ -47,8 +47,8 @@ class NGFHdsNavigationTitleStyle implements HdsNavigationTitleStyle {
   constructor(mainTitleColor: ResourceColor, subTitleColor: ResourceColor) {
     this.mainTitleColor = mainTitleColor;
     this.subTitleColor = subTitleColor;
-    this.mainTitleShadowColor = '#1A000000';
-    this.subTitleShadowColor = '#12000000';
+    this.mainTitleShadowColor = $r('app.color.circle_shadow_light');
+    this.subTitleShadowColor = $r('app.color.card_shadow_light');
   }
 }
 
@@ -145,7 +145,7 @@ export class NGFHdsTitleBarOptionsFactory {
   static build(
     mainTitle: string,
     subTitle: string,
-    backgroundColor: string,
+    backgroundColor: ResourceColor,
     materialLevel: hdsMaterial.MaterialLevel,
     avoidLayoutSafeArea: boolean = false,
     enableComponentSafeArea: boolean = false

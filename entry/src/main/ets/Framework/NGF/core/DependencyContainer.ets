@@ -1,4 +1,4 @@
-import { logger } from './NGF/utils/Logger';
+import { logger } from '../utils/Logger';
 
 const TAG: string = 'NGFDependencyContainer';
 
@@ -46,11 +46,11 @@ export class DependencyContainer {
   register(token: string, factory: DependencyFactory, lifecycle: ContainerLifecycle): void {
     const normalizedToken = token.trim();
     if (normalizedToken.length <= 0) {
-      logger.warn(TAG, 'register ignored: token is empty');
+      logger.warn(TAG, 'register 忽略：token 为空');
       return;
     }
     this.registrations.set(normalizedToken, new DependencyRegistration(normalizedToken, factory, lifecycle));
-    logger.info(TAG, `register dependency: token=${normalizedToken}, lifecycle=${lifecycle}`);
+    logger.info(TAG, `注册依赖：token=${normalizedToken}, lifecycle=${lifecycle}`);
   }
 
   isRegistered(token: string): boolean {
@@ -62,16 +62,16 @@ export class DependencyContainer {
     const normalizedToken = token.trim();
     const registration = this.registrations.get(normalizedToken);
     if (!registration) {
-      logger.warn(TAG, `resolve missed: token=${normalizedToken}`);
+      logger.warn(TAG, `解析未命中：token=${normalizedToken}`);
       return null;
     }
     const instance = registration.resolve();
-    logger.debug(TAG, `resolve dependency: token=${normalizedToken}`);
+    logger.debug(TAG, `解析依赖：token=${normalizedToken}`);
     return instance;
   }
 
   clear(): void {
     this.registrations.clear();
-    logger.info(TAG, 'clear dependency registrations');
+    logger.info(TAG, '清除所有依赖注册');
   }
 }

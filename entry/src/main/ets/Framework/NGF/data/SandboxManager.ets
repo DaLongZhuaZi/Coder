@@ -1,7 +1,7 @@
 import { fileIo as fs } from '@kit.CoreFileKit';
-import { getContext, isInitialized as isGlobalContextInitialized } from '../../GlobalContext';
-import { uiContextManager } from '../Managers/UIContextManager';
-import { logger } from '../NGF/utils/Logger';
+import { getContext, isInitialized as isGlobalContextInitialized } from '../../../GlobalContext';
+import { uiContextManager } from '../platformOhos/UIContextManager';
+import { logger } from '../utils/Logger';
 
 const TAG: string = 'NGFSandboxManager';
 
@@ -18,14 +18,14 @@ export class SandboxManager {
   getDirectory(directoryName: string): string {
     const filesDir = this.resolveFilesDir();
     if (filesDir.length <= 0) {
-      logger.warn(TAG, `getDirectory failed: filesDir unavailable, directory=${directoryName}`);
+      logger.warn(TAG, `获取目录失败：filesDir 不可用，directory=${directoryName}`);
       return '';
     }
 
     const normalizedName = this.normalizeDirectoryName(directoryName);
     const targetDirectory = normalizedName === 'files' ? filesDir : `${filesDir}/${normalizedName}`;
     this.ensureDirectory(targetDirectory);
-    logger.debug(TAG, `getDirectory success: directory=${targetDirectory}`);
+    logger.debug(TAG, `获取目录成功：directory=${targetDirectory}`);
     return targetDirectory;
   }
 
@@ -67,7 +67,7 @@ export class SandboxManager {
       try {
         fs.mkdirSync(directoryPath, true);
       } catch {
-        logger.warn(TAG, `ensureDirectory failed: path=${directoryPath}`);
+        logger.warn(TAG, `确保目录失败：path=${directoryPath}`);
       }
     }
   }
