@@ -93,7 +93,7 @@ class TaskManagerFacade implements ITaskManager {
       await this.updateNotification(notifId, taskInfo);
       logger.error(TAG, '任务执行异常: TaskID=' + taskId + ', Error=' + e);
     } finally {
-      void this.checkStopBackground();
+      void this.stopBackgroundForTask(taskId);
     }
   }
 
@@ -111,6 +111,7 @@ class TaskManagerFacade implements ITaskManager {
       NGFNotificationType.PROGRESS,
       taskInfo.progress,
       taskInfo.total,
+      isOngoing,
       isOngoing
     );
     await ngfSystemNotificationManager.publish(request);
@@ -126,11 +127,8 @@ class TaskManagerFacade implements ITaskManager {
     return this.notificationIdCounter;
   }
 
-  private async checkStopBackground(): Promise<void> {
-    const runningTasks = this.getAllTasks().filter((t: NGFTaskInfo) => { return t.state === NGFTaskState.RUNNING; });
-    if (runningTasks.length === 0) {
-      await ngfBackgroundTaskManager.stopContinuousTask();
-    }
+  private async stopBackgroundForTask(taskId: string): Promise<void> {
+    await ngfBackgroundTaskManager.stopContinuousTask(taskId);
   }
 }
 

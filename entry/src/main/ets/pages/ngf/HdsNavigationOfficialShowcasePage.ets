@@ -1415,7 +1415,7 @@ export struct HdsNavigationOfficialEffectPage {
           .width('100%')
           .fontSize(18)
           .fontWeight(FontWeight.Medium)
-          .fontColor($r('app.color.panel_background'))
+          .fontColor($r('app.color.text_white'))
           .textAlign(TextAlign.Start)
 
         Text(entry.description)
@@ -1527,7 +1527,7 @@ export struct HdsNavigationOfficialEffectPage {
           .width('100%')
           .fontSize(18)
           .fontWeight(FontWeight.Medium)
-          .fontColor($r('app.color.panel_background'))
+          .fontColor($r('app.color.text_white'))
           .textAlign(TextAlign.Start)
 
         Text(entry.description)

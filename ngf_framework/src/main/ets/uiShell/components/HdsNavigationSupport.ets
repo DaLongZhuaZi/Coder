@@ -1,19 +1,38 @@
 import {
   BlurStrategy,
   hdsMaterial,
+  HdsNavigationBadgeIconOptions,
   HdsNavigationBackgroundStyle,
+  HdsNavigationIconOptions,
+  HdsNavigationMenuContentOptions,
+  HdsNavigationMenuItemOptions,
   HdsNavigationTitle,
   HdsNavigationTitleBarOptions,
   HdsNavigationTitleBarStyle,
   HdsNavigationTitleStyle,
   HdsTitleBarContentStyle,
+  IconStyleMode,
+  IconType,
   ScrollEffectOptions,
   ScrollEffectType,
   SystemMaterialParams,
+  TextStyleMode,
   TitleBarContentOptions,
   TitleBarStyleOptions
 } from '@kit.UIDesignKit';
 import { NGFHdsEffectPresetFactory } from './NGFHdsEffectPresets';
+
+export class NGFHdsTitleBarMenuAction {
+  icon: IconType;
+  label: ResourceStr;
+  action: Callback<void>;
+
+  constructor(icon: IconType, label: ResourceStr, action: Callback<void>) {
+    this.icon = icon;
+    this.label = label;
+    this.action = action;
+  }
+}
 
 class NGFHdsNavigationTitle implements HdsNavigationTitle {
   mainTitle: ResourceStr;
@@ -92,9 +111,10 @@ class NGFHdsTitleBarStyleOptions implements TitleBarStyleOptions {
   constructor(
     originalStyle: HdsNavigationTitleBarStyle,
     scrollEffectStyle: HdsNavigationTitleBarStyle,
-    systemMaterialEffect: SystemMaterialParams
+    systemMaterialEffect: SystemMaterialParams,
+    scrollEffectType: ScrollEffectType = ScrollEffectType.GRADIENT_BLUR
   ) {
-    this.scrollEffectOpts = new NGFHdsScrollEffectOptions(ScrollEffectType.GRADIENT_BLUR);
+    this.scrollEffectOpts = new NGFHdsScrollEffectOptions(scrollEffectType);
     this.originalStyle = originalStyle;
     this.scrollEffectStyle = scrollEffectStyle;
     this.blurStrategy = BlurStrategy.ADAPTIVE;
@@ -103,11 +123,49 @@ class NGFHdsTitleBarStyleOptions implements TitleBarStyleOptions {
   }
 }
 
+class NGFHdsNavigationIconOptions implements HdsNavigationIconOptions {
+  icon?: IconType;
+  label?: ResourceStr;
+  isEnabled?: boolean;
+  action?: Callback<void>;
+  type?: IconStyleMode | TextStyleMode;
+
+  constructor(icon: IconType, label: ResourceStr, action: Callback<void>) {
+    this.icon = icon;
+    this.label = label;
+    this.isEnabled = true;
+    this.action = action;
+    this.type = IconStyleMode.NORMAL;
+  }
+}
+
+class NGFHdsNavigationMenuItemOptions implements HdsNavigationBadgeIconOptions {
+  content?: HdsNavigationIconOptions;
+
+  constructor(content: HdsNavigationIconOptions) {
+    this.content = content;
+  }
+}
+
+class NGFHdsNavigationMenuContentOptions implements HdsNavigationMenuContentOptions {
+  value?: Array<HdsNavigationMenuItemOptions>;
+  maxCount?: number;
+
+  constructor(value: Array<HdsNavigationMenuItemOptions>, maxCount: number) {
+    this.value = value;
+    this.maxCount = maxCount;
+  }
+}
+
 class NGFHdsTitleBarContentOptions implements TitleBarContentOptions {
   title?: HdsNavigationTitle;
+  menu?: HdsNavigationMenuContentOptions;
 
-  constructor(title: HdsNavigationTitle) {
+  constructor(title: HdsNavigationTitle, menu?: HdsNavigationMenuContentOptions) {
     this.title = title;
+    if (menu !== undefined) {
+      this.menu = menu;
+    }
   }
 }
 
@@ -133,6 +191,19 @@ class NGFHdsNavigationTitleBarOptions implements HdsNavigationTitleBarOptions {
 }
 
 export class NGFHdsTitleBarOptionsFactory {
+  private static buildMenuContent(
+    menuActions: Array<NGFHdsTitleBarMenuAction>,
+    maxMenuCount: number
+  ): HdsNavigationMenuContentOptions {
+    const menuItems: Array<HdsNavigationMenuItemOptions> = [];
+    for (let index = 0; index < menuActions.length; index++) {
+      const menuAction = menuActions[index];
+      const iconOptions = new NGFHdsNavigationIconOptions(menuAction.icon, menuAction.label, menuAction.action);
+      menuItems.push(new NGFHdsNavigationMenuItemOptions(iconOptions));
+    }
+    return new NGFHdsNavigationMenuContentOptions(menuItems, maxMenuCount);
+  }
+
   static build(
     mainTitle: ResourceStr,
     subTitle: ResourceStr,
@@ -152,6 +223,61 @@ export class NGFHdsTitleBarOptionsFactory {
     const materialParams = NGFHdsEffectPresetFactory.buildSystemMaterialParams(hdsMaterial.MaterialType.IMMERSIVE, materialLevel);
     const content = new NGFHdsTitleBarContentOptions(new NGFHdsNavigationTitle(mainTitle, subTitle));
     const style = new NGFHdsTitleBarStyleOptions(originalBarStyle, scrollBarStyle, materialParams);
+    return new NGFHdsNavigationTitleBarOptions(content, style, avoidLayoutSafeArea, enableComponentSafeArea);
+  }
+
+  static buildTransparentSurface(
+    mainTitle: ResourceStr,
+    subTitle: ResourceStr,
+    materialLevel: hdsMaterial.MaterialLevel,
+    avoidLayoutSafeArea: boolean = false,
+    enableComponentSafeArea: boolean = false
+  ): HdsNavigationTitleBarOptions {
+    const originalTitleStyle = new NGFHdsNavigationTitleStyle($r('app.color.text_body'), $r('app.color.text_secondary'));
+    const scrollTitleStyle = new NGFHdsNavigationTitleStyle($r('app.color.text_body'), $r('app.color.text_secondary'));
+    const originalContentStyle = new NGFHdsTitleBarContentStyle(originalTitleStyle);
+    const scrollContentStyle = new NGFHdsTitleBarContentStyle(scrollTitleStyle);
+    const originalBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 18);
+    const scrollBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 28);
+    const originalBarStyle = new NGFHdsNavigationTitleBarStyle(originalBackgroundStyle, originalContentStyle);
+    const scrollBarStyle = new NGFHdsNavigationTitleBarStyle(scrollBackgroundStyle, scrollContentStyle);
+    const materialParams = NGFHdsEffectPresetFactory.buildSystemMaterialParams(hdsMaterial.MaterialType.IMMERSIVE, materialLevel);
+    const content = new NGFHdsTitleBarContentOptions(new NGFHdsNavigationTitle(mainTitle, subTitle));
+    const style = new NGFHdsTitleBarStyleOptions(
+      originalBarStyle,
+      scrollBarStyle,
+      materialParams,
+      ScrollEffectType.IMMERSIVE_GRADIENT_BLUR
+    );
+    return new NGFHdsNavigationTitleBarOptions(content, style, avoidLayoutSafeArea, enableComponentSafeArea);
+  }
+
+  static buildTransparentSurfaceWithMenu(
+    mainTitle: ResourceStr,
+    subTitle: ResourceStr,
+    materialLevel: hdsMaterial.MaterialLevel,
+    menuActions: Array<NGFHdsTitleBarMenuAction>,
+    maxMenuCount: number = 3,
+    avoidLayoutSafeArea: boolean = false,
+    enableComponentSafeArea: boolean = false
+  ): HdsNavigationTitleBarOptions {
+    const originalTitleStyle = new NGFHdsNavigationTitleStyle($r('app.color.text_body'), $r('app.color.text_secondary'));
+    const scrollTitleStyle = new NGFHdsNavigationTitleStyle($r('app.color.text_body'), $r('app.color.text_secondary'));
+    const originalContentStyle = new NGFHdsTitleBarContentStyle(originalTitleStyle);
+    const scrollContentStyle = new NGFHdsTitleBarContentStyle(scrollTitleStyle);
+    const originalBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 18);
+    const scrollBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 28);
+    const originalBarStyle = new NGFHdsNavigationTitleBarStyle(originalBackgroundStyle, originalContentStyle);
+    const scrollBarStyle = new NGFHdsNavigationTitleBarStyle(scrollBackgroundStyle, scrollContentStyle);
+    const materialParams = NGFHdsEffectPresetFactory.buildSystemMaterialParams(hdsMaterial.MaterialType.IMMERSIVE, materialLevel);
+    const menu = NGFHdsTitleBarOptionsFactory.buildMenuContent(menuActions, maxMenuCount);
+    const content = new NGFHdsTitleBarContentOptions(new NGFHdsNavigationTitle(mainTitle, subTitle), menu);
+    const style = new NGFHdsTitleBarStyleOptions(
+      originalBarStyle,
+      scrollBarStyle,
+      materialParams,
+      ScrollEffectType.IMMERSIVE_GRADIENT_BLUR
+    );
     return new NGFHdsNavigationTitleBarOptions(content, style, avoidLayoutSafeArea, enableComponentSafeArea);
   }
 }

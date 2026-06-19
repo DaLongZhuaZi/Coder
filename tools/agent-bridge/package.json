@@ -1,0 +1,35 @@
+{
+  "name": "@ngf/agent-bridge",
+  "version": "0.1.0",
+  "private": false,
+  "description": "Desktop bridge service for connecting NGF HarmonyOS clients to local coding agents.",
+  "main": "src/server.js",
+  "bin": {
+    "ngf-agent-bridge": "src/desktop-launcher.js"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "keywords": [
+    "ngf",
+    "agent",
+    "bridge",
+    "cli",
+    "tui",
+    "harmonyos"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "start": "node src/desktop-launcher.js",
+    "setup": "node src/desktop-launcher.js --setup",
+    "doctor": "node src/desktop-launcher.js --doctor",
+    "check": "node --check src/server.js && node --check src/config.js && node --check src/protocol.js && node --check src/provider-registry.js && node --check src/workspace-service.js && node --check src/websocket.js && node --check src/providers/mock-provider.js && node --check src/providers/opencode-provider.js && node --check src/providers/cli-provider.js && node --check src/qr-code.js && node --check src/profile-store.js && node --check src/provider-scan.js && node --check src/i18n.js && node --check src/connect-wizard.js && node --check src/desktop-launcher.js"
+  },
+  "license": "MIT"
+}

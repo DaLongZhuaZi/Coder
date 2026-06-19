@@ -82,7 +82,7 @@ export struct NGFCapabilitiesSecurityPage {
       Text($r('app.string.card_security_title'))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor($r('app.color.panel_background'))
+        .fontColor($r('app.color.text_white'))
       Text($r('app.string.card_security_desc'))
         .fontSize(13)
         .lineHeight(20)
@@ -107,6 +107,7 @@ export struct NGFCapabilitiesSecurityPage {
         .fontSize(14)
         .borderRadius(12)
         .backgroundColor($r('app.color.tag_purple'))
+        .fontColor($r('app.color.panel_background'))
         .onClick((): void => {
           void this.handleAuthenticate();
         })

@@ -82,7 +82,7 @@ export struct NGFCapabilitiesNetworkPage {
       Text($r('app.string.card_network_title'))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor($r('app.color.panel_background'))
+        .fontColor($r('app.color.text_white'))
       Text($r('app.string.card_network_desc'))
         .fontSize(13)
         .lineHeight(20)
@@ -107,6 +107,7 @@ export struct NGFCapabilitiesNetworkPage {
         .fontSize(14)
         .borderRadius(12)
         .backgroundColor($r('app.color.button_primary'))
+        .fontColor($r('app.color.panel_background'))
         .onClick((): void => {
           void this.handleFetchData();
         })

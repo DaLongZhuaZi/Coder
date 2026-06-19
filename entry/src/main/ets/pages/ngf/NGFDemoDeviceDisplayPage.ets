@@ -125,7 +125,7 @@ export struct NGFDemoDeviceDisplayPage {
       Text($r('app.string.ui_str_2262'))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor($r('app.color.panel_background'))
+        .fontColor($r('app.color.text_white'))
       Text($r('app.string.ui_str_2263'))
         .fontSize(13)
         .lineHeight(20)
@@ -156,7 +156,7 @@ export struct NGFDemoDeviceDisplayPage {
             .fontSize(13)
             .borderRadius(10)
             .backgroundColor(this.localeIndexes[0] === index ? $r('app.color.tag_green') : $r('app.color.card_border'))
-            .fontColor(this.localeIndexes[0] === index ? $r('app.color.panel_background') : $r('app.color.text_body'))
+            .fontColor(this.localeIndexes[0] === index ? $r('app.color.component_control_bg') : $r('app.color.text_body'))
             .onClick((): void => {
               this.localeIndexes = [index];
             })
@@ -171,6 +171,7 @@ export struct NGFDemoDeviceDisplayPage {
           .fontSize(12)
           .borderRadius(10)
           .backgroundColor($r('app.color.tag_green'))
+          .fontColor($r('app.color.component_control_bg'))
           .onClick((): void => {
             this.formatRelativeTime(60 * 1000);
           })
@@ -180,6 +181,7 @@ export struct NGFDemoDeviceDisplayPage {
           .fontSize(12)
           .borderRadius(10)
           .backgroundColor($r('app.color.tag_green'))
+          .fontColor($r('app.color.component_control_bg'))
           .onClick((): void => {
             this.formatRelativeTime(60 * 60 * 1000);
           })
@@ -189,6 +191,7 @@ export struct NGFDemoDeviceDisplayPage {
           .fontSize(12)
           .borderRadius(10)
           .backgroundColor($r('app.color.tag_green_dark'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             this.formatRelativeTime(24 * 60 * 60 * 1000);
           })
@@ -198,6 +201,7 @@ export struct NGFDemoDeviceDisplayPage {
           .fontSize(12)
           .borderRadius(10)
           .backgroundColor($r('app.color.tag_green_darker'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             this.formatRelativeTime(30 * 24 * 60 * 60 * 1000);
           })
@@ -247,6 +251,7 @@ export struct NGFDemoDeviceDisplayPage {
         .fontSize(14)
         .borderRadius(12)
         .backgroundColor($r('app.color.tag_green'))
+        .fontColor($r('app.color.component_control_bg'))
         .onClick((): void => {
           this.handleDetectAll();
         })
@@ -271,7 +276,7 @@ export struct NGFDemoDeviceDisplayPage {
               Text(entry.available ? $r('app.string.ui_str_2271') : $r('app.string.ui_str_2272'))
                 .fontSize(11)
                 .fontWeight(FontWeight.Medium)
-                .fontColor($r('app.color.panel_background'))
+                .fontColor(entry.available ? $r('app.color.component_control_bg') : $r('app.color.panel_background'))
                 .padding({ left: 8, right: 8, top: 3, bottom: 3 })
                 .backgroundColor(entry.available ? $r('app.color.tag_green') : $r('app.color.tag_red'))
                 .borderRadius(8)
@@ -398,7 +403,7 @@ export struct NGFDemoDeviceDisplayPage {
         .fontColor($r('app.color.text_body'))
         .width('100%')
         .padding(12)
-        .backgroundColor('#FFF0FDF4')
+        .backgroundColor($r('app.color.background_success'))
         .borderRadius(10)
     }
     .width('100%')

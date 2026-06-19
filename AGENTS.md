@@ -98,9 +98,9 @@
   - `entry/src/main/module.json5`
   - `entry/src/main/resources/base/profile/main_pages.json`
 - 当前 `build-profile.json5` 的产品配置为：
-  - `targetSdkVersion: 26.0.0`
-  - `compatibleSdkVersion: 26.0.0`
-- 当前根目录 `oh-package.json5` 的 `modelVersion` 为 `26.0.0`。
+  - `targetSdkVersion: 6.1.0(23)`
+  - `compatibleSdkVersion: 6.1.0(23)`
+- 当前根目录 `oh-package.json5` 的 `modelVersion` 为 `6.1.0`。
 - 当前 `AppScope/app.json5` 的 `bundleName` 为 `com.dlzz.ngf`。
 - 当前 `entry/src/main/module.json5` 的主能力为 `EntryAbility`，页面入口通过 `$profile:main_pages` 声明。
 - 当前 `entry/src/main/resources/base/profile/main_pages.json` 中注册的入口页面为 `pages/ngf/MainMenuPage`。

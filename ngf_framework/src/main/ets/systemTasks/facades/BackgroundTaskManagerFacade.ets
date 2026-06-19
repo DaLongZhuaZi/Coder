@@ -7,10 +7,35 @@ import { logger } from '../../utils/Logger';
 const TAG: string = 'BackgroundTaskManagerFacade';
 
 class BackgroundTaskManagerFacade implements IBackgroundTaskManager {
+  private activeTaskIds: Set<string> = new Set();
+  private isContinuousTaskRunning: boolean = false;
+  private startTaskPromise: Promise<boolean> | null = null;
+
   async startContinuousTask(taskId: string, title: string, content: string): Promise<boolean> {
+    if (taskId.length > 0) {
+      this.activeTaskIds.add(taskId);
+    }
+    if (this.isContinuousTaskRunning) {
+      return true;
+    }
+    const pendingStart = this.startTaskPromise;
+    if (pendingStart !== null) {
+      return pendingStart;
+    }
+    const promise = this.startContinuousTaskInternal(taskId, title, content);
+    this.startTaskPromise = promise;
+    const result = await promise;
+    this.startTaskPromise = null;
+    return result;
+  }
+
+  private async startContinuousTaskInternal(taskId: string, title: string, content: string): Promise<boolean> {
     const context = uiContextManager.getFullAbilityContext();
     if (!context) {
       logger.error(TAG, '无 UIAbilityContext，无法启动后台长时任务');
+      if (taskId.length > 0) {
+        this.activeTaskIds.delete(taskId);
+      }
       return false;
     }
     try {
@@ -26,17 +51,36 @@ class BackgroundTaskManagerFacade implements IBackgroundTaskManager {
         wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
       };
       const wa: WantAgent = await wantAgent.getWantAgent(wantAgentInfo);
-      
+
       await backgroundTaskManager.startBackgroundRunning(context, backgroundTaskManager.BackgroundMode.DATA_TRANSFER, wa);
-      logger.info(TAG, '后台长时任务已启动: TaskID=' + taskId);
+      this.isContinuousTaskRunning = true;
+      if (this.activeTaskIds.size === 0) {
+        const stopped: boolean = await this.stopContinuousTask();
+        return stopped;
+      }
+      logger.info(TAG, '后台长时任务已启动: TaskID=' + taskId + ', title=' + title + ', content=' + content);
       return true;
     } catch (e) {
       logger.error(TAG, '启动后台长时任务失败: ' + e);
+      this.isContinuousTaskRunning = false;
+      this.activeTaskIds.clear();
       return false;
     }
   }
 
-  async stopContinuousTask(): Promise<boolean> {
+  async stopContinuousTask(taskId?: string): Promise<boolean> {
+    if (taskId !== undefined && taskId.length > 0) {
+      this.activeTaskIds.delete(taskId);
+    } else {
+      this.activeTaskIds.clear();
+    }
+    if (this.activeTaskIds.size > 0) {
+      logger.debug(TAG, '后台长时任务仍有活动请求，暂不停止: remaining=' + String(this.activeTaskIds.size));
+      return true;
+    }
+    if (!this.isContinuousTaskRunning) {
+      return true;
+    }
     const context = uiContextManager.getFullAbilityContext();
     if (!context) {
       logger.error(TAG, '无 UIAbilityContext，无法停止后台长时任务');
@@ -44,6 +88,7 @@ class BackgroundTaskManagerFacade implements IBackgroundTaskManager {
     }
     try {
       await backgroundTaskManager.stopBackgroundRunning(context);
+      this.isContinuousTaskRunning = false;
       logger.info(TAG, '后台长时任务已停止');
       return true;
     } catch (e) {

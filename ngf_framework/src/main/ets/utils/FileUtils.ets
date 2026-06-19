@@ -188,6 +188,9 @@ export class FileUtils {
   static createDirectory(dirPath: string, recursive: boolean = true): boolean {
     const resolved: string = FileUtils.resolvePath(dirPath);
     try {
+      if (FileUtils.exists(dirPath)) {
+        return FileUtils.isDirectory(dirPath);
+      }
       fs.mkdirSync(resolved, recursive);
       return true;
     } catch (error) {

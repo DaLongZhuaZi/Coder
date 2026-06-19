@@ -12,25 +12,27 @@ export class NGFNotificationRequest {
   title: string;
   content: string;
   type: NGFNotificationType;
-  
+
   progressValue: number;
   progressMax: number;
   isOngoing: boolean;
+  isAlertOnce: boolean;
 
   // 扩展属性
   longText?: string;
   lines?: Array<string>;
   templateName?: string;
   templateData?: Record<string, Object>;
-  
+
   constructor(
-    id: number, 
-    title: string, 
-    content: string, 
+    id: number,
+    title: string,
+    content: string,
     type: NGFNotificationType = NGFNotificationType.BASIC,
-    progressValue: number = 0, 
-    progressMax: number = 0, 
-    isOngoing: boolean = false
+    progressValue: number = 0,
+    progressMax: number = 0,
+    isOngoing: boolean = false,
+    isAlertOnce: boolean = false
   ) {
     this.id = id;
     this.title = title;
@@ -39,6 +41,7 @@ export class NGFNotificationRequest {
     this.progressValue = progressValue;
     this.progressMax = progressMax;
     this.isOngoing = isOngoing;
+    this.isAlertOnce = isAlertOnce;
   }
 }
 

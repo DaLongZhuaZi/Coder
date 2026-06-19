@@ -154,7 +154,7 @@ export struct NGFDemoErrorRecoveryPage {
       Text($r('app.string.demo_error_recovery_title'))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor($r('app.color.panel_background'))
+        .fontColor($r('app.color.text_white'))
       Text($r('app.string.demo_error_recovery_desc'))
         .fontSize(13)
         .lineHeight(20)
@@ -189,7 +189,8 @@ export struct NGFDemoErrorRecoveryPage {
           .height(40)
           .fontSize(14)
           .borderRadius(12)
-          .backgroundColor('#FF16A34A')
+          .fontColor($r('app.color.component_control_bg'))
+          .backgroundColor($r('app.color.tag_green'))
           .onClick((): void => {
             void this.handleTriggerError(NGFErrorSeverity.LOW);
           })
@@ -199,7 +200,8 @@ export struct NGFDemoErrorRecoveryPage {
           .height(40)
           .fontSize(14)
           .borderRadius(12)
-          .backgroundColor('#FFD97706')
+          .fontColor($r('app.color.component_control_bg'))
+          .backgroundColor($r('app.color.tag_amber'))
           .onClick((): void => {
             void this.handleTriggerError(NGFErrorSeverity.MEDIUM);
           })
@@ -209,7 +211,8 @@ export struct NGFDemoErrorRecoveryPage {
           .height(40)
           .fontSize(14)
           .borderRadius(12)
-          .backgroundColor('#FFEA580C')
+          .fontColor($r('app.color.component_control_bg'))
+          .backgroundColor($r('app.color.tag_amber'))
           .onClick((): void => {
             void this.handleTriggerError(NGFErrorSeverity.HIGH);
           })
@@ -219,7 +222,8 @@ export struct NGFDemoErrorRecoveryPage {
           .height(40)
           .fontSize(14)
           .borderRadius(12)
-          .backgroundColor('#FFE11D48')
+          .fontColor($r('app.color.panel_background'))
+          .backgroundColor($r('app.color.tag_red'))
           .onClick((): void => {
             void this.handleTriggerError(NGFErrorSeverity.CRITICAL);
           })
@@ -272,10 +276,10 @@ export struct NGFDemoErrorRecoveryPage {
       .width('100%')
 
       Column({ space: 6 }) {
-        this.buildStrategyRule($r('app.string.err_rule_low'), $r('app.string.err_rule_low_desc'), '#16A34A')
-        this.buildStrategyRule($r('app.string.err_rule_medium'), $r('app.string.err_rule_medium_desc'), '#D97706')
-        this.buildStrategyRule($r('app.string.err_rule_high'), $r('app.string.err_rule_high_desc'), '#EA580C')
-        this.buildStrategyRule($r('app.string.err_rule_critical'), $r('app.string.err_rule_critical_desc'), '#E11D48')
+        this.buildStrategyRule($r('app.string.err_rule_low'), $r('app.string.err_rule_low_desc'), $r('app.color.tag_green'))
+        this.buildStrategyRule($r('app.string.err_rule_medium'), $r('app.string.err_rule_medium_desc'), $r('app.color.tag_amber'))
+        this.buildStrategyRule($r('app.string.err_rule_high'), $r('app.string.err_rule_high_desc'), $r('app.color.button_warning'))
+        this.buildStrategyRule($r('app.string.err_rule_critical'), $r('app.string.err_rule_critical_desc'), $r('app.color.tag_red'))
       }
       .width('100%')
     }
@@ -288,7 +292,7 @@ export struct NGFDemoErrorRecoveryPage {
   }
 
   @Builder
-  private buildStrategyRule(level: ResourceStr, desc: ResourceStr, color: string): void {
+  private buildStrategyRule(level: ResourceStr, desc: ResourceStr, color: ResourceColor): void {
     Row({ space: 10 }) {
       Column() {}
         .width(4)

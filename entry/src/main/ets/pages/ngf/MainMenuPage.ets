@@ -43,6 +43,7 @@ import { NGFCapabilitiesHardwarePage } from './NGFCapabilitiesHardwarePage';
 import { NGFCapabilitiesMediaPage } from './NGFCapabilitiesMediaPage';
 import { NGFDemoErrorRecoveryPage } from './NGFDemoErrorRecoveryPage';
 import { NGFDemoSyncManagerPage } from './NGFDemoSyncManagerPage';
+import { NGFAgentBridgePage } from './NGFAgentBridgePage';
 
 const TAG: string = 'NGFStarterMainMenuPage';
 const NGF_MAIN_MENU_TITLE_BAR_UNDERLAY_HEIGHT: number = 188;
@@ -65,6 +66,7 @@ class NGFMainMenuActionKey {
   static readonly DEMO_TASK_MANAGER: string = NGFHdsDemoRouteName.TASK_MANAGER;
   static readonly DEMO_ERROR_RECOVERY: string = NGFHdsDemoRouteName.DEMO_ERROR_RECOVERY;
   static readonly DEMO_SYNC_MANAGER: string = NGFHdsDemoRouteName.DEMO_SYNC_MANAGER;
+  static readonly AGENT_BRIDGE: string = NGFHdsDemoRouteName.AGENT_BRIDGE;
   static readonly DEMO_MULTITON_SYMBOL: string = 'action.demo_multiton_symbol';
   static readonly DEMO_MULTITON_DATA: string = 'action.demo_multiton_data';
   static readonly DEMO_SUB_WINDOW_SETTINGS: string = 'action.demo_sub_window_settings';
@@ -533,7 +535,8 @@ struct NGFStarterMainMenuPage {
       actionKey === NGFMainMenuActionKey.SYSTEM_RESOURCE_PREVIEW ||
       actionKey === NGFMainMenuActionKey.DEMO_TASK_MANAGER ||
       actionKey === NGFMainMenuActionKey.DEMO_ERROR_RECOVERY ||
-      actionKey === NGFMainMenuActionKey.DEMO_SYNC_MANAGER) {
+      actionKey === NGFMainMenuActionKey.DEMO_SYNC_MANAGER ||
+      actionKey === NGFMainMenuActionKey.AGENT_BRIDGE) {
       this.handleOpenHdsDemoTap(actionKey, labelStr);
       return;
     }
@@ -868,6 +871,7 @@ struct NGFStarterMainMenuPage {
                 this.buildSystemResourcePreviewCard()
                 this.buildDemoErrorRecoveryCard()
                 this.buildDemoSyncManagerCard()
+                this.buildAgentBridgeCard()
                 this.buildDemoMultitonSymbolCard()
                 this.buildDemoMultitonDataCard()
                 this.buildDemoSubWindowSettingsCard()
@@ -1134,6 +1138,8 @@ struct NGFStarterMainMenuPage {
       NGFDemoErrorRecoveryPage()
     } else if (name === NGFHdsDemoRouteName.DEMO_SYNC_MANAGER) {
       NGFDemoSyncManagerPage()
+    } else if (name === NGFHdsDemoRouteName.AGENT_BRIDGE) {
+      NGFAgentBridgePage()
     }
   }
 
@@ -1595,6 +1601,19 @@ struct NGFStarterMainMenuPage {
   }
 
   @Builder
+  private buildAgentBridgeCard(): void {
+    this.buildFeatureActionButton(
+      'AGENT',
+      $r('app.string.agent_bridge_main_card_title'),
+      $r('app.string.agent_bridge_main_card_desc'),
+      '#064E3B',
+      '#0EA5E9',
+      '#67E8F9FF',
+      NGFMainMenuActionKey.AGENT_BRIDGE
+    )
+  }
+
+  @Builder
   private buildDemoMultitonSymbolCard(): void {
     this.buildFeatureActionButton(
       'MULTI',
@@ -1962,8 +1981,8 @@ struct NGFStarterMainMenuPage {
         Progress({ value: this.runtimeStatus?.batterySOC || 0, total: 100, type: ProgressType.Capsule })
           .layoutWeight(1)
           .height(14)
-          .color(this.runtimeStatus?.batterySOC && this.runtimeStatus.batterySOC < 20 ? Color.Red : 
-                (this.runtimeStatus?.isCharging ? Color.Green : $r('app.color.button_primary')))
+            .color(this.runtimeStatus?.batterySOC && this.runtimeStatus.batterySOC < 20 ? $r('app.color.tag_red') :
+                (this.runtimeStatus?.isCharging ? $r('app.color.tag_green') : $r('app.color.button_primary')))
         Text(String(this.runtimeStatus?.batterySOC || 0) + '%')
           .fontSize(13)
           .fontColor($r('app.color.text_primary'))
@@ -2183,6 +2202,7 @@ struct NGFStarterMainMenuPage {
           .fontSize(13)
           .borderRadius(18)
           .backgroundColor($r('app.color.button_primary'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             this.handleFeatureActionTap(NGFMainMenuActionKey.DEMO_CONTINUATION, '流转准备');
           })
@@ -2221,6 +2241,7 @@ struct NGFStarterMainMenuPage {
           .fontSize(13)
           .borderRadius(18)
           .backgroundColor($r('app.color.tag_blue'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             this.handleFeatureActionTap(NGFMainMenuActionKey.DEMO_SHARE_KIT, '分享');
           })

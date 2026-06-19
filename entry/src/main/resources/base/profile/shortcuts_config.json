@@ -6,7 +6,7 @@
       "icon": "$media:layered_image",
       "wants": [
         {
-          "bundleName": "com.dlzz.ngf",
+          "bundleName": "com.dlzz.coder",
           "abilityName": "MultitonEntryAbility",
           "parameters": {
             "instanceId": "A",
@@ -22,7 +22,7 @@
       "icon": "$media:layered_image",
       "wants": [
         {
-          "bundleName": "com.dlzz.ngf",
+          "bundleName": "com.dlzz.coder",
           "abilityName": "MultitonEntryAbility",
           "parameters": {
             "instanceId": "B",

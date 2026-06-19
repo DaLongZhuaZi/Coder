@@ -70,8 +70,8 @@ class NGFHdsPointLightEffectImpl implements hdsEffect.PointLightEffect {
 
 @Component
 export struct AboutSheetContent {
-  @State private appName: string = 'NGF';
-  @State private bundleName: string = 'com.dlzz.ngf';
+  @State private appName: string = 'Coder';
+  @State private bundleName: string = 'com.dlzz.coder';
   @State private versionName: string = '1.0.0';
   @State private versionCode: number = 1000000;
   @State private buildVersion: string = '1';

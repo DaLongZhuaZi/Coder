@@ -5,12 +5,12 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "C:\\Users\\13359\\.ohos\\config\\default_NGF_JDB3kluqIj7qxGPW8Q8f_cGAegyyShqaVNLCSj8S55M=.cer",
+          "certpath": "C:\\Users\\13359\\.ohos\\config\\default_Coder_v4wQCv96KRIoxFXKa_0UZ8S2KTL9XKRc0cZABG8z7O8=.cer",
           "keyAlias": "debugKey",
           "keyPassword": "__REMOVED__",
-          "profile": "C:\\Users\\13359\\.ohos\\config\\default_NGF_JDB3kluqIj7qxGPW8Q8f_cGAegyyShqaVNLCSj8S55M=.p7b",
+          "profile": "C:\\Users\\13359\\.ohos\\config\\default_Coder_v4wQCv96KRIoxFXKa_0UZ8S2KTL9XKRc0cZABG8z7O8=.p7b",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "C:\\Users\\13359\\.ohos\\config\\default_NGF_JDB3kluqIj7qxGPW8Q8f_cGAegyyShqaVNLCSj8S55M=.p12",
+          "storeFile": "C:\\Users\\13359\\.ohos\\config\\default_Coder_v4wQCv96KRIoxFXKa_0UZ8S2KTL9XKRc0cZABG8z7O8=.p12",
           "storePassword": "__REMOVED__"
         }
       }
@@ -19,8 +19,8 @@
       {
         "name": "default",
         "signingConfig": "default",
-        "targetSdkVersion": "26.0.0",
-        "compatibleSdkVersion": "26.0.0",
+        "targetSdkVersion": "6.1.0(23)",
+        "compatibleSdkVersion": "6.1.0(23)",
         "runtimeOS": "HarmonyOS",
         "buildOption": {
           "strictMode": {

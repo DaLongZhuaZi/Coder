@@ -13,6 +13,10 @@
       "value": "#F3F7FB"
     },
     {
+      "name": "background_primary",
+      "value": "#F3F7FB"
+    },
+    {
       "name": "ngf_background_secondary",
       "value": "#EAF0F7"
     },
@@ -129,6 +133,10 @@
       "value": "#16A34A"
     },
     {
+      "name": "tag_green",
+      "value": "#16A34A"
+    },
+    {
       "name": "ngf_tag_blue",
       "value": "#2563EB"
     },
@@ -138,6 +146,10 @@
     },
     {
       "name": "ngf_tag_red",
+      "value": "#DC2626"
+    },
+    {
+      "name": "tag_red",
       "value": "#DC2626"
     },
     {
@@ -306,6 +318,10 @@
     },
     {
       "name": "ngf_tag_amber",
+      "value": "#D97706"
+    },
+    {
+      "name": "tag_amber",
       "value": "#D97706"
     },
     {

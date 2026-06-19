@@ -240,7 +240,7 @@ export struct NGFDemoSyncManagerPage {
       Text($r('app.string.demo_sync_title'))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor($r('app.color.panel_background'))
+        .fontColor($r('app.color.text_white'))
       Text($r('app.string.demo_sync_desc'))
         .fontSize(13)
         .lineHeight(20)
@@ -277,6 +277,7 @@ export struct NGFDemoSyncManagerPage {
           .fontSize(13)
           .borderRadius(10)
           .backgroundColor(this.isOnline ? $r('app.color.tag_red') : $r('app.color.tag_green'))
+          .fontColor(this.isOnline ? $r('app.color.panel_background') : $r('app.color.component_control_bg'))
           .onClick((): void => {
             this.handleToggleNetwork();
           })
@@ -329,10 +330,10 @@ export struct NGFDemoSyncManagerPage {
           Row({ space: 4 }) {
             SymbolGlyph($r('sys.symbol.plus'))
               .fontSize(14)
-              .fontColor(['#FFFFFF'])
+              .fontColor([$r('app.color.component_control_bg')])
             Text($r('app.string.sync_enqueue_create'))
               .fontSize(12)
-              .fontColor('#FFFFFF')
+              .fontColor($r('app.color.component_control_bg'))
           }
           .width('100%')
           .justifyContent(FlexAlign.Center)
@@ -349,10 +350,10 @@ export struct NGFDemoSyncManagerPage {
           Row({ space: 4 }) {
             SymbolGlyph($r('sys.symbol.square_and_pencil'))
               .fontSize(14)
-              .fontColor(['#FFFFFF'])
+              .fontColor([$r('app.color.panel_background')])
             Text($r('app.string.sync_enqueue_update'))
               .fontSize(12)
-              .fontColor('#FFFFFF')
+              .fontColor($r('app.color.panel_background'))
           }
           .width('100%')
           .justifyContent(FlexAlign.Center)
@@ -360,7 +361,7 @@ export struct NGFDemoSyncManagerPage {
         .layoutWeight(1)
         .height(36)
         .borderRadius(10)
-        .backgroundColor('#FF2563EB')
+        .backgroundColor($r('app.color.tag_blue'))
         .onClick((): void => {
           this.handleEnqueue(NGFSyncOperation.UPDATE);
         })
@@ -369,10 +370,10 @@ export struct NGFDemoSyncManagerPage {
           Row({ space: 4 }) {
             SymbolGlyph($r('sys.symbol.xmark'))
               .fontSize(14)
-              .fontColor(['#FFFFFF'])
+              .fontColor([$r('app.color.panel_background')])
             Text($r('app.string.sync_enqueue_delete'))
               .fontSize(12)
-              .fontColor('#FFFFFF')
+              .fontColor($r('app.color.panel_background'))
           }
           .width('100%')
           .justifyContent(FlexAlign.Center)
@@ -394,6 +395,7 @@ export struct NGFDemoSyncManagerPage {
           .fontSize(14)
           .borderRadius(12)
           .backgroundColor($r('app.color.button_primary'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             void this.handleFlush();
           })
@@ -497,9 +499,9 @@ export struct NGFDemoSyncManagerPage {
           .fontColor($r('app.color.text_body'))
 
         Row({ space: 12 }) {
-          this.buildResultStat($r('app.string.sync_stat_synced'), String((this.lastResult as NGFSyncResultDisplay).syncedCount), '#16A34A')
-          this.buildResultStat($r('app.string.sync_stat_failed'), String((this.lastResult as NGFSyncResultDisplay).failedCount), '#E11D48')
-          this.buildResultStat($r('app.string.sync_stat_conflict'), String((this.lastResult as NGFSyncResultDisplay).conflictCount), '#D97706')
+          this.buildResultStat($r('app.string.sync_stat_synced'), String((this.lastResult as NGFSyncResultDisplay).syncedCount), $r('app.color.tag_green'))
+          this.buildResultStat($r('app.string.sync_stat_failed'), String((this.lastResult as NGFSyncResultDisplay).failedCount), $r('app.color.tag_red'))
+          this.buildResultStat($r('app.string.sync_stat_conflict'), String((this.lastResult as NGFSyncResultDisplay).conflictCount), $r('app.color.tag_amber'))
         }
         .width('100%')
 
@@ -525,7 +527,7 @@ export struct NGFDemoSyncManagerPage {
   }
 
   @Builder
-  private buildResultStat(label: ResourceStr, value: string, color: string): void {
+  private buildResultStat(label: ResourceStr, value: string, color: ResourceColor): void {
     Column({ space: 4 }) {
       Text(value)
         .fontSize(22)

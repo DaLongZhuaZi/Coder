@@ -73,6 +73,7 @@ export struct NGFTaskManagerPage {
               .height(44)
               .fontSize(14)
               .backgroundColor($r('app.color.button_primary'))
+              .fontColor($r('app.color.panel_background'))
               .onClick(() => {
                 this.submitMockDownloadTask();
               })
@@ -90,7 +91,7 @@ export struct NGFTaskManagerPage {
                 .height(40)
                 .fontSize(13)
                 .backgroundColor($r('app.color.button_secondary'))
-                .fontColor($r('app.color.text_primary'))
+                .fontColor($r('app.color.panel_background'))
                 .margin({ bottom: 12 })
                 .onClick(() => this.testBasicNotification())
 
@@ -100,7 +101,7 @@ export struct NGFTaskManagerPage {
                 .height(40)
                 .fontSize(13)
                 .backgroundColor($r('app.color.button_secondary'))
-                .fontColor($r('app.color.text_primary'))
+                .fontColor($r('app.color.panel_background'))
                 .margin({ bottom: 12 })
                 .onClick(() => this.testLongTextNotification())
 
@@ -110,7 +111,7 @@ export struct NGFTaskManagerPage {
                 .height(40)
                 .fontSize(13)
                 .backgroundColor($r('app.color.button_secondary'))
-                .fontColor($r('app.color.text_primary'))
+                .fontColor($r('app.color.panel_background'))
                 .margin({ bottom: 12 })
                 .onClick(() => this.testMultiLineNotification())
 
@@ -120,7 +121,7 @@ export struct NGFTaskManagerPage {
                 .height(40)
                 .fontSize(13)
                 .backgroundColor($r('app.color.button_secondary'))
-                .fontColor($r('app.color.text_primary'))
+                .fontColor($r('app.color.panel_background'))
                 .margin({ bottom: 12 })
                 .onClick(() => this.testCustomNotification())
             }
@@ -175,7 +176,7 @@ export struct NGFTaskManagerPage {
       Text($r('app.string.task_manager_route_label'))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor($r('app.color.panel_background'))
+        .fontColor($r('app.color.text_white'))
       Text($r('app.string.task_manager_intro'))
         .fontSize(13)
         .lineHeight(20)

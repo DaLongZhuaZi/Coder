@@ -8,7 +8,7 @@ import {
 } from 'ngf_framework';
 import { NGFHdsTitleBarOptionsFactory } from 'ngf_framework';
 import { NGFPageWindowSupport } from './NGFPageWindowSupport';
-import { ngfRdbManager } from 'ngf_framework';
+import { NGFRdbRow, ngfRdbManager } from 'ngf_framework';
 
 const TAG: string = 'NGFCapabilitiesDatabasePage';
 
@@ -63,16 +63,16 @@ export struct NGFCapabilitiesDatabasePage {
     if (!this.isDbInitialized) return;
     try {
       this.isProcessing = true;
-      const rawResults = await ngfRdbManager.querySql('SELECT * FROM DemoTaskTable ORDER BY timestamp DESC');
-      logger.info(TAG, '成功查询数据库，共查到 ' + String(rawResults.length) + ' 条记录');
+      const rows = await ngfRdbManager.queryRows('SELECT id, content, timestamp FROM DemoTaskTable ORDER BY timestamp DESC');
+      logger.info(TAG, '成功查询数据库，共查到 ' + String(rows.length) + ' 条记录');
       
       const newTasks: Array<TaskRecord> = [];
-      for (let i: number = 0; i < rawResults.length; i++) {
-        const row = rawResults[i];
+      for (let i: number = 0; i < rows.length; i++) {
+        const row: NGFRdbRow = rows[i];
         newTasks.push({
-          id: Number(row['id'] ?? 0),
-          content: String(row['content'] ?? ''),
-          timestamp: Number(row['timestamp'] ?? 0)
+          id: row.getNumber('id', 0),
+          content: row.getString('content', ''),
+          timestamp: row.getNumber('timestamp', 0)
         });
       }
       this.tasks = newTasks;
@@ -184,20 +184,20 @@ export struct NGFCapabilitiesDatabasePage {
         Text($r('app.string.card_rdb_title'))
           .fontSize(20)
           .fontWeight(FontWeight.Bold)
-          .fontColor($r('app.color.panel_background'))
+          .fontColor($r('app.color.text_white'))
         Blank()
         if (this.isDbInitialized) {
           Text($r('app.string.db_connected'))
             .fontSize(12)
-            .fontColor('#FFFFFF')
-            .backgroundColor('#34D399')
+            .fontColor($r('app.color.component_control_bg'))
+            .backgroundColor($r('app.color.tag_green'))
             .padding({ left: 8, right: 8, top: 4, bottom: 4 })
             .borderRadius(8)
         } else {
           Text($r('app.string.db_disconnected'))
             .fontSize(12)
-            .fontColor('#FFFFFF')
-            .backgroundColor('#EF4444')
+            .fontColor($r('app.color.panel_background'))
+            .backgroundColor($r('app.color.tag_red'))
             .padding({ left: 8, right: 8, top: 4, bottom: 4 })
             .borderRadius(8)
         }
@@ -241,7 +241,8 @@ export struct NGFCapabilitiesDatabasePage {
           .height(44)
           .fontSize(14)
           .borderRadius(12)
-          .backgroundColor('#F59E0B')
+          .fontColor($r('app.color.component_control_bg'))
+          .backgroundColor($r('app.color.tag_amber'))
           .enabled(this.isDbInitialized && this.inputText.trim().length > 0 && !this.isProcessing)
           .onClick(() => {
             void this.handleAddTask();
@@ -252,7 +253,8 @@ export struct NGFCapabilitiesDatabasePage {
           .height(44)
           .fontSize(14)
           .borderRadius(12)
-          .backgroundColor('#EF4444')
+          .fontColor($r('app.color.panel_background'))
+          .backgroundColor($r('app.color.tag_red'))
           .enabled(this.isDbInitialized && this.tasks.length > 0 && !this.isProcessing)
           .onClick(() => {
             void this.handleClearAll();
@@ -332,7 +334,7 @@ export struct NGFCapabilitiesDatabasePage {
         .height(32)
         .fontSize(12)
         .backgroundColor($r('app.color.background_surface'))
-        .fontColor('#EF4444')
+        .fontColor($r('app.color.tag_red'))
         .borderRadius(8)
         .onClick(() => {
           void this.handleDeleteTask(task.id);

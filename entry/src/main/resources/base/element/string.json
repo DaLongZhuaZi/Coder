@@ -5303,6 +5303,1490 @@
     {
       "name": "EntryFormAbility_desc",
       "value": "提供桌面卡片能力"
+    },
+    {
+      "name": "agent_bridge_title",
+      "value": "Agent Bridge"
+    },
+    {
+      "name": "agent_bridge_subtitle",
+      "value": "连接电脑端编码 Agent"
+    },
+    {
+      "name": "agent_bridge_main_card_title",
+      "value": "Agent Bridge"
+    },
+    {
+      "name": "agent_bridge_main_card_desc",
+      "value": "连接电脑端 Bridge，管理 Codex、OpenCode、Claude Code 会话"
+    },
+    {
+      "name": "agent_bridge_connection_panel",
+      "value": "主机连接"
+    },
+    {
+      "name": "agent_bridge_endpoint_label",
+      "value": "Bridge 地址"
+    },
+    {
+      "name": "agent_bridge_token_label",
+      "value": "访问 Token"
+    },
+    {
+      "name": "agent_bridge_workspace_label",
+      "value": "工作区路径"
+    },
+    {
+      "name": "agent_bridge_message_label",
+      "value": "消息"
+    },
+    {
+      "name": "agent_bridge_connect",
+      "value": "连接"
+    },
+    {
+      "name": "agent_bridge_disconnect",
+      "value": "断开"
+    },
+    {
+      "name": "agent_bridge_create_session",
+      "value": "创建会话"
+    },
+    {
+      "name": "agent_bridge_send_message",
+      "value": "发送消息"
+    },
+    {
+      "name": "agent_bridge_status_disconnected",
+      "value": "未连接"
+    },
+    {
+      "name": "agent_bridge_status_connecting",
+      "value": "连接中"
+    },
+    {
+      "name": "agent_bridge_status_connected",
+      "value": "已连接"
+    },
+    {
+      "name": "agent_bridge_status_error",
+      "value": "连接异常"
+    },
+    {
+      "name": "agent_bridge_session_panel",
+      "value": "会话"
+    },
+    {
+      "name": "agent_bridge_timeline_panel",
+      "value": "事件流"
+    },
+    {
+      "name": "agent_bridge_preview_panel",
+      "value": "预览"
+    },
+    {
+      "name": "agent_bridge_empty_session",
+      "value": "尚未创建会话"
+    },
+    {
+      "name": "agent_bridge_empty_timeline",
+      "value": "暂无事件"
+    },
+    {
+      "name": "agent_bridge_default_message",
+      "value": "请概述当前工作区"
+    },
+    {
+      "name": "agent_bridge_endpoint_placeholder",
+      "value": "192.168.5.201:8787 或 ws://电脑局域网IP:8787"
+    },
+    {
+      "name": "agent_bridge_token_placeholder",
+      "value": "输入 AGENT_BRIDGE_TOKEN"
+    },
+    {
+      "name": "agent_home_scan_bridge_qr",
+      "value": "扫码导入连接"
+    },
+    {
+      "name": "agent_home_scan_bridge_qr_applied",
+      "value": "已导入连接配置"
+    },
+    {
+      "name": "agent_home_scan_bridge_qr_failed",
+      "value": "扫码导入失败"
+    },
+    {
+      "name": "agent_home_scan_bridge_qr_invalid",
+      "value": "二维码不是有效的 Agent Bridge 连接"
+    },
+    {
+      "name": "agent_home_scan_action",
+      "value": "扫一扫"
+    },
+    {
+      "name": "agent_home_home_action",
+      "value": "主页"
+    },
+    {
+      "name": "agent_bridge_workspace_placeholder",
+      "value": "电脑上的项目路径"
+    },
+    {
+      "name": "agent_bridge_provider_mock",
+      "value": "Mock Provider"
+    },
+    {
+      "name": "agent_bridge_preview_placeholder",
+      "value": "创建会话后可请求文件或 diff 预览"
+    },
+    {
+      "name": "agent_bridge_event_status",
+      "value": "状态"
+    },
+    {
+      "name": "agent_bridge_event_message",
+      "value": "消息"
+    },
+    {
+      "name": "agent_bridge_event_tool",
+      "value": "工具"
+    },
+    {
+      "name": "agent_bridge_event_error",
+      "value": "错误"
+    },
+    {
+      "name": "agent_bridge_event_raw",
+      "value": "事件"
+    },
+    {
+      "name": "agent_bridge_preview_path_label",
+      "value": "预览路径"
+    },
+    {
+      "name": "agent_bridge_preview_path_placeholder",
+      "value": "README.md"
+    },
+    {
+      "name": "agent_bridge_request_preview",
+      "value": "请求预览"
+    },
+    {
+      "name": "agent_bridge_provider_opencode",
+      "value": "OpenCode"
+    },
+    {
+      "name": "agent_bridge_provider_label",
+      "value": "Provider"
+    },
+    {
+      "name": "agent_home_app_title",
+      "value": "Coder"
+    },
+    {
+      "name": "agent_home_sessions_title",
+      "value": "会话"
+    },
+    {
+      "name": "agent_home_switch_tab_title",
+      "value": "切换会话"
+    },
+    {
+      "name": "agent_home_workspaces_title",
+      "value": "工作区"
+    },
+    {
+      "name": "agent_home_connection_title",
+      "value": "连接设置"
+    },
+    {
+      "name": "agent_home_open_framework",
+      "value": "打开 NGF 控制台"
+    },
+    {
+      "name": "agent_home_message_placeholder",
+      "value": "消息、@文件、/命令"
+    },
+    {
+      "name": "agent_home_auto_review",
+      "value": "自动审查"
+    },
+    {
+      "name": "agent_home_new_session",
+      "value": "新会话"
+    },
+    {
+      "name": "agent_home_empty_messages",
+      "value": "连接 Bridge，选择 Provider 后输入消息开始远端会话。"
+    },
+    {
+      "name": "agent_home_bridge_disconnected",
+      "value": "未连接"
+    },
+    {
+      "name": "agent_home_bridge_connected",
+      "value": "已连接"
+    },
+    {
+      "name": "agent_home_bridge_connecting",
+      "value": "连接中"
+    },
+    {
+      "name": "agent_home_bridge_error",
+      "value": "连接异常"
+    },
+    {
+      "name": "agent_home_model_label",
+      "value": "当前代理"
+    },
+    {
+      "name": "agent_home_local_device",
+      "value": "当前工作区"
+    },
+    {
+      "name": "agent_home_branch_main",
+      "value": "main"
+    },
+    {
+      "name": "agent_home_workspace_info_security",
+      "value": "信息安全"
+    },
+    {
+      "name": "agent_home_workspace_manxia",
+      "value": "DaLongZhuaZi/manxia"
+    },
+    {
+      "name": "agent_home_workspace_downloads",
+      "value": "Downloads-E"
+    },
+    {
+      "name": "agent_home_session_cloud_update",
+      "value": "Legado 兼容层云更新分析"
+    },
+    {
+      "name": "agent_home_session_manga_reopen",
+      "value": "Analyze Manga Reopen Failures"
+    },
+    {
+      "name": "agent_home_session_image_share",
+      "value": "修复在线漫画图片保存分享"
+    },
+    {
+      "name": "agent_home_session_book_source",
+      "value": "Legado 漫画书源支持分析"
+    },
+    {
+      "name": "agent_home_session_reorder",
+      "value": "详情页章节排序方案"
+    },
+    {
+      "name": "agent_home_session_more_settings",
+      "value": "更多功能与源设置快捷入口"
+    },
+    {
+      "name": "agent_home_sample_assistant",
+      "value": "暂无助手消息"
+    },
+    {
+      "name": "agent_home_sample_user",
+      "value": "暂无用户消息"
+    },
+    {
+      "name": "agent_home_worked_for",
+      "value": "工作了 %s"
+    },
+    {
+      "name": "agent_home_duration_response",
+      "value": "回答"
+    },
+    {
+      "name": "agent_home_duration_turn",
+      "value": "本轮"
+    },
+    {
+      "name": "agent_home_bridge_session_creating",
+      "value": "正在创建 Bridge 会话"
+    },
+    {
+      "name": "agent_home_bridge_local_only",
+      "value": "Bridge 未连接，无法发送到 Provider。"
+    },
+    {
+      "name": "agent_home_bridge_ready",
+      "value": "Bridge 协议已就绪。"
+    },
+    {
+      "name": "agent_home_settings_hint",
+      "value": "真机调试时 Bridge 地址需要填写电脑局域网 IP。"
+    },
+    {
+      "name": "agent_home_settings_tab_connection",
+      "value": "连接"
+    },
+    {
+      "name": "agent_home_settings_tab_workspace",
+      "value": "工作区"
+    },
+    {
+      "name": "agent_home_settings_tab_data",
+      "value": "数据"
+    },
+    {
+      "name": "agent_home_settings_stage_bridge_title",
+      "value": "电脑端 Bridge"
+    },
+    {
+      "name": "agent_home_settings_stage_bridge_desc",
+      "value": "填写电脑上正在运行的 Agent Bridge 地址和 Token。"
+    },
+    {
+      "name": "agent_home_settings_stage_provider_title",
+      "value": "代理提供方"
+    },
+    {
+      "name": "agent_home_settings_stage_provider_desc",
+      "value": "选择当前会话要使用的已实现提供方。"
+    },
+    {
+      "name": "agent_home_settings_stage_status_title",
+      "value": "连接状态"
+    },
+    {
+      "name": "agent_home_settings_stage_status_desc",
+      "value": "连接成功后，新消息会通过远端会话发送。"
+    },
+    {
+      "name": "agent_home_settings_stage_workspace_identity_title",
+      "value": "工作区信息"
+    },
+    {
+      "name": "agent_home_settings_stage_workspace_identity_desc",
+      "value": "设置工作区在 App 内显示的名称。"
+    },
+    {
+      "name": "agent_home_settings_stage_workspace_path_title",
+      "value": "电脑路径"
+    },
+    {
+      "name": "agent_home_settings_stage_workspace_path_desc",
+      "value": "填写电脑上的项目目录，远端代理会在这里运行。"
+    },
+    {
+      "name": "agent_home_settings_stage_cleanup_title",
+      "value": "清理当前会话"
+    },
+    {
+      "name": "agent_home_settings_stage_cleanup_desc",
+      "value": "只清理当前会话的本地消息或预览，不删除远端会话。"
+    },
+    {
+      "name": "agent_home_settings_stage_reset_title",
+      "value": "重置本地数据库"
+    },
+    {
+      "name": "agent_home_settings_stage_reset_desc",
+      "value": "删除本机保存的连接配置、工作区、会话、消息和预览。"
+    },
+    {
+      "name": "agent_home_settings_stage_framework_title",
+      "value": "框架控制台"
+    },
+    {
+      "name": "agent_home_settings_stage_framework_desc",
+      "value": "进入 NGF 控制台查看框架能力和数据库演示。"
+    },
+    {
+      "name": "agent_home_settings_stage_connection_log_title",
+      "value": "连接日志"
+    },
+    {
+      "name": "agent_home_settings_stage_connection_log_desc",
+      "value": "最近的连接状态和错误会保留在当前会话中。"
+    },
+    {
+      "name": "agent_home_connection_log_empty",
+      "value": "暂无连接日志。"
+    },
+    {
+      "name": "agent_home_endpoint_required",
+      "value": "请先填写电脑端 Agent Bridge 地址。"
+    },
+    {
+      "name": "agent_home_token_required",
+      "value": "请先填写 Agent Bridge Token。"
+    },
+    {
+      "name": "agent_home_workspace_path_required",
+      "value": "请先填写电脑上的工作区路径。"
+    },
+    {
+      "name": "agent_home_workspace_path_empty",
+      "value": "未配置工作区路径"
+    },
+    {
+      "name": "agent_bridge_endpoint_required",
+      "value": "请先填写 Bridge 地址。"
+    },
+    {
+      "name": "agent_bridge_token_required",
+      "value": "请先填写 Bridge Token。"
+    },
+    {
+      "name": "agent_bridge_workspace_required",
+      "value": "请先填写电脑上的工作区路径。"
+    },
+    {
+      "name": "agent_home_default_workspace_title",
+      "value": "默认工作区"
+    },
+    {
+      "name": "agent_home_workspace_title_label",
+      "value": "工作区名称"
+    },
+    {
+      "name": "agent_home_workspace_title_placeholder",
+      "value": "默认工作区"
+    },
+    {
+      "name": "agent_home_save_workspace",
+      "value": "保存工作区"
+    },
+    {
+      "name": "agent_home_clear_session",
+      "value": "清理会话"
+    },
+    {
+      "name": "agent_home_clear_previews",
+      "value": "清理预览"
+    },
+    {
+      "name": "agent_home_reset_data",
+      "value": "重置本地数据"
+    },
+    {
+      "name": "agent_home_clear",
+      "value": "清理"
+    },
+    {
+      "name": "agent_home_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "agent_home_clear_session_title",
+      "value": "清理当前会话"
+    },
+    {
+      "name": "agent_home_clear_session_message",
+      "value": "将删除当前会话中的本地消息和工具记录，远端会话不会被删除。"
+    },
+    {
+      "name": "agent_home_clear_previews_title",
+      "value": "清理当前预览"
+    },
+    {
+      "name": "agent_home_clear_previews_message",
+      "value": "将删除当前会话保存的本地预览内容。"
+    },
+    {
+      "name": "agent_home_reset_data_title",
+      "value": "重置本地 Agent 数据"
+    },
+    {
+      "name": "agent_home_reset_data_message",
+      "value": "将删除本机保存的连接配置、工作区、会话、消息和预览记录。"
+    },
+    {
+      "name": "agent_home_send",
+      "value": "发送"
+    },
+    {
+      "name": "agent_home_preview_title",
+      "value": "内容预览"
+    },
+    {
+      "name": "agent_home_preview_path_label",
+      "value": "预览路径"
+    },
+    {
+      "name": "agent_home_preview_path_placeholder",
+      "value": "README.md"
+    },
+    {
+      "name": "agent_home_preview_request",
+      "value": "请求预览"
+    },
+    {
+      "name": "agent_home_preview_empty",
+      "value": "当前会话还没有预览内容。"
+    },
+    {
+      "name": "agent_home_preview_requires_session",
+      "value": "需要先连接 Bridge 并创建远端会话后才能请求预览。"
+    },
+    {
+      "name": "agent_home_preview_requested",
+      "value": "已请求预览"
+    },
+    {
+      "name": "agent_home_preview_updated",
+      "value": "预览已更新"
+    },
+    {
+      "name": "agent_home_tool_started",
+      "value": "工具开始"
+    },
+    {
+      "name": "agent_home_tool_output",
+      "value": "工具输出"
+    },
+    {
+      "name": "agent_home_tool_completed",
+      "value": "工具完成"
+    },
+    {
+      "name": "agent_home_reply_stalled",
+      "value": "当前会话长时间没有返回消息或工具事件，已停止本地等待。远端进程可能仍在运行，持续无响应时请刷新会话或重新发送。无活动时长："
+    },
+    {
+      "name": "agent_home_workspaces_sheet_hint",
+      "value": "选择电脑工作目录，新的会话会在当前工作区下运行。"
+    },
+    {
+      "name": "agent_home_sessions_sheet_hint",
+      "value": "切换当前会话，每个会话会保留自己的上下文。"
+    },
+    {
+      "name": "agent_home_connection_sheet_hint",
+      "value": "配置连接到电脑端 Agent Bridge 的地址、Token 和代理。"
+    },
+    {
+      "name": "agent_home_preview_sheet_hint",
+      "value": "向当前远端会话请求文件或工具结果预览。"
+    },
+    {
+      "name": "agent_home_settings_stage_model_title",
+      "value": "模型"
+    },
+    {
+      "name": "agent_home_settings_stage_model_desc",
+      "value": "选择当前 Provider 支持的模型或默认配置。"
+    },
+    {
+      "name": "agent_home_settings_stage_speed_title",
+      "value": "速度"
+    },
+    {
+      "name": "agent_home_settings_stage_speed_desc",
+      "value": "在低延迟和更充分上下文之间切换。"
+    },
+    {
+      "name": "agent_home_settings_stage_tools_title",
+      "value": "工具"
+    },
+    {
+      "name": "agent_home_settings_stage_tools_desc",
+      "value": "查看当前 Provider 暴露给会话的工具能力。"
+    },
+    {
+      "name": "agent_home_refresh_remote_sessions",
+      "value": "刷新远端会话"
+    },
+    {
+      "name": "agent_home_local_sessions_title",
+      "value": "已导入会话"
+    },
+    {
+      "name": "agent_home_remote_sessions_title",
+      "value": "远端历史会话"
+    },
+    {
+      "name": "agent_home_remote_sessions_count_label",
+      "value": "远程会话"
+    },
+    {
+      "name": "agent_home_imported_sessions_count_label",
+      "value": "已导入"
+    },
+    {
+      "name": "agent_home_remote_sessions_empty",
+      "value": "当前 Provider 没有可用会话。"
+    },
+    {
+      "name": "agent_home_remote_sessions_search_empty",
+      "value": "没有匹配的会话。"
+    },
+    {
+      "name": "agent_home_import_remote_session",
+      "value": "导入"
+    },
+    {
+      "name": "agent_home_remote_session_imported",
+      "value": "已导入远端会话，正在读取历史消息。"
+    },
+    {
+      "name": "agent_home_remote_session_history_empty",
+      "value": "远端会话没有返回历史消息。"
+    },
+    {
+      "name": "agent_home_remote_session_history_loaded",
+      "value": "远端历史消息已导入。"
+    },
+    {
+      "name": "agent_home_conversation_rendering",
+      "value": "正在准备会话内容"
+    },
+    {
+      "name": "agent_home_model_sheet_title",
+      "value": "模型"
+    },
+    {
+      "name": "agent_home_model_sheet_hint",
+      "value": "选择当前会话使用的 Provider、模型和响应模式。"
+    },
+    {
+      "name": "agent_home_runtime_sheet_title",
+      "value": "能力"
+    },
+    {
+      "name": "agent_home_runtime_sheet_hint",
+      "value": "查看当前 Provider 的工具、预览和会话能力。"
+    },
+    {
+      "name": "agent_home_runtime_tools_empty",
+      "value": "当前 Provider 没有返回可用工具。"
+    },
+    {
+      "name": "agent_home_runtime_preview_title",
+      "value": "内容预览"
+    },
+    {
+      "name": "agent_home_runtime_preview_desc",
+      "value": "请求当前会话的文件或 diff 预览。"
+    },
+    {
+      "name": "agent_home_attachment_sheet_title",
+      "value": "添加附件"
+    },
+    {
+      "name": "agent_home_attachment_sheet_hint",
+      "value": "选择图片或文件，并随下一条消息发送。"
+    },
+    {
+      "name": "agent_home_pick_image",
+      "value": "选择图片"
+    },
+    {
+      "name": "agent_home_pick_document",
+      "value": "选择文件"
+    },
+    {
+      "name": "agent_home_attachment_selected_title",
+      "value": "已选择"
+    },
+    {
+      "name": "agent_home_clear_attachments",
+      "value": "清空"
+    },
+    {
+      "name": "agent_home_attachment_empty",
+      "value": "还没有选择附件。"
+    },
+    {
+      "name": "agent_home_attachment_image_fallback",
+      "value": "图片"
+    },
+    {
+      "name": "agent_home_attachment_file_fallback",
+      "value": "文件"
+    },
+    {
+      "name": "agent_home_remote_sessions_provider_title",
+      "value": "切换 Provider"
+    },
+    {
+      "name": "agent_home_session_search_placeholder",
+      "value": "搜索标题或会话 ID"
+    },
+    {
+      "name": "agent_home_restore_connection",
+      "value": "正在恢复上次连接"
+    },
+    {
+      "name": "agent_home_bridge_reconnect",
+      "value": "重新连接"
+    },
+    {
+      "name": "agent_home_composer_missing_connection_config",
+      "value": "未配置 Bridge 地址或 Token，请先扫码或填写连接信息。"
+    },
+    {
+      "name": "agent_home_status_model",
+      "value": "模型"
+    },
+    {
+      "name": "agent_home_status_idle",
+      "value": "空闲"
+    },
+    {
+      "name": "agent_home_status_replying",
+      "value": "回复中"
+    },
+    {
+      "name": "agent_home_status_tool_running",
+      "value": "工具运行中"
+    },
+    {
+      "name": "agent_home_status_tool",
+      "value": "工具"
+    },
+    {
+      "name": "agent_home_status_subagent",
+      "value": "Subagent"
+    },
+    {
+      "name": "agent_home_status_context",
+      "value": "上下文"
+    },
+    {
+      "name": "agent_home_status_context_unknown",
+      "value": "未知"
+    },
+    {
+      "name": "agent_home_status_context_limit_unknown",
+      "value": "上限未知"
+    },
+    {
+      "name": "agent_home_status_detail_title",
+      "value": "会话数据"
+    },
+    {
+      "name": "agent_home_status_detail_hint",
+      "value": "查看当前会话的模型、上下文和估算数据。"
+    },
+    {
+      "name": "agent_home_status_detail_runtime",
+      "value": "运行状态"
+    },
+    {
+      "name": "agent_home_status_detail_context",
+      "value": "上下文"
+    },
+    {
+      "name": "agent_home_status_detail_cost",
+      "value": "花销估算"
+    },
+    {
+      "name": "agent_home_detail_provider",
+      "value": "Provider"
+    },
+    {
+      "name": "agent_home_detail_model",
+      "value": "模型"
+    },
+    {
+      "name": "agent_home_detail_speed",
+      "value": "速度"
+    },
+    {
+      "name": "agent_home_detail_workspace",
+      "value": "工作区"
+    },
+    {
+      "name": "agent_home_detail_bridge_session",
+      "value": "远端会话"
+    },
+    {
+      "name": "agent_home_detail_reply_state",
+      "value": "回复状态"
+    },
+    {
+      "name": "agent_home_detail_active_tool",
+      "value": "当前工具"
+    },
+    {
+      "name": "agent_home_detail_subagent",
+      "value": "Subagent"
+    },
+    {
+      "name": "agent_home_detail_messages",
+      "value": "消息数"
+    },
+    {
+      "name": "agent_home_detail_input_tokens",
+      "value": "输入估算"
+    },
+    {
+      "name": "agent_home_detail_output_tokens",
+      "value": "输出估算"
+    },
+    {
+      "name": "agent_home_detail_total_tokens",
+      "value": "总量估算"
+    },
+    {
+      "name": "agent_home_detail_context_limit",
+      "value": "上下文上限"
+    },
+    {
+      "name": "agent_home_detail_context_remaining",
+      "value": "剩余估算"
+    },
+    {
+      "name": "agent_home_detail_context_usage",
+      "value": "使用比例"
+    },
+    {
+      "name": "agent_home_detail_estimated_cost",
+      "value": "预估花销"
+    },
+    {
+      "name": "agent_home_detail_pricing",
+      "value": "价格来源"
+    },
+    {
+      "name": "agent_home_detail_pricing_not_configured",
+      "value": "价格表未配置"
+    },
+    {
+      "name": "agent_home_detail_pricing_free_model",
+      "value": "免费或本地模拟模型"
+    },
+    {
+      "name": "agent_home_detail_empty",
+      "value": "未记录"
+    },
+    {
+      "name": "agent_home_status_detail_session",
+      "value": "会话"
+    },
+    {
+      "name": "agent_home_detail_session_title",
+      "value": "会话标题"
+    },
+    {
+      "name": "agent_home_detail_local_session",
+      "value": "会话记录"
+    },
+    {
+      "name": "agent_home_detail_workspace_title",
+      "value": "工作区名称"
+    },
+    {
+      "name": "agent_home_detail_workspace_path",
+      "value": "工作区路径"
+    },
+    {
+      "name": "agent_home_detail_branch",
+      "value": "分支"
+    },
+    {
+      "name": "agent_home_detail_connection_status",
+      "value": "连接状态"
+    },
+    {
+      "name": "agent_home_detail_endpoint",
+      "value": "Bridge 地址"
+    },
+    {
+      "name": "agent_home_detail_remote_source",
+      "value": "远端来源"
+    },
+    {
+      "name": "agent_home_detail_remote_messages",
+      "value": "远端消息数"
+    },
+    {
+      "name": "agent_home_detail_updated_at",
+      "value": "更新时间"
+    },
+    {
+      "name": "agent_home_slash_commands_title",
+      "value": "当前 Provider 命令"
+    },
+    {
+      "name": "agent_home_slash_commands_empty",
+      "value": "当前 Provider 未声明可用的 / 命令。"
+    },
+    {
+      "name": "agent_home_slash_commands_source",
+      "value": "来源"
+    },
+    {
+      "name": "agent_home_slash_commands_no_match",
+      "value": "没有匹配的 / 命令。"
+    },
+    {
+      "name": "agent_home_thinking_label",
+      "value": "思考"
+    },
+    {
+      "name": "agent_home_thinking_expand",
+      "value": "展开思考"
+    },
+    {
+      "name": "agent_home_thinking_collapse",
+      "value": "收起思考"
+    },
+    {
+      "name": "agent_bridge_provider_deveco",
+      "value": "DevEco Code"
+    },
+    {
+      "name": "agent_bridge_provider_mimo",
+      "value": "MiMo Code"
+    },
+    {
+      "name": "agent_bridge_provider_codex",
+      "value": "Codex CLI"
+    },
+    {
+      "name": "agent_bridge_provider_claude",
+      "value": "Claude Code"
+    },
+    {
+      "name": "agent_bridge_provider_antigravity",
+      "value": "Antigravity CLI"
+    },
+    {
+      "name": "agent_home_new_session_provider_title",
+      "value": "新会话 Provider"
+    },
+    {
+      "name": "agent_home_new_session_provider_hint",
+      "value": "在当前工作区创建会话时选择要绑定的 provider。"
+    },
+    {
+      "name": "agent_home_create_session",
+      "value": "创建会话"
+    },
+    {
+      "name": "agent_home_workspace_panel_title",
+      "value": "工作区"
+    },
+    {
+      "name": "agent_home_workspace_panel_hint",
+      "value": "查看变更、文件和提交操作"
+    },
+    {
+      "name": "agent_home_workspace_tab_changes",
+      "value": "变更"
+    },
+    {
+      "name": "agent_home_workspace_tab_files",
+      "value": "文件"
+    },
+    {
+      "name": "agent_home_workspace_refresh",
+      "value": "刷新"
+    },
+    {
+      "name": "agent_home_workspace_commit",
+      "value": "提交"
+    },
+    {
+      "name": "agent_home_workspace_commit_message",
+      "value": "提交说明"
+    },
+    {
+      "name": "agent_home_workspace_commit_placeholder",
+      "value": "输入提交说明"
+    },
+    {
+      "name": "agent_home_workspace_uncommitted",
+      "value": "未提交变更"
+    },
+    {
+      "name": "agent_home_workspace_changes_empty",
+      "value": "当前没有变更"
+    },
+    {
+      "name": "agent_home_workspace_files_empty",
+      "value": "当前目录没有文件"
+    },
+    {
+      "name": "agent_home_workspace_stage",
+      "value": "暂存"
+    },
+    {
+      "name": "agent_home_workspace_unstage",
+      "value": "取消暂存"
+    },
+    {
+      "name": "agent_home_workspace_discard",
+      "value": "丢弃"
+    },
+    {
+      "name": "agent_home_workspace_diff",
+      "value": "Diff"
+    },
+    {
+      "name": "agent_home_workspace_change_edit",
+      "value": "编辑"
+    },
+    {
+      "name": "agent_home_workspace_change_added",
+      "value": "新增"
+    },
+    {
+      "name": "agent_home_workspace_change_deleted",
+      "value": "删除"
+    },
+    {
+      "name": "agent_home_workspace_change_renamed",
+      "value": "重命名"
+    },
+    {
+      "name": "agent_home_workspace_change_directory_edit",
+      "value": "目录变更"
+    },
+    {
+      "name": "agent_home_workspace_change_directory_added",
+      "value": "新增目录"
+    },
+    {
+      "name": "agent_home_workspace_change_directory_deleted",
+      "value": "删除目录"
+    },
+    {
+      "name": "agent_home_workspace_change_directory_renamed",
+      "value": "重命名目录"
+    },
+    {
+      "name": "agent_home_workspace_change_file_singular",
+      "value": "个文件"
+    },
+    {
+      "name": "agent_home_workspace_change_file_plural",
+      "value": "个文件"
+    },
+    {
+      "name": "agent_home_workspace_diff_empty",
+      "value": "暂无可显示的修改内容。"
+    },
+    {
+      "name": "agent_home_workspace_download",
+      "value": "下载"
+    },
+    {
+      "name": "agent_home_workspace_preview",
+      "value": "预览"
+    },
+    {
+      "name": "agent_home_workspace_preview_full",
+      "value": "预览完整内容"
+    },
+    {
+      "name": "agent_home_workspace_content_preview_title",
+      "value": "完整内容预览"
+    },
+    {
+      "name": "agent_home_workspace_content_preview_empty",
+      "value": "暂无可显示的文件内容。"
+    },
+    {
+      "name": "agent_home_workspace_content_preview_file_required",
+      "value": "请选择具体文件进行预览。"
+    },
+    {
+      "name": "agent_home_workspace_preview_light",
+      "value": "浅色"
+    },
+    {
+      "name": "agent_home_workspace_preview_dark",
+      "value": "深色"
+    },
+    {
+      "name": "agent_home_workspace_copy_path",
+      "value": "复制路径"
+    },
+    {
+      "name": "agent_home_tool_detail_title",
+      "value": "工具调用"
+    },
+    {
+      "name": "agent_home_tool_detail_input",
+      "value": "输入"
+    },
+    {
+      "name": "agent_home_tool_detail_output",
+      "value": "输出"
+    },
+    {
+      "name": "agent_home_tool_detail_error",
+      "value": "错误"
+    },
+    {
+      "name": "agent_home_tool_detail_raw",
+      "value": "原始事件"
+    },
+    {
+      "name": "agent_home_confirm_discard_title",
+      "value": "丢弃更改？"
+    },
+    {
+      "name": "agent_home_confirm_discard_message",
+      "value": "此操作会丢弃所选文件的未提交内容。"
+    },
+    {
+      "name": "agent_home_confirm_commit_title",
+      "value": "提交更改？"
+    },
+    {
+      "name": "agent_home_confirm_commit_message",
+      "value": "将已暂存的更改提交到当前分支。"
+    },
+    {
+      "name": "agent_home_action_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "agent_home_action_ok",
+      "value": "确定"
+    },
+    {
+      "name": "agent_home_workspace_requires_session",
+      "value": "需要先连接会话"
+    },
+    {
+      "name": "agent_home_workspace_download_ready",
+      "value": "下载已就绪"
+    },
+    {
+      "name": "agent_home_workspace_path_copied",
+      "value": "路径已复制"
+    },
+    {
+      "name": "agent_home_tool_status_running",
+      "value": "运行中"
+    },
+    {
+      "name": "agent_home_tool_status_completed",
+      "value": "已完成"
+    },
+    {
+      "name": "agent_home_tool_status_error",
+      "value": "失败"
+    },
+    {
+      "name": "agent_home_mode_goal",
+      "value": "Goal"
+    },
+    {
+      "name": "agent_home_mode_plan",
+      "value": "Plan"
+    },
+    {
+      "name": "agent_home_request_title",
+      "value": "需要输入"
+    },
+    {
+      "name": "agent_home_plan_title",
+      "value": "Plan"
+    },
+    {
+      "name": "agent_home_plan_progress_title",
+      "value": "进度"
+    },
+    {
+      "name": "agent_home_plan_reject",
+      "value": "拒绝"
+    },
+    {
+      "name": "agent_home_plan_implement",
+      "value": "执行"
+    },
+    {
+      "name": "agent_home_request_other_placeholder",
+      "value": "其他回复"
+    },
+    {
+      "name": "agent_home_request_dismiss",
+      "value": "忽略"
+    },
+    {
+      "name": "agent_home_request_submit",
+      "value": "提交"
+    },
+    {
+      "name": "agent_home_request_status_pending",
+      "value": "等待处理"
+    },
+    {
+      "name": "agent_home_request_status_answered",
+      "value": "已回复"
+    },
+    {
+      "name": "agent_home_request_status_dismissed",
+      "value": "已忽略"
+    },
+    {
+      "name": "agent_home_plan_status_rejected",
+      "value": "已拒绝"
+    },
+    {
+      "name": "agent_home_plan_status_implementing",
+      "value": "执行中"
+    },
+    {
+      "name": "agent_home_plan_status_implemented",
+      "value": "已执行"
+    },
+    {
+      "name": "agent_home_context_compacting",
+      "value": "正在压缩上下文..."
+    },
+    {
+      "name": "agent_home_status_elapsed",
+      "value": "计时"
+    },
+    {
+      "name": "agent_home_revert_to_message",
+      "value": "回退到此处"
+    },
+    {
+      "name": "agent_home_revert_confirm_title",
+      "value": "回退会话？"
+    },
+    {
+      "name": "agent_home_revert_confirm_message",
+      "value": "将会把当前会话回退到所选消息节点，之后的上下文将被截断。"
+    },
+    {
+      "name": "agent_home_revert_success",
+      "value": "已请求回退会话"
+    },
+    {
+      "name": "agent_home_revert_missing_node",
+      "value": "此消息缺少可回退节点"
+    },
+    {
+      "name": "agent_home_quick_add_project",
+      "value": "添加项目"
+    },
+    {
+      "name": "agent_home_quick_add_project_desc",
+      "value": "从 Provider 会话同步工作区"
+    },
+    {
+      "name": "agent_home_quick_import_session",
+      "value": "导入会话"
+    },
+    {
+      "name": "agent_home_quick_import_session_desc",
+      "value": "导入最近的外部 CLI 会话"
+    },
+    {
+      "name": "agent_home_quick_setup_providers",
+      "value": "设置 Provider"
+    },
+    {
+      "name": "agent_home_quick_setup_providers_desc",
+      "value": "配置 Claude Code、Codex 等"
+    },
+    {
+      "name": "agent_home_quick_view_changes",
+      "value": "查看变更"
+    },
+    {
+      "name": "agent_home_quick_view_changes_desc",
+      "value": "进入当前工作区的文件变更"
+    },
+    {
+      "name": "agent_home_model_sheet_session_hint",
+      "value": "当前已进入会话，仅调整此会话的模型、速度和模式。"
+    },
+    {
+      "name": "agent_home_settings_stage_mode_title",
+      "value": "模式"
+    },
+    {
+      "name": "agent_home_settings_stage_mode_desc",
+      "value": "选择当前 Provider 支持的会话执行模式。"
+    },
+    {
+      "name": "agent_home_workspace_loading",
+      "value": "正在加载工作区内容"
+    },
+    {
+      "name": "agent_home_workspace_diff_loading",
+      "value": "正在加载代码变更"
+    },
+    {
+      "name": "agent_home_stop_reply_requested",
+      "value": "已请求停止当前回复"
+    },
+    {
+      "name": "agent_home_stop_reply_local_only",
+      "value": "当前 Provider 暂不支持远端中断，已停止本地等待状态"
+    },
+    {
+      "name": "agent_home_use_provider",
+      "value": "使用此 Provider"
+    },
+    {
+      "name": "agent_home_permission_title",
+      "value": "权限请求"
+    },
+    {
+      "name": "agent_home_permission_allow_once",
+      "value": "允许一次"
+    },
+    {
+      "name": "agent_home_permission_deny",
+      "value": "拒绝"
+    },
+    {
+      "name": "agent_home_permission_edit_placeholder",
+      "value": "修改内容或补充说明"
+    },
+    {
+      "name": "agent_home_permission_status_allowed",
+      "value": "已允许"
+    },
+    {
+      "name": "agent_home_agent_filter_all",
+      "value": "全部"
+    },
+    {
+      "name": "agent_home_agent_filter_main",
+      "value": "主 Agent"
+    },
+    {
+      "name": "agent_home_settings_stage_reasoning_title",
+      "value": "思考程度"
+    },
+    {
+      "name": "agent_home_detail_reasoning",
+      "value": "思考程度"
+    },
+    {
+      "name": "agent_home_workspace_actions_title",
+      "value": "工作区操作"
+    },
+    {
+      "name": "agent_home_session_actions_title",
+      "value": "会话操作"
+    },
+    {
+      "name": "agent_home_rename_workspace",
+      "value": "重命名工作区"
+    },
+    {
+      "name": "agent_home_delete_workspace",
+      "value": "删除工作区"
+    },
+    {
+      "name": "agent_home_rename_session",
+      "value": "重命名会话"
+    },
+    {
+      "name": "agent_home_delete_session",
+      "value": "删除会话"
+    },
+    {
+      "name": "agent_home_copy_session_id",
+      "value": "复制会话 ID"
+    },
+    {
+      "name": "agent_home_session_id_copied",
+      "value": "会话 ID 已复制"
+    },
+    {
+      "name": "agent_home_rename_workspace_title",
+      "value": "重命名工作区"
+    },
+    {
+      "name": "agent_home_rename_session_title",
+      "value": "重命名会话"
+    },
+    {
+      "name": "agent_home_name_placeholder",
+      "value": "输入名称"
+    },
+    {
+      "name": "agent_home_save_name",
+      "value": "保存名称"
+    },
+    {
+      "name": "agent_home_confirm_delete_workspace_title",
+      "value": "删除工作区？"
+    },
+    {
+      "name": "agent_home_confirm_delete_workspace_message",
+      "value": "这会删除该工作区及其本地会话、消息和缓存。远端历史不会被删除。"
+    },
+    {
+      "name": "agent_home_confirm_delete_session_title",
+      "value": "删除会话？"
+    },
+    {
+      "name": "agent_home_confirm_delete_session_message",
+      "value": "这会删除该会话及其本地消息和缓存。远端会话不会被删除。"
+    },
+    {
+      "name": "agent_home_last_workspace_required",
+      "value": "至少保留一个工作区"
+    },
+    {
+      "name": "agent_home_last_session_required",
+      "value": "至少保留一个会话"
+    },
+    {
+      "name": "agent_home_no_sessions_in_workspace",
+      "value": "暂无会话"
+    },
+    {
+      "name": "agent_home_notification_running_title",
+      "value": "Agent 正在执行"
+    },
+    {
+      "name": "agent_home_notification_running_content",
+      "value": "正在处理当前会话"
+    },
+    {
+      "name": "agent_home_notification_tool_content",
+      "value": "正在调用工具"
+    },
+    {
+      "name": "agent_home_notification_waiting_title",
+      "value": "Agent 等待处理"
+    },
+    {
+      "name": "agent_home_notification_request_content",
+      "value": "需要你处理一个请求"
+    },
+    {
+      "name": "agent_home_notification_permission_content",
+      "value": "需要你处理一个权限请求"
+    },
+    {
+      "name": "agent_home_notification_plan_content",
+      "value": "需要你确认计划"
+    },
+    {
+      "name": "agent_home_notification_completed_title",
+      "value": "Agent 已完成"
+    },
+    {
+      "name": "agent_home_notification_completed_content",
+      "value": "当前任务已完成"
+    },
+    {
+      "name": "agent_home_notification_interrupted_title",
+      "value": "Agent 已中断"
+    },
+    {
+      "name": "agent_home_notification_interrupted_content",
+      "value": "当前任务已停止"
+    },
+    {
+      "name": "agent_home_notification_error_title",
+      "value": "Agent 执行失败"
+    },
+    {
+      "name": "agent_home_notification_error_content",
+      "value": "当前任务遇到错误"
     }
   ]
 }

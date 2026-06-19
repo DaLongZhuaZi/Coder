@@ -81,7 +81,7 @@ export struct NGFCapabilitiesMediaPage {
       Text($r('app.string.card_media_title'))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor($r('app.color.panel_background'))
+        .fontColor($r('app.color.text_white'))
       Text($r('app.string.card_media_desc'))
         .fontSize(13)
         .lineHeight(20)
@@ -106,6 +106,7 @@ export struct NGFCapabilitiesMediaPage {
         .fontSize(14)
         .borderRadius(12)
         .backgroundColor($r('app.color.tag_cyan'))
+        .fontColor($r('app.color.component_control_bg'))
         .onClick((): void => {
           void this.handlePickMedia();
         })

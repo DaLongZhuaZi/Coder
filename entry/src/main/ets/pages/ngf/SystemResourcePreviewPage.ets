@@ -165,11 +165,11 @@ export struct NGFSystemResourcePreviewPage {
           Row({ space: 6 }) {
             SymbolGlyph($r('sys.symbol.doc_plaintext_and_checkmark'))
               .fontSize(17)
-              .fontColor([$r('app.color.text_white')])
+              .fontColor([$r('app.color.panel_background')])
             Text($r('app.string.ui_str_2441'))
               .fontSize(13)
               .fontWeight(FontWeight.Medium)
-              .fontColor($r('app.color.text_white'))
+              .fontColor($r('app.color.panel_background'))
           }
         }
         .height(38)
@@ -243,7 +243,7 @@ export struct NGFSystemResourcePreviewPage {
     }
     .layoutWeight(1)
     .padding({ top: 8, bottom: 8 })
-    .backgroundColor('#24FFFFFF')
+    .backgroundColor($r('app.color.glass_bg_effect_strong'))
     .borderRadius(12)
   }
 
@@ -273,7 +273,7 @@ export struct NGFSystemResourcePreviewPage {
         Button($r('app.string.ui_str_2444'))
           .height(32)
           .fontSize(12)
-          .fontColor(this.isSearching ? $r('app.color.text_secondary') : $r('app.color.text_white'))
+          .fontColor(this.isSearching ? $r('app.color.text_secondary') : $r('app.color.panel_background'))
           .backgroundColor(this.isSearching ? $r('app.color.background_surface') : $r('app.color.button_primary'))
           .borderRadius(12)
           .onClick((): void => {
@@ -326,11 +326,11 @@ export struct NGFSystemResourcePreviewPage {
               Text(group.name)
                 .fontSize(12)
                 .fontWeight(this.isSelectedGroup(group.name) ? FontWeight.Medium : FontWeight.Normal)
-                .fontColor(this.isSelectedGroup(group.name) ? $r('app.color.text_white') : $r('app.color.text_primary'))
+                .fontColor(this.isSelectedGroup(group.name) ? $r('app.color.panel_background') : $r('app.color.text_primary'))
                 .maxLines(1)
               Text(String(group.items.length))
                 .fontSize(11)
-                .fontColor(this.isSelectedGroup(group.name) ? $r('app.color.text_white_medium') : $r('app.color.text_tertiary'))
+                .fontColor(this.isSelectedGroup(group.name) ? $r('app.color.panel_background') : $r('app.color.text_tertiary'))
             }
           }
           .height(34)
@@ -445,7 +445,7 @@ export struct NGFSystemResourcePreviewPage {
   @Builder
   private buildDragPreview(itemName: string): void {
     Column({ space: 7 }) {
-      this.buildPreviewGlyph(itemName, 32, $r('app.color.text_white'))
+      this.buildPreviewGlyph(itemName, 32, $r('app.color.panel_background'))
     }
     .width(60)
     .height(60)
@@ -476,7 +476,7 @@ export struct NGFSystemResourcePreviewPage {
     .borderRadius(12)
     .border({
       width: this.isSelectedSymbol(itemName) ? 1.5 : 1,
-      color: this.isSelectedSymbol(itemName) ? $r('app.color.text_white_medium') : $r('app.color.card_border')
+      color: this.isSelectedSymbol(itemName) ? $r('app.color.panel_background') : $r('app.color.card_border')
     })
     .onClick((): void => {
       this.selectSymbol(itemName);
@@ -700,11 +700,11 @@ export struct NGFSystemResourcePreviewPage {
   }
 
   private getSymbolIconColor(symbolName: string): ResourceColor {
-    return this.isSelectedSymbol(symbolName) ? $r('app.color.text_white') : $r('app.color.text_primary');
+    return this.isSelectedSymbol(symbolName) ? $r('app.color.panel_background') : $r('app.color.text_primary');
   }
 
   private getSymbolTextColor(symbolName: string): ResourceColor {
-    return this.isSelectedSymbol(symbolName) ? $r('app.color.text_white_high') : $r('app.color.text_secondary');
+    return this.isSelectedSymbol(symbolName) ? $r('app.color.panel_background') : $r('app.color.text_secondary');
   }
 
   private performSearch(): void {

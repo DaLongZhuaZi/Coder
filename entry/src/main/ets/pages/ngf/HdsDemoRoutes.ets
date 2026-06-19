@@ -12,6 +12,7 @@ export class NGFHdsDemoRouteName {
   static readonly TASK_MANAGER: string = 'ngf.task.manager';
   static readonly DEMO_ERROR_RECOVERY: string = 'ngf.demo.error.recovery';
   static readonly DEMO_SYNC_MANAGER: string = 'ngf.demo.sync.manager';
+  static readonly AGENT_BRIDGE: string = 'ngf.agent.bridge';
   static readonly CAPABILITY_NETWORK: string = 'ngf.capability.network';
   static readonly CAPABILITY_RDB: string = 'ngf.capability.rdb';
   static readonly CAPABILITY_WEB_BRIDGE: string = 'ngf.capability.web.bridge';

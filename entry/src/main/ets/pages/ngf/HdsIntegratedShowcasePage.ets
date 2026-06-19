@@ -980,8 +980,8 @@ export struct HdsIntegratedShowcasePage {
           .itemHeight(8)
           .selectedItemWidth(18)
           .selectedItemHeight(8)
-          .color('#66FFFFFF')
-          .selectedColor(Color.White)
+          .color($r('app.color.glass_divider'))
+          .selectedColor($r('app.color.text_white'))
       )
       .onChange((index: number): void => {
         this.motionCurrentIndex = index;
@@ -1002,18 +1002,18 @@ export struct HdsIntegratedShowcasePage {
         .width('100%')
         .fontSize(20)
         .fontWeight(FontWeight.Bold)
-        .fontColor('#FFFFFF')
+        .fontColor($r('app.color.text_white'))
 
       Text(slide.subtitle)
         .width('100%')
         .fontSize(13)
-        .fontColor('#E6FFFFFF')
+        .fontColor($r('app.color.text_white_medium'))
 
       Text(slide.description)
         .width('100%')
         .fontSize(13)
         .lineHeight(20)
-        .fontColor('#E6FFFFFF')
+        .fontColor($r('app.color.text_white_medium'))
     }
     .width('100%')
     .height('100%')
@@ -1032,7 +1032,7 @@ export struct HdsIntegratedShowcasePage {
     .opacity(this.resolveMotionOpacity(index))
     .shadow({
       radius: this.motionCurrentIndex === index ? 18 : 10,
-      color: '#26000000',
+      color: $r('app.color.card_shadow_light'),
       offsetX: 0,
       offsetY: 8
     })
@@ -1047,8 +1047,8 @@ export struct HdsIntegratedShowcasePage {
           .width(36)
           .height(36)
           .buttonStyle(ButtonStyleMode.NORMAL)
-          .backgroundColor(this.motionCurrentIndex === index ? '#0F766E' : NGF_HDS_INTEGRATED_INACTIVE_BUTTON_BACKGROUND)
-          .fontColor(this.motionCurrentIndex === index ? $r('app.color.panel_background') : $r('app.color.text_primary'))
+          .backgroundColor(this.motionCurrentIndex === index ? $r('app.color.tag_teal') : NGF_HDS_INTEGRATED_INACTIVE_BUTTON_BACKGROUND)
+          .fontColor(this.motionCurrentIndex === index ? $r('app.color.component_control_bg') : $r('app.color.text_primary'))
           .onClick((): void => {
             this.selectMotionSlide(index);
           })
@@ -1075,7 +1075,7 @@ export struct HdsIntegratedShowcasePage {
         .layoutWeight(1)
         .height(42)
         .buttonStyle(ButtonStyleMode.NORMAL)
-        .backgroundColor('#1D4ED8')
+        .backgroundColor($r('app.color.button_primary'))
         .fontColor($r('app.color.panel_background'))
         .onClick((): void => {
           this.motionAutoPlayEnabled = !this.motionAutoPlayEnabled;

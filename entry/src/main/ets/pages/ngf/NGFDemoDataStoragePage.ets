@@ -120,7 +120,7 @@ export struct NGFDemoDataStoragePage {
       Text($r('app.string.ui_str_2233'))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor($r('app.color.panel_background'))
+        .fontColor($r('app.color.text_white'))
       Text($r('app.string.ui_str_2234'))
         .fontSize(13)
         .lineHeight(20)
@@ -156,6 +156,7 @@ export struct NGFDemoDataStoragePage {
           .fontSize(14)
           .borderRadius(12)
           .backgroundColor($r('app.color.button_primary'))
+          .fontColor($r('app.color.panel_background'))
           .onClick(async (): Promise<void> => {
             const uris = await ngfMediaPickerFacade.pickImages(1);
             if (uris.length > 0) {
@@ -169,7 +170,7 @@ export struct NGFDemoDataStoragePage {
           .fontSize(14)
           .borderRadius(14)
           .backgroundColor($r('app.color.button_secondary'))
-          .fontColor($r('app.color.text_primary'))
+          .fontColor($r('app.color.panel_background'))
           .onClick(async (): Promise<void> => {
             const uris = await ngfMediaPickerFacade.pickDocuments();
             if (uris.length > 0) {
@@ -210,6 +211,7 @@ export struct NGFDemoDataStoragePage {
           .fontSize(14)
           .borderRadius(12)
           .backgroundColor($r('app.color.tag_amber'))
+          .fontColor($r('app.color.component_control_bg'))
           .onClick((): void => {
             void this.handleFileWrite();
           })
@@ -219,6 +221,7 @@ export struct NGFDemoDataStoragePage {
           .fontSize(14)
           .borderRadius(12)
           .backgroundColor($r('app.color.tag_cyan'))
+          .fontColor($r('app.color.component_control_bg'))
           .onClick((): void => {
             void this.handleFileRead();
           })
@@ -271,6 +274,7 @@ export struct NGFDemoDataStoragePage {
         .fontSize(14)
         .borderRadius(12)
         .backgroundColor($r('app.color.tag_purple'))
+        .fontColor($r('app.color.panel_background'))
         .onClick((): void => {
           void this.handleListDirectory();
         })
@@ -291,7 +295,7 @@ export struct NGFDemoDataStoragePage {
                 .margin({ left: 8 })
               Text(entry.typeText)
                 .fontSize(11)
-                .fontColor($r('app.color.panel_background'))
+                .fontColor(entry.typeText === 'DIR' ? $r('app.color.panel_background') : $r('app.color.component_control_bg'))
                 .padding({ left: 6, right: 6, top: 2, bottom: 2 })
                 .backgroundColor(entry.typeText === 'DIR' ? $r('app.color.tag_purple') : $r('app.color.tag_cyan'))
                 .borderRadius(6)
@@ -345,6 +349,7 @@ export struct NGFDemoDataStoragePage {
           .fontSize(13)
           .borderRadius(10)
           .backgroundColor($r('app.color.tag_green'))
+          .fontColor($r('app.color.component_control_bg'))
           .onClick((): void => {
             ngfContentCacheFacade.put(this.cacheKey, this.cacheValue, 300000);
             this.cacheMemorySize = ngfContentCacheFacade.memorySize();
@@ -356,6 +361,7 @@ export struct NGFDemoDataStoragePage {
           .fontSize(13)
           .borderRadius(14)
           .backgroundColor($r('app.color.button_primary'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             const value = ngfContentCacheFacade.get(this.cacheKey);
             const valStr = typeof value === 'string' ? value : ''; this.cacheGetResult = valStr.length > 0 ? valStr : $r('app.string.ui_str_2246');
@@ -366,6 +372,7 @@ export struct NGFDemoDataStoragePage {
           .fontSize(13)
           .borderRadius(10)
           .backgroundColor($r('app.color.tag_purple'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             const exists = ngfContentCacheFacade.has(this.cacheKey);
             this.cacheHasResult = exists ? $r('app.string.ui_str_2247') : $r('app.string.ui_str_2248');
@@ -376,6 +383,7 @@ export struct NGFDemoDataStoragePage {
           .fontSize(13)
           .borderRadius(10)
           .backgroundColor($r('app.color.tag_red'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             ngfContentCacheFacade.remove(this.cacheKey);
             this.cacheMemorySize = ngfContentCacheFacade.memorySize();

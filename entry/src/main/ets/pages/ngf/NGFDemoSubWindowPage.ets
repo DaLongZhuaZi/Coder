@@ -59,7 +59,7 @@ struct NGFDemoSubWindowPage {
               Button($r('app.string.subwin_btn_close'))
                 .type(ButtonType.Capsule)
                 .backgroundColor($r('app.color.button_primary'))
-                .fontColor($r('app.color.text_white'))
+                .fontColor($r('app.color.panel_background'))
                 .onClick(() => this.closeSubWindow('sub_window_settings'))
             }.width('100%').padding(16)
             
@@ -84,7 +84,7 @@ struct NGFDemoSubWindowPage {
               Button($r('app.string.subwin_btn_close'))
                 .type(ButtonType.Capsule)
                 .backgroundColor($r('app.color.button_primary'))
-                .fontColor($r('app.color.text_white'))
+                .fontColor($r('app.color.panel_background'))
                 .onClick(() => this.closeSubWindow('sub_window_task'))
             }.width('100%').padding(16).zIndex(10)
 
@@ -101,7 +101,7 @@ struct NGFDemoSubWindowPage {
           .clip(true)
           .transition(TransitionEffect.OPACITY.combine(TransitionEffect.scale({ x: 0.9, y: 0.9 })))
         } else {
-          Text($r('app.string.subwin_unknown_content')).fontColor(Color.White)
+          Text($r('app.string.subwin_unknown_content')).fontColor($r('app.color.text_white'))
         }
       }
     }

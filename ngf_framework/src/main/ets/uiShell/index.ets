@@ -27,7 +27,7 @@ export { NGFUiShellIntegrationFacade, ngfUiShellIntegrationFacade } from './faca
 export { ngfPageTransitionManager } from './facades/PageTransitionManagerFacade';
 export { OverlayManagerFacade, ngfOverlayManagerFacade } from './facades/OverlayManagerFacade';
 export { NGFListPageTemplate, NGFDetailPageTemplate, NGFFormPageTemplate, NGFKeyValueEntry } from './components/NGFPageTemplates';
-export { NGFHdsTitleBarOptionsFactory } from './components/HdsNavigationSupport';
+export { NGFHdsTitleBarMenuAction, NGFHdsTitleBarOptionsFactory } from './components/HdsNavigationSupport';
 export {
   NGFImmersiveTopChromePresetFactory,
   NGFImmersiveTopChromeSpec,
@@ -42,4 +42,5 @@ export {
 } from './components/NGFHdsEffectPresets';
 export { AboutSheetContent } from './components/AboutSheetContent';
 export { NGFHdsImmersiveTabs, NGFHdsTabItem } from './components/NGFHdsTabsFactory';
+export { NGFRichContentKind, NGFRichContentRenderer } from './components/NGFRichContentRenderer';
 export { DragDropManagerFacade, ngfDragDropManagerFacade } from './utils/DragDropManager';

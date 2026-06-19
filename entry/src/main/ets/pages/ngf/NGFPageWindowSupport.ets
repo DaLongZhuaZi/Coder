@@ -15,6 +15,7 @@ import window from '@ohos.window';
 const TAG: string = 'NGFPageWindowSupport';
 
 export class NGFPageWindowName {
+  static readonly AGENT_HOME: string = 'pages/ngf/NGFAgentHomePage';
   static readonly MAIN_MENU: string = 'pages/ngf/MainMenuPage';
   static readonly HDS_SHOWCASE: string = NGFHdsDemoRouteName.SHOWCASE;
   static readonly HDS_OFFICIAL_NAVIGATION: string = NGFHdsDemoRouteName.OFFICIAL_NAVIGATION;
@@ -29,6 +30,11 @@ export class NGFPageWindowName {
 }
 
 class NGFPageWindowStyleFactory {
+  private static isDarkMode(): boolean {
+    const value = AppStorage.get<boolean>('ngf_is_dark_mode');
+    return value === true;
+  }
+
   static buildTransparentLightStyle(): NGFWindowSystemBarStyle {
     const style = new NGFWindowSystemBarStyle();
     style.enabled = true;
@@ -43,15 +49,34 @@ class NGFPageWindowStyleFactory {
     return style;
   }
 
-  static buildSurfaceDarkTextStyle(): NGFWindowSystemBarStyle {
+  static buildTransparentDarkTextStyle(): NGFWindowSystemBarStyle {
+    const isDark = NGFPageWindowStyleFactory.isDarkMode();
+    const contentColor = isDark ? '#FFFFFFFF' : '#0F172A';
     const style = new NGFWindowSystemBarStyle();
     style.enabled = true;
-    style.statusBarColor = '#FFF8FAFC';
-    style.navigationBarColor = '#FFF8FAFC';
-    style.statusBarContentColor = '#0F172A';
-    style.navigationBarContentColor = '#0F172A';
-    style.isStatusBarLightIcon = false;
-    style.isNavigationBarLightIcon = false;
+    style.statusBarColor = '#00000000';
+    style.navigationBarColor = '#00000000';
+    style.statusBarContentColor = contentColor;
+    style.navigationBarContentColor = contentColor;
+    style.isStatusBarLightIcon = isDark;
+    style.isNavigationBarLightIcon = isDark;
+    style.enableStatusBarAnimation = true;
+    style.enableNavigationBarAnimation = true;
+    return style;
+  }
+
+  static buildSurfaceDarkTextStyle(): NGFWindowSystemBarStyle {
+    const isDark = NGFPageWindowStyleFactory.isDarkMode();
+    const surfaceColor = isDark ? '#1A1A1A' : '#FFF8FAFC';
+    const contentColor = isDark ? '#FFFFFFFF' : '#0F172A';
+    const style = new NGFWindowSystemBarStyle();
+    style.enabled = true;
+    style.statusBarColor = surfaceColor;
+    style.navigationBarColor = surfaceColor;
+    style.statusBarContentColor = contentColor;
+    style.navigationBarContentColor = contentColor;
+    style.isStatusBarLightIcon = isDark;
+    style.isNavigationBarLightIcon = isDark;
     style.enableStatusBarAnimation = true;
     style.enableNavigationBarAnimation = true;
     return style;
@@ -80,12 +105,20 @@ export class NGFPageWindowSupport {
     });
   }
 
-  static ensureProfilesRegistered(): void {
-    if (NGFPageWindowSupport.initialized) {
+  static ensureProfilesRegistered(forceRefresh: boolean = false): void {
+    if (NGFPageWindowSupport.initialized && !forceRefresh) {
       return;
     }
 
     const profiles: Array<NGFPageWindowProfile> = [];
+    profiles.push(
+      NGFPageWindowSupport.buildProfile(
+        NGFPageWindowName.AGENT_HOME,
+        NGFDisplayMode.IMMERSIVE_WITH_BARS,
+        NGFPageWindowStyleFactory.buildTransparentDarkTextStyle(),
+        48
+      )
+    );
     profiles.push(
       NGFPageWindowSupport.buildProfile(
         NGFPageWindowName.MAIN_MENU,
@@ -184,7 +217,7 @@ export class NGFPageWindowSupport {
   }
 
   static apply(pageName: string): void {
-    NGFPageWindowSupport.ensureProfilesRegistered();
+    NGFPageWindowSupport.ensureProfilesRegistered(true);
     ngfPagePolicyHostFacade.applyPolicy(pageName);
     ngfPagePolicyHostFacade.reapplyPolicy(pageName);
   }

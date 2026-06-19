@@ -25,6 +25,7 @@
 compile_commands.json
 
 # Logs, diagnostics, and temporary files
+/temp/
 *.log
 *.tmp
 *.temp

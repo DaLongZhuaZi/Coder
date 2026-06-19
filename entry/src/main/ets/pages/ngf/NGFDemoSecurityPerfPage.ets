@@ -134,7 +134,7 @@ export struct NGFDemoSecurityPerfPage {
       Text($r('app.string.ui_str_2294'))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor($r('app.color.panel_background'))
+        .fontColor($r('app.color.text_white'))
       Text($r('app.string.ui_str_2295'))
         .fontSize(13)
         .lineHeight(20)
@@ -173,7 +173,7 @@ export struct NGFDemoSecurityPerfPage {
             .fontSize(13)
             .borderRadius(10)
             .backgroundColor(this.shaAlgorithmIndexes[0] === index ? $r('app.color.tag_teal') : $r('app.color.card_border'))
-            .fontColor(this.shaAlgorithmIndexes[0] === index ? $r('app.color.panel_background') : $r('app.color.text_body'))
+            .fontColor(this.shaAlgorithmIndexes[0] === index ? $r('app.color.component_control_bg') : $r('app.color.text_body'))
             .onClick((): void => {
               this.shaAlgorithmIndexes = [index];
             })
@@ -187,6 +187,7 @@ export struct NGFDemoSecurityPerfPage {
         .fontSize(14)
         .borderRadius(12)
         .backgroundColor($r('app.color.tag_teal'))
+        .fontColor($r('app.color.component_control_bg'))
         .onClick((): void => {
           void this.handleShaHash();
         })
@@ -242,6 +243,7 @@ export struct NGFDemoSecurityPerfPage {
           .fontSize(14)
           .borderRadius(12)
           .backgroundColor($r('app.color.tag_cyan'))
+          .fontColor($r('app.color.component_control_bg'))
           .onClick((): void => {
             void this.handleAesEncrypt();
           })
@@ -251,6 +253,7 @@ export struct NGFDemoSecurityPerfPage {
           .fontSize(14)
           .borderRadius(12)
           .backgroundColor($r('app.color.tag_purple'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             void this.handleAesDecrypt();
           })
@@ -287,7 +290,7 @@ export struct NGFDemoSecurityPerfPage {
             .fontColor($r('app.color.tag_green'))
             .width('100%')
             .padding(10)
-            .backgroundColor('#FFF0FDF4')
+            .backgroundColor($r('app.color.background_success'))
             .borderRadius(10)
         }
         .width('100%')
@@ -317,6 +320,7 @@ export struct NGFDemoSecurityPerfPage {
           .fontSize(14)
           .borderRadius(12)
           .backgroundColor($r('app.color.button_primary'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             performanceMonitor.mark('demo_start');
             logger.info(TAG, '已记录开始打点: demo_start');
@@ -327,6 +331,7 @@ export struct NGFDemoSecurityPerfPage {
           .fontSize(14)
           .borderRadius(12)
           .backgroundColor($r('app.color.tag_purple'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             performanceMonitor.mark('demo_end');
             const result = performanceMonitor.measure('demo_measure', 'demo_start', 'demo_end');
@@ -387,6 +392,7 @@ export struct NGFDemoSecurityPerfPage {
         .fontSize(14)
         .borderRadius(12)
         .backgroundColor($r('app.color.tag_red'))
+        .fontColor($r('app.color.panel_background'))
         .onClick((): void => {
           const snapshot = performanceMonitor.snapshotMemory();
           const now = new Date();

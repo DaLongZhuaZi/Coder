@@ -15,12 +15,12 @@ struct WidgetCard {
         Text($r('app.string.widget_title'))
           .fontSize(14)
           .fontWeight(FontWeight.Bold)
-          .fontColor('#333333')
+          .fontColor($r('app.color.text_primary'))
         Blank()
         // Refresh Button
         Text('↻')
           .fontSize(18)
-          .fontColor('#666666')
+          .fontColor($r('app.color.text_secondary'))
           .fontWeight(FontWeight.Bold)
           .onClick(() => {
             postCardAction(this, {
@@ -38,11 +38,11 @@ struct WidgetCard {
         Text(this.frameworkStatus)
           .fontSize(20)
           .fontWeight(FontWeight.Medium)
-          .fontColor('#007DFF')
+          .fontColor($r('app.color.button_primary'))
           .margin({ top: 8, bottom: 4 })
         Text('最后更新: ' + this.lastUpdate)
           .fontSize(10)
-          .fontColor('#999999')
+          .fontColor($r('app.color.text_secondary'))
       }
       .layoutWeight(1)
       .justifyContent(FlexAlign.Center)
@@ -55,8 +55,8 @@ struct WidgetCard {
         Button('主应用')
           .fontSize(10)
           .height(24)
-          .backgroundColor('#F1F3F5')
-          .fontColor('#333333')
+          .backgroundColor($r('app.color.background_surface'))
+          .fontColor($r('app.color.text_primary'))
           .onClick(() => {
             postCardAction(this, {
               action: 'router',
@@ -69,8 +69,8 @@ struct WidgetCard {
         Button('独立实例')
           .fontSize(10)
           .height(24)
-          .backgroundColor('#E8F3FF')
-          .fontColor('#007DFF')
+          .backgroundColor($r('app.color.component_control_bg'))
+          .fontColor($r('app.color.button_primary'))
           .onClick(() => {
             postCardAction(this, {
               action: 'router',
@@ -89,7 +89,7 @@ struct WidgetCard {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#FFFFFF')
+    .backgroundColor($r('app.color.panel_background'))
     .borderRadius(16)
   }
 }

@@ -5295,6 +5295,1482 @@
     {
       "name": "EntryFormAbility_desc",
       "value": "Provides desktop widget capability"
+    },
+    {
+      "name": "agent_bridge_title",
+      "value": "Agent Bridge"
+    },
+    {
+      "name": "agent_bridge_subtitle",
+      "value": "Connect Desktop Coding Agents"
+    },
+    {
+      "name": "agent_bridge_main_card_title",
+      "value": "Agent Bridge"
+    },
+    {
+      "name": "agent_bridge_main_card_desc",
+      "value": "Connect the desktop bridge and manage Codex, OpenCode, and Claude Code sessions"
+    },
+    {
+      "name": "agent_bridge_connection_panel",
+      "value": "Host Connection"
+    },
+    {
+      "name": "agent_bridge_endpoint_label",
+      "value": "Bridge URL"
+    },
+    {
+      "name": "agent_bridge_token_label",
+      "value": "Access Token"
+    },
+    {
+      "name": "agent_bridge_workspace_label",
+      "value": "Workspace Path"
+    },
+    {
+      "name": "agent_bridge_message_label",
+      "value": "Message"
+    },
+    {
+      "name": "agent_bridge_connect",
+      "value": "Connect"
+    },
+    {
+      "name": "agent_bridge_disconnect",
+      "value": "Disconnect"
+    },
+    {
+      "name": "agent_bridge_create_session",
+      "value": "Create Session"
+    },
+    {
+      "name": "agent_bridge_send_message",
+      "value": "Send Message"
+    },
+    {
+      "name": "agent_bridge_status_disconnected",
+      "value": "Disconnected"
+    },
+    {
+      "name": "agent_bridge_status_connecting",
+      "value": "Connecting"
+    },
+    {
+      "name": "agent_bridge_status_connected",
+      "value": "Connected"
+    },
+    {
+      "name": "agent_bridge_status_error",
+      "value": "Connection Error"
+    },
+    {
+      "name": "agent_bridge_session_panel",
+      "value": "Session"
+    },
+    {
+      "name": "agent_bridge_timeline_panel",
+      "value": "Event Stream"
+    },
+    {
+      "name": "agent_bridge_preview_panel",
+      "value": "Preview"
+    },
+    {
+      "name": "agent_bridge_empty_session",
+      "value": "No session yet"
+    },
+    {
+      "name": "agent_bridge_empty_timeline",
+      "value": "No events yet"
+    },
+    {
+      "name": "agent_bridge_default_message",
+      "value": "Summarize the current workspace"
+    },
+    {
+      "name": "agent_bridge_endpoint_placeholder",
+      "value": "192.168.5.201:8787 or ws://LAN-IP:8787"
+    },
+    {
+      "name": "agent_bridge_token_placeholder",
+      "value": "Enter AGENT_BRIDGE_TOKEN"
+    },
+    {
+      "name": "agent_home_scan_bridge_qr",
+      "value": "Scan Connection QR"
+    },
+    {
+      "name": "agent_home_scan_bridge_qr_applied",
+      "value": "Connection Settings Imported"
+    },
+    {
+      "name": "agent_home_scan_bridge_qr_failed",
+      "value": "QR Scan Failed"
+    },
+    {
+      "name": "agent_home_scan_bridge_qr_invalid",
+      "value": "Invalid Agent Bridge QR Code"
+    },
+    {
+      "name": "agent_home_scan_action",
+      "value": "Scan"
+    },
+    {
+      "name": "agent_home_home_action",
+      "value": "Home"
+    },
+    {
+      "name": "agent_bridge_workspace_placeholder",
+      "value": "Project path on computer"
+    },
+    {
+      "name": "agent_bridge_provider_mock",
+      "value": "Mock Provider"
+    },
+    {
+      "name": "agent_bridge_preview_placeholder",
+      "value": "Create a session to request file or diff previews"
+    },
+    {
+      "name": "agent_bridge_event_status",
+      "value": "Status"
+    },
+    {
+      "name": "agent_bridge_event_message",
+      "value": "Message"
+    },
+    {
+      "name": "agent_bridge_event_tool",
+      "value": "Tool"
+    },
+    {
+      "name": "agent_bridge_event_error",
+      "value": "Error"
+    },
+    {
+      "name": "agent_bridge_event_raw",
+      "value": "Event"
+    },
+    {
+      "name": "agent_bridge_preview_path_label",
+      "value": "Preview Path"
+    },
+    {
+      "name": "agent_bridge_preview_path_placeholder",
+      "value": "README.md"
+    },
+    {
+      "name": "agent_bridge_request_preview",
+      "value": "Request Preview"
+    },
+    {
+      "name": "agent_bridge_provider_opencode",
+      "value": "OpenCode"
+    },
+    {
+      "name": "agent_bridge_provider_label",
+      "value": "Provider"
+    },
+    {
+      "name": "agent_home_app_title",
+      "value": "Coder"
+    },
+    {
+      "name": "agent_home_sessions_title",
+      "value": "Sessions"
+    },
+    {
+      "name": "agent_home_switch_tab_title",
+      "value": "Switch Tab"
+    },
+    {
+      "name": "agent_home_workspaces_title",
+      "value": "Workspaces"
+    },
+    {
+      "name": "agent_home_connection_title",
+      "value": "Connection"
+    },
+    {
+      "name": "agent_home_open_framework",
+      "value": "Open NGF Console"
+    },
+    {
+      "name": "agent_home_message_placeholder",
+      "value": "Message, @files, /commands"
+    },
+    {
+      "name": "agent_home_auto_review",
+      "value": "Auto-review"
+    },
+    {
+      "name": "agent_home_new_session",
+      "value": "New Session"
+    },
+    {
+      "name": "agent_home_empty_messages",
+      "value": "Connect Bridge, choose a provider, then send a message to start a remote session."
+    },
+    {
+      "name": "agent_home_bridge_disconnected",
+      "value": "Not Connected"
+    },
+    {
+      "name": "agent_home_bridge_connected",
+      "value": "Connected"
+    },
+    {
+      "name": "agent_home_bridge_connecting",
+      "value": "Connecting"
+    },
+    {
+      "name": "agent_home_bridge_error",
+      "value": "Connection Error"
+    },
+    {
+      "name": "agent_home_model_label",
+      "value": "Current Provider"
+    },
+    {
+      "name": "agent_home_local_device",
+      "value": "Current Workspace"
+    },
+    {
+      "name": "agent_home_branch_main",
+      "value": "main"
+    },
+    {
+      "name": "agent_home_workspace_info_security",
+      "value": "InfoSec"
+    },
+    {
+      "name": "agent_home_workspace_manxia",
+      "value": "DaLongZhuaZi/manxia"
+    },
+    {
+      "name": "agent_home_workspace_downloads",
+      "value": "Downloads-E"
+    },
+    {
+      "name": "agent_home_session_cloud_update",
+      "value": "Legado Compatibility Cloud Update Analysis"
+    },
+    {
+      "name": "agent_home_session_manga_reopen",
+      "value": "Analyze Manga Reopen Failures"
+    },
+    {
+      "name": "agent_home_session_image_share",
+      "value": "Fix Online Manga Image Save Sharing"
+    },
+    {
+      "name": "agent_home_session_book_source",
+      "value": "Legado Manga Source Support Analysis"
+    },
+    {
+      "name": "agent_home_session_reorder",
+      "value": "Detail Chapter Sorting Plan"
+    },
+    {
+      "name": "agent_home_session_more_settings",
+      "value": "More Features and Source Settings Shortcut"
+    },
+    {
+      "name": "agent_home_sample_assistant",
+      "value": "No assistant messages yet"
+    },
+    {
+      "name": "agent_home_sample_user",
+      "value": "No user messages yet"
+    },
+    {
+      "name": "agent_home_worked_for",
+      "value": "Worked for %s"
+    },
+    {
+      "name": "agent_home_duration_response",
+      "value": "Response"
+    },
+    {
+      "name": "agent_home_duration_turn",
+      "value": "Turn"
+    },
+    {
+      "name": "agent_home_bridge_session_creating",
+      "value": "Creating Bridge session"
+    },
+    {
+      "name": "agent_home_bridge_local_only",
+      "value": "Bridge is not connected. The message cannot be sent to the provider."
+    },
+    {
+      "name": "agent_home_bridge_ready",
+      "value": "Bridge protocol is ready."
+    },
+    {
+      "name": "agent_home_settings_hint",
+      "value": "For device debugging, set the Bridge URL to the computer LAN IP."
+    },
+    {
+      "name": "agent_home_settings_tab_connection",
+      "value": "Connection"
+    },
+    {
+      "name": "agent_home_settings_tab_workspace",
+      "value": "Workspace"
+    },
+    {
+      "name": "agent_home_settings_tab_data",
+      "value": "Data"
+    },
+    {
+      "name": "agent_home_settings_stage_bridge_title",
+      "value": "Computer Bridge"
+    },
+    {
+      "name": "agent_home_settings_stage_bridge_desc",
+      "value": "Enter the Agent Bridge URL and token running on your computer."
+    },
+    {
+      "name": "agent_home_settings_stage_provider_title",
+      "value": "Agent Provider"
+    },
+    {
+      "name": "agent_home_settings_stage_provider_desc",
+      "value": "Choose the implemented provider used by the current session."
+    },
+    {
+      "name": "agent_home_settings_stage_status_title",
+      "value": "Connection Status"
+    },
+    {
+      "name": "agent_home_settings_stage_status_desc",
+      "value": "After connecting, new messages are sent through the remote session."
+    },
+    {
+      "name": "agent_home_settings_stage_workspace_identity_title",
+      "value": "Workspace Info"
+    },
+    {
+      "name": "agent_home_settings_stage_workspace_identity_desc",
+      "value": "Set the workspace name shown in the app."
+    },
+    {
+      "name": "agent_home_settings_stage_workspace_path_title",
+      "value": "Computer Path"
+    },
+    {
+      "name": "agent_home_settings_stage_workspace_path_desc",
+      "value": "Enter the project directory on the computer where the remote agent runs."
+    },
+    {
+      "name": "agent_home_settings_stage_cleanup_title",
+      "value": "Clean Current Session"
+    },
+    {
+      "name": "agent_home_settings_stage_cleanup_desc",
+      "value": "Clear local messages or previews for the current session without deleting the remote session."
+    },
+    {
+      "name": "agent_home_settings_stage_reset_title",
+      "value": "Reset Local Database"
+    },
+    {
+      "name": "agent_home_settings_stage_reset_desc",
+      "value": "Delete saved connection settings, workspaces, sessions, messages, and previews on this device."
+    },
+    {
+      "name": "agent_home_settings_stage_framework_title",
+      "value": "Framework Console"
+    },
+    {
+      "name": "agent_home_settings_stage_framework_desc",
+      "value": "Open the NGF console to inspect framework capabilities and database demos."
+    },
+    {
+      "name": "agent_home_settings_stage_connection_log_title",
+      "value": "Connection Log"
+    },
+    {
+      "name": "agent_home_settings_stage_connection_log_desc",
+      "value": "Recent connection status and errors are kept in the current session."
+    },
+    {
+      "name": "agent_home_connection_log_empty",
+      "value": "No connection logs yet."
+    },
+    {
+      "name": "agent_home_endpoint_required",
+      "value": "Enter the Agent Bridge URL on your computer first."
+    },
+    {
+      "name": "agent_home_token_required",
+      "value": "Enter the Agent Bridge token first."
+    },
+    {
+      "name": "agent_home_workspace_path_required",
+      "value": "Enter the workspace path on your computer first."
+    },
+    {
+      "name": "agent_home_workspace_path_empty",
+      "value": "Workspace path not configured"
+    },
+    {
+      "name": "agent_bridge_endpoint_required",
+      "value": "Enter the Bridge URL first."
+    },
+    {
+      "name": "agent_bridge_token_required",
+      "value": "Enter the Bridge token first."
+    },
+    {
+      "name": "agent_bridge_workspace_required",
+      "value": "Enter the workspace path on your computer first."
+    },
+    {
+      "name": "agent_home_default_workspace_title",
+      "value": "Default Workspace"
+    },
+    {
+      "name": "agent_home_workspace_title_label",
+      "value": "Workspace Name"
+    },
+    {
+      "name": "agent_home_workspace_title_placeholder",
+      "value": "Default Workspace"
+    },
+    {
+      "name": "agent_home_save_workspace",
+      "value": "Save Workspace"
+    },
+    {
+      "name": "agent_home_clear_session",
+      "value": "Clear Session"
+    },
+    {
+      "name": "agent_home_clear_previews",
+      "value": "Clear Previews"
+    },
+    {
+      "name": "agent_home_reset_data",
+      "value": "Reset Local Data"
+    },
+    {
+      "name": "agent_home_clear",
+      "value": "Clear"
+    },
+    {
+      "name": "agent_home_cancel",
+      "value": "Cancel"
+    },
+    {
+      "name": "agent_home_clear_session_title",
+      "value": "Clear Current Session"
+    },
+    {
+      "name": "agent_home_clear_session_message",
+      "value": "This deletes local messages and tool records in the current session. The remote session is not deleted."
+    },
+    {
+      "name": "agent_home_clear_previews_title",
+      "value": "Clear Current Previews"
+    },
+    {
+      "name": "agent_home_clear_previews_message",
+      "value": "This deletes local preview content saved for the current session."
+    },
+    {
+      "name": "agent_home_reset_data_title",
+      "value": "Reset Local Agent Data"
+    },
+    {
+      "name": "agent_home_reset_data_message",
+      "value": "This deletes saved connection settings, workspaces, sessions, messages, and previews on this device."
+    },
+    {
+      "name": "agent_home_send",
+      "value": "Send"
+    },
+    {
+      "name": "agent_home_preview_title",
+      "value": "Content Preview"
+    },
+    {
+      "name": "agent_home_preview_path_label",
+      "value": "Preview Path"
+    },
+    {
+      "name": "agent_home_preview_path_placeholder",
+      "value": "README.md"
+    },
+    {
+      "name": "agent_home_preview_request",
+      "value": "Request Preview"
+    },
+    {
+      "name": "agent_home_preview_empty",
+      "value": "No preview content for this session yet."
+    },
+    {
+      "name": "agent_home_preview_requires_session",
+      "value": "Connect Bridge and create a remote session before requesting a preview."
+    },
+    {
+      "name": "agent_home_preview_requested",
+      "value": "Preview requested"
+    },
+    {
+      "name": "agent_home_preview_updated",
+      "value": "Preview updated"
+    },
+    {
+      "name": "agent_home_tool_started",
+      "value": "Tool Started"
+    },
+    {
+      "name": "agent_home_tool_output",
+      "value": "Tool Output"
+    },
+    {
+      "name": "agent_home_tool_completed",
+      "value": "Tool Completed"
+    },
+    {
+      "name": "agent_home_reply_stalled",
+      "value": "This session has not returned message or tool events for a long time. Local waiting has been released. The remote run may still be active; refresh the session or send again if it stays silent. Idle time:"
+    },
+    {
+      "name": "agent_home_workspaces_sheet_hint",
+      "value": "Choose the computer workspace where new sessions run."
+    },
+    {
+      "name": "agent_home_sessions_sheet_hint",
+      "value": "Switch the active session while keeping each session context."
+    },
+    {
+      "name": "agent_home_connection_sheet_hint",
+      "value": "Configure the Agent Bridge URL, token, and provider."
+    },
+    {
+      "name": "agent_home_preview_sheet_hint",
+      "value": "Request file or tool-result previews from the remote session."
+    },
+    {
+      "name": "agent_home_settings_stage_model_title",
+      "value": "Model"
+    },
+    {
+      "name": "agent_home_settings_stage_model_desc",
+      "value": "Choose the model or provider default."
+    },
+    {
+      "name": "agent_home_settings_stage_speed_title",
+      "value": "Speed"
+    },
+    {
+      "name": "agent_home_settings_stage_speed_desc",
+      "value": "Switch between lower latency and deeper context."
+    },
+    {
+      "name": "agent_home_settings_stage_tools_title",
+      "value": "Tools"
+    },
+    {
+      "name": "agent_home_settings_stage_tools_desc",
+      "value": "Review tools exposed by the current provider."
+    },
+    {
+      "name": "agent_home_refresh_remote_sessions",
+      "value": "Refresh Remote Sessions"
+    },
+    {
+      "name": "agent_home_local_sessions_title",
+      "value": "Imported Sessions"
+    },
+    {
+      "name": "agent_home_remote_sessions_title",
+      "value": "Remote History"
+    },
+    {
+      "name": "agent_home_remote_sessions_count_label",
+      "value": "Remote"
+    },
+    {
+      "name": "agent_home_imported_sessions_count_label",
+      "value": "Imported"
+    },
+    {
+      "name": "agent_home_remote_sessions_empty",
+      "value": "The current provider returned no importable history sessions."
+    },
+    {
+      "name": "agent_home_import_remote_session",
+      "value": "Import to App"
+    },
+    {
+      "name": "agent_home_remote_session_imported",
+      "value": "Remote session imported. Loading message history."
+    },
+    {
+      "name": "agent_home_remote_session_history_empty",
+      "value": "The remote session returned no message history."
+    },
+    {
+      "name": "agent_home_remote_session_history_loaded",
+      "value": "Remote message history imported."
+    },
+    {
+      "name": "agent_home_conversation_rendering",
+      "value": "Preparing conversation content"
+    },
+    {
+      "name": "agent_home_model_sheet_title",
+      "value": "Model"
+    },
+    {
+      "name": "agent_home_model_sheet_hint",
+      "value": "Choose the provider, model, and response mode for this session."
+    },
+    {
+      "name": "agent_home_runtime_sheet_title",
+      "value": "Capabilities"
+    },
+    {
+      "name": "agent_home_runtime_sheet_hint",
+      "value": "Review tools, previews, and session capabilities for the current provider."
+    },
+    {
+      "name": "agent_home_runtime_tools_empty",
+      "value": "The current provider returned no available tools."
+    },
+    {
+      "name": "agent_home_runtime_preview_title",
+      "value": "Content Preview"
+    },
+    {
+      "name": "agent_home_runtime_preview_desc",
+      "value": "Request file or diff previews for the current session."
+    },
+    {
+      "name": "agent_home_attachment_sheet_title",
+      "value": "Add Attachments"
+    },
+    {
+      "name": "agent_home_attachment_sheet_hint",
+      "value": "Choose images or files to send with the next message."
+    },
+    {
+      "name": "agent_home_pick_image",
+      "value": "Choose Images"
+    },
+    {
+      "name": "agent_home_pick_document",
+      "value": "Choose Files"
+    },
+    {
+      "name": "agent_home_attachment_selected_title",
+      "value": "Selected"
+    },
+    {
+      "name": "agent_home_clear_attachments",
+      "value": "Clear"
+    },
+    {
+      "name": "agent_home_attachment_empty",
+      "value": "No attachments selected."
+    },
+    {
+      "name": "agent_home_attachment_image_fallback",
+      "value": "Image"
+    },
+    {
+      "name": "agent_home_attachment_file_fallback",
+      "value": "File"
+    },
+    {
+      "name": "agent_home_remote_sessions_provider_title",
+      "value": "Import By Provider"
+    },
+    {
+      "name": "agent_home_restore_connection",
+      "value": "Restoring Last Connection"
+    },
+    {
+      "name": "agent_home_bridge_reconnect",
+      "value": "Reconnect"
+    },
+    {
+      "name": "agent_home_composer_missing_connection_config",
+      "value": "Bridge URL or token is missing. Scan or enter connection details first."
+    },
+    {
+      "name": "agent_home_status_model",
+      "value": "Model"
+    },
+    {
+      "name": "agent_home_status_idle",
+      "value": "Idle"
+    },
+    {
+      "name": "agent_home_status_replying",
+      "value": "Replying"
+    },
+    {
+      "name": "agent_home_status_tool_running",
+      "value": "Tool Running"
+    },
+    {
+      "name": "agent_home_status_tool",
+      "value": "Tool"
+    },
+    {
+      "name": "agent_home_status_subagent",
+      "value": "Subagent"
+    },
+    {
+      "name": "agent_home_status_context",
+      "value": "Context"
+    },
+    {
+      "name": "agent_home_status_context_unknown",
+      "value": "Unknown"
+    },
+    {
+      "name": "agent_home_status_context_limit_unknown",
+      "value": "Limit Unknown"
+    },
+    {
+      "name": "agent_home_status_detail_title",
+      "value": "Session Data"
+    },
+    {
+      "name": "agent_home_status_detail_hint",
+      "value": "View the current session model, context, and estimates."
+    },
+    {
+      "name": "agent_home_status_detail_runtime",
+      "value": "Runtime"
+    },
+    {
+      "name": "agent_home_status_detail_context",
+      "value": "Context"
+    },
+    {
+      "name": "agent_home_status_detail_cost",
+      "value": "Cost Estimate"
+    },
+    {
+      "name": "agent_home_detail_provider",
+      "value": "Provider"
+    },
+    {
+      "name": "agent_home_detail_model",
+      "value": "Model"
+    },
+    {
+      "name": "agent_home_detail_speed",
+      "value": "Speed"
+    },
+    {
+      "name": "agent_home_detail_workspace",
+      "value": "Workspace"
+    },
+    {
+      "name": "agent_home_detail_bridge_session",
+      "value": "Remote Session"
+    },
+    {
+      "name": "agent_home_detail_reply_state",
+      "value": "Reply State"
+    },
+    {
+      "name": "agent_home_detail_active_tool",
+      "value": "Active Tool"
+    },
+    {
+      "name": "agent_home_detail_subagent",
+      "value": "Subagent"
+    },
+    {
+      "name": "agent_home_detail_messages",
+      "value": "Messages"
+    },
+    {
+      "name": "agent_home_detail_input_tokens",
+      "value": "Input Estimate"
+    },
+    {
+      "name": "agent_home_detail_output_tokens",
+      "value": "Output Estimate"
+    },
+    {
+      "name": "agent_home_detail_total_tokens",
+      "value": "Total Estimate"
+    },
+    {
+      "name": "agent_home_detail_context_limit",
+      "value": "Context Limit"
+    },
+    {
+      "name": "agent_home_detail_context_remaining",
+      "value": "Remaining Estimate"
+    },
+    {
+      "name": "agent_home_detail_context_usage",
+      "value": "Usage"
+    },
+    {
+      "name": "agent_home_detail_estimated_cost",
+      "value": "Estimated Cost"
+    },
+    {
+      "name": "agent_home_detail_pricing",
+      "value": "Pricing Source"
+    },
+    {
+      "name": "agent_home_detail_pricing_not_configured",
+      "value": "Pricing Not Configured"
+    },
+    {
+      "name": "agent_home_detail_pricing_free_model",
+      "value": "Free Or Local Mock Model"
+    },
+    {
+      "name": "agent_home_detail_empty",
+      "value": "Not Recorded"
+    },
+    {
+      "name": "agent_home_status_detail_session",
+      "value": "Session"
+    },
+    {
+      "name": "agent_home_detail_session_title",
+      "value": "Session Title"
+    },
+    {
+      "name": "agent_home_detail_local_session",
+      "value": "Session Record"
+    },
+    {
+      "name": "agent_home_detail_workspace_title",
+      "value": "Workspace Name"
+    },
+    {
+      "name": "agent_home_detail_workspace_path",
+      "value": "Workspace Path"
+    },
+    {
+      "name": "agent_home_detail_branch",
+      "value": "Branch"
+    },
+    {
+      "name": "agent_home_detail_connection_status",
+      "value": "Connection Status"
+    },
+    {
+      "name": "agent_home_detail_endpoint",
+      "value": "Bridge URL"
+    },
+    {
+      "name": "agent_home_detail_remote_source",
+      "value": "Remote Source"
+    },
+    {
+      "name": "agent_home_detail_remote_messages",
+      "value": "Remote Messages"
+    },
+    {
+      "name": "agent_home_detail_updated_at",
+      "value": "Updated"
+    },
+    {
+      "name": "agent_home_slash_commands_title",
+      "value": "Provider Commands"
+    },
+    {
+      "name": "agent_home_slash_commands_empty",
+      "value": "The current provider does not declare slash commands."
+    },
+    {
+      "name": "agent_home_slash_commands_source",
+      "value": "Source"
+    },
+    {
+      "name": "agent_home_slash_commands_no_match",
+      "value": "No matching slash commands."
+    },
+    {
+      "name": "agent_home_thinking_label",
+      "value": "Thinking"
+    },
+    {
+      "name": "agent_home_thinking_expand",
+      "value": "Show Thinking"
+    },
+    {
+      "name": "agent_home_thinking_collapse",
+      "value": "Hide Thinking"
+    },
+    {
+      "name": "agent_bridge_provider_deveco",
+      "value": "DevEco Code"
+    },
+    {
+      "name": "agent_bridge_provider_mimo",
+      "value": "MiMo Code"
+    },
+    {
+      "name": "agent_bridge_provider_codex",
+      "value": "Codex CLI"
+    },
+    {
+      "name": "agent_bridge_provider_claude",
+      "value": "Claude Code"
+    },
+    {
+      "name": "agent_bridge_provider_antigravity",
+      "value": "Antigravity CLI"
+    },
+    {
+      "name": "agent_home_new_session_provider_title",
+      "value": "New Session Provider"
+    },
+    {
+      "name": "agent_home_new_session_provider_hint",
+      "value": "Choose the provider to bind to the new session in this workspace."
+    },
+    {
+      "name": "agent_home_create_session",
+      "value": "Create Session"
+    },
+    {
+      "name": "agent_home_workspace_panel_title",
+      "value": "Workspace"
+    },
+    {
+      "name": "agent_home_workspace_panel_hint",
+      "value": "Review changes, files, and Git actions"
+    },
+    {
+      "name": "agent_home_workspace_tab_changes",
+      "value": "Changes"
+    },
+    {
+      "name": "agent_home_workspace_tab_files",
+      "value": "Files"
+    },
+    {
+      "name": "agent_home_workspace_refresh",
+      "value": "Refresh"
+    },
+    {
+      "name": "agent_home_workspace_commit",
+      "value": "Commit"
+    },
+    {
+      "name": "agent_home_workspace_commit_message",
+      "value": "Commit Message"
+    },
+    {
+      "name": "agent_home_workspace_commit_placeholder",
+      "value": "Enter commit message"
+    },
+    {
+      "name": "agent_home_workspace_uncommitted",
+      "value": "Uncommitted"
+    },
+    {
+      "name": "agent_home_workspace_changes_empty",
+      "value": "No changes"
+    },
+    {
+      "name": "agent_home_workspace_files_empty",
+      "value": "No files in this folder"
+    },
+    {
+      "name": "agent_home_workspace_stage",
+      "value": "Stage"
+    },
+    {
+      "name": "agent_home_workspace_unstage",
+      "value": "Unstage"
+    },
+    {
+      "name": "agent_home_workspace_discard",
+      "value": "Discard"
+    },
+    {
+      "name": "agent_home_workspace_diff",
+      "value": "Diff"
+    },
+    {
+      "name": "agent_home_workspace_change_edit",
+      "value": "Edit"
+    },
+    {
+      "name": "agent_home_workspace_change_added",
+      "value": "Added"
+    },
+    {
+      "name": "agent_home_workspace_change_deleted",
+      "value": "Deleted"
+    },
+    {
+      "name": "agent_home_workspace_change_renamed",
+      "value": "Renamed"
+    },
+    {
+      "name": "agent_home_workspace_change_directory_edit",
+      "value": "Directory Change"
+    },
+    {
+      "name": "agent_home_workspace_change_directory_added",
+      "value": "Added Directory"
+    },
+    {
+      "name": "agent_home_workspace_change_directory_deleted",
+      "value": "Deleted Directory"
+    },
+    {
+      "name": "agent_home_workspace_change_directory_renamed",
+      "value": "Renamed Directory"
+    },
+    {
+      "name": "agent_home_workspace_change_file_singular",
+      "value": "file"
+    },
+    {
+      "name": "agent_home_workspace_change_file_plural",
+      "value": "files"
+    },
+    {
+      "name": "agent_home_workspace_diff_empty",
+      "value": "No diff content available."
+    },
+    {
+      "name": "agent_home_workspace_download",
+      "value": "Download"
+    },
+    {
+      "name": "agent_home_workspace_preview",
+      "value": "Preview"
+    },
+    {
+      "name": "agent_home_workspace_preview_full",
+      "value": "Full Preview"
+    },
+    {
+      "name": "agent_home_workspace_content_preview_title",
+      "value": "Full Content Preview"
+    },
+    {
+      "name": "agent_home_workspace_content_preview_empty",
+      "value": "No file content available."
+    },
+    {
+      "name": "agent_home_workspace_content_preview_file_required",
+      "value": "Select a file to preview."
+    },
+    {
+      "name": "agent_home_workspace_preview_light",
+      "value": "Light"
+    },
+    {
+      "name": "agent_home_workspace_preview_dark",
+      "value": "Dark"
+    },
+    {
+      "name": "agent_home_workspace_copy_path",
+      "value": "Copy Path"
+    },
+    {
+      "name": "agent_home_tool_detail_title",
+      "value": "Tool Call"
+    },
+    {
+      "name": "agent_home_tool_detail_input",
+      "value": "Input"
+    },
+    {
+      "name": "agent_home_tool_detail_output",
+      "value": "Output"
+    },
+    {
+      "name": "agent_home_tool_detail_error",
+      "value": "Error"
+    },
+    {
+      "name": "agent_home_tool_detail_raw",
+      "value": "Raw Event"
+    },
+    {
+      "name": "agent_home_confirm_discard_title",
+      "value": "Discard Changes?"
+    },
+    {
+      "name": "agent_home_confirm_discard_message",
+      "value": "This will discard uncommitted content for the selected files."
+    },
+    {
+      "name": "agent_home_confirm_commit_title",
+      "value": "Commit Changes?"
+    },
+    {
+      "name": "agent_home_confirm_commit_message",
+      "value": "Commit staged changes to the current branch."
+    },
+    {
+      "name": "agent_home_action_cancel",
+      "value": "Cancel"
+    },
+    {
+      "name": "agent_home_action_ok",
+      "value": "OK"
+    },
+    {
+      "name": "agent_home_workspace_requires_session",
+      "value": "Connect a session first"
+    },
+    {
+      "name": "agent_home_workspace_download_ready",
+      "value": "Download Ready"
+    },
+    {
+      "name": "agent_home_workspace_path_copied",
+      "value": "Path copied"
+    },
+    {
+      "name": "agent_home_tool_status_running",
+      "value": "Running"
+    },
+    {
+      "name": "agent_home_tool_status_completed",
+      "value": "Completed"
+    },
+    {
+      "name": "agent_home_tool_status_error",
+      "value": "Error"
+    },
+    {
+      "name": "agent_home_mode_goal",
+      "value": "Goal"
+    },
+    {
+      "name": "agent_home_mode_plan",
+      "value": "Plan"
+    },
+    {
+      "name": "agent_home_request_title",
+      "value": "Input Required"
+    },
+    {
+      "name": "agent_home_plan_title",
+      "value": "Plan"
+    },
+    {
+      "name": "agent_home_plan_progress_title",
+      "value": "Progress"
+    },
+    {
+      "name": "agent_home_plan_reject",
+      "value": "Reject"
+    },
+    {
+      "name": "agent_home_plan_implement",
+      "value": "Implement"
+    },
+    {
+      "name": "agent_home_request_other_placeholder",
+      "value": "Other Response"
+    },
+    {
+      "name": "agent_home_request_dismiss",
+      "value": "Dismiss"
+    },
+    {
+      "name": "agent_home_request_submit",
+      "value": "Submit"
+    },
+    {
+      "name": "agent_home_request_status_pending",
+      "value": "Pending"
+    },
+    {
+      "name": "agent_home_request_status_answered",
+      "value": "Answered"
+    },
+    {
+      "name": "agent_home_request_status_dismissed",
+      "value": "Dismissed"
+    },
+    {
+      "name": "agent_home_plan_status_rejected",
+      "value": "Rejected"
+    },
+    {
+      "name": "agent_home_plan_status_implementing",
+      "value": "Implementing"
+    },
+    {
+      "name": "agent_home_plan_status_implemented",
+      "value": "Implemented"
+    },
+    {
+      "name": "agent_home_context_compacting",
+      "value": "Compacting..."
+    },
+    {
+      "name": "agent_home_status_elapsed",
+      "value": "Elapsed"
+    },
+    {
+      "name": "agent_home_revert_to_message",
+      "value": "Revert Here"
+    },
+    {
+      "name": "agent_home_revert_confirm_title",
+      "value": "Revert Session?"
+    },
+    {
+      "name": "agent_home_revert_confirm_message",
+      "value": "This will revert the current session to the selected message and truncate later context."
+    },
+    {
+      "name": "agent_home_revert_success",
+      "value": "Session revert requested"
+    },
+    {
+      "name": "agent_home_revert_missing_node",
+      "value": "This message has no revertable node"
+    },
+    {
+      "name": "agent_home_quick_add_project",
+      "value": "Add a Project"
+    },
+    {
+      "name": "agent_home_quick_add_project_desc",
+      "value": "Sync a workspace from a provider session"
+    },
+    {
+      "name": "agent_home_quick_import_session",
+      "value": "Import Session"
+    },
+    {
+      "name": "agent_home_quick_import_session_desc",
+      "value": "Bring in recent external CLI sessions"
+    },
+    {
+      "name": "agent_home_quick_setup_providers",
+      "value": "Setup Providers"
+    },
+    {
+      "name": "agent_home_quick_setup_providers_desc",
+      "value": "Configure Claude Code, Codex, and more"
+    },
+    {
+      "name": "agent_home_quick_view_changes",
+      "value": "View Changes"
+    },
+    {
+      "name": "agent_home_quick_view_changes_desc",
+      "value": "Open file changes for the current workspace"
+    },
+    {
+      "name": "agent_home_model_sheet_session_hint",
+      "value": "Adjust only the model, speed, and mode for the current session."
+    },
+    {
+      "name": "agent_home_settings_stage_mode_title",
+      "value": "Mode"
+    },
+    {
+      "name": "agent_home_settings_stage_mode_desc",
+      "value": "Choose the session mode supported by the current provider."
+    },
+    {
+      "name": "agent_home_workspace_loading",
+      "value": "Loading Workspace Content"
+    },
+    {
+      "name": "agent_home_workspace_diff_loading",
+      "value": "Loading Diff"
+    },
+    {
+      "name": "agent_home_stop_reply_requested",
+      "value": "Stop Requested"
+    },
+    {
+      "name": "agent_home_stop_reply_local_only",
+      "value": "This provider does not support remote abort yet. Local waiting has stopped."
+    },
+    {
+      "name": "agent_home_use_provider",
+      "value": "Use This Provider"
+    },
+    {
+      "name": "agent_home_permission_title",
+      "value": "Permission Request"
+    },
+    {
+      "name": "agent_home_permission_allow_once",
+      "value": "Allow Once"
+    },
+    {
+      "name": "agent_home_permission_deny",
+      "value": "Deny"
+    },
+    {
+      "name": "agent_home_permission_edit_placeholder",
+      "value": "Edit input or add a note"
+    },
+    {
+      "name": "agent_home_permission_status_allowed",
+      "value": "Allowed"
+    },
+    {
+      "name": "agent_home_agent_filter_all",
+      "value": "All"
+    },
+    {
+      "name": "agent_home_agent_filter_main",
+      "value": "Main Agent"
+    },
+    {
+      "name": "agent_home_settings_stage_reasoning_title",
+      "value": "Reasoning Effort"
+    },
+    {
+      "name": "agent_home_detail_reasoning",
+      "value": "Reasoning"
+    },
+    {
+      "name": "agent_home_workspace_actions_title",
+      "value": "Workspace Actions"
+    },
+    {
+      "name": "agent_home_session_actions_title",
+      "value": "Session Actions"
+    },
+    {
+      "name": "agent_home_rename_workspace",
+      "value": "Rename Workspace"
+    },
+    {
+      "name": "agent_home_delete_workspace",
+      "value": "Delete Workspace"
+    },
+    {
+      "name": "agent_home_rename_session",
+      "value": "Rename Session"
+    },
+    {
+      "name": "agent_home_delete_session",
+      "value": "Delete Session"
+    },
+    {
+      "name": "agent_home_copy_session_id",
+      "value": "Copy Session ID"
+    },
+    {
+      "name": "agent_home_session_id_copied",
+      "value": "Session ID Copied"
+    },
+    {
+      "name": "agent_home_rename_workspace_title",
+      "value": "Rename Workspace"
+    },
+    {
+      "name": "agent_home_rename_session_title",
+      "value": "Rename Session"
+    },
+    {
+      "name": "agent_home_name_placeholder",
+      "value": "Enter Name"
+    },
+    {
+      "name": "agent_home_save_name",
+      "value": "Save Name"
+    },
+    {
+      "name": "agent_home_confirm_delete_workspace_title",
+      "value": "Delete Workspace?"
+    },
+    {
+      "name": "agent_home_confirm_delete_workspace_message",
+      "value": "This deletes this workspace, local sessions, messages, and cached data. Remote history is not deleted."
+    },
+    {
+      "name": "agent_home_confirm_delete_session_title",
+      "value": "Delete Session?"
+    },
+    {
+      "name": "agent_home_confirm_delete_session_message",
+      "value": "This deletes this session, local messages, and cached data. The remote session is not deleted."
+    },
+    {
+      "name": "agent_home_last_workspace_required",
+      "value": "Keep at Least One Workspace"
+    },
+    {
+      "name": "agent_home_last_session_required",
+      "value": "Keep at Least One Session"
+    },
+    {
+      "name": "agent_home_no_sessions_in_workspace",
+      "value": "No Sessions Yet"
+    },
+    {
+      "name": "agent_home_notification_running_title",
+      "value": "Agent Running"
+    },
+    {
+      "name": "agent_home_notification_running_content",
+      "value": "Working on the current session"
+    },
+    {
+      "name": "agent_home_notification_tool_content",
+      "value": "Running Tool"
+    },
+    {
+      "name": "agent_home_notification_waiting_title",
+      "value": "Agent Needs Input"
+    },
+    {
+      "name": "agent_home_notification_request_content",
+      "value": "A request needs your response"
+    },
+    {
+      "name": "agent_home_notification_permission_content",
+      "value": "A permission request needs your response"
+    },
+    {
+      "name": "agent_home_notification_plan_content",
+      "value": "A plan needs your confirmation"
+    },
+    {
+      "name": "agent_home_notification_completed_title",
+      "value": "Agent Finished"
+    },
+    {
+      "name": "agent_home_notification_completed_content",
+      "value": "The current task is complete"
+    },
+    {
+      "name": "agent_home_notification_interrupted_title",
+      "value": "Agent Interrupted"
+    },
+    {
+      "name": "agent_home_notification_interrupted_content",
+      "value": "The current task was stopped"
+    },
+    {
+      "name": "agent_home_notification_error_title",
+      "value": "Agent Failed"
+    },
+    {
+      "name": "agent_home_notification_error_content",
+      "value": "The current task hit an error"
     }
   ]
 }

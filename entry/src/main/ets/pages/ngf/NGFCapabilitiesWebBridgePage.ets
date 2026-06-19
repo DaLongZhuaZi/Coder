@@ -82,7 +82,7 @@ export struct NGFCapabilitiesWebBridgePage {
       Text($r('app.string.card_web_title'))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor($r('app.color.panel_background'))
+        .fontColor($r('app.color.text_white'))
       Text($r('app.string.card_web_desc'))
         .fontSize(13)
         .lineHeight(20)

@@ -19,6 +19,7 @@ export struct NGFWorkflowVisualizer {
       Text('Workflow Visual Debugger')
         .fontSize(24)
         .fontWeight(FontWeight.Bold)
+        .fontColor($r('app.color.text_primary'))
         .margin({ top: 16 })
 
       List({ space: 8 }) {
@@ -27,7 +28,7 @@ export struct NGFWorkflowVisualizer {
             Row() {
               Text(wfName)
                 .fontSize(16)
-                .fontColor(this.selectedWorkflow === wfName ? Color.Blue : Color.Black)
+                .fontColor(this.selectedWorkflow === wfName ? $r('app.color.button_primary') : $r('app.color.text_body'))
               Blank()
               Button('Run')
                 .onClick(() => {
@@ -37,8 +38,9 @@ export struct NGFWorkflowVisualizer {
             }
             .width('100%')
             .padding(12)
-            .backgroundColor('#F5F5F5')
+            .backgroundColor($r('app.color.panel_background'))
             .borderRadius(8)
+            .border({ width: 1, color: $r('app.color.card_border') })
           }
         }, (item: string) => item)
       }
@@ -50,17 +52,19 @@ export struct NGFWorkflowVisualizer {
       Column({ space: 8 }) {
         Text('Execution Log:')
           .fontWeight(FontWeight.Bold)
+          .fontColor($r('app.color.text_primary'))
         Scroll() {
           Text(this.executionResult)
             .fontSize(14)
             .fontFamily('monospace')
-            .fontColor(this.isExecuting ? Color.Orange : (this.executionResult.includes('FAILED') ? Color.Red : Color.Green))
+            .fontColor(this.isExecuting ? $r('app.color.tag_amber') : (this.executionResult.includes('FAILED') ? $r('app.color.tag_red') : $r('app.color.tag_green')))
         }
         .width('100%')
         .height(150)
-        .backgroundColor('#1E1E1E')
+        .backgroundColor($r('app.color.background_surface'))
         .padding(8)
         .borderRadius(8)
+        .border({ width: 1, color: $r('app.color.card_border') })
       }
       .width('100%')
       .padding({ bottom: 16 })
@@ -68,6 +72,7 @@ export struct NGFWorkflowVisualizer {
     .width('100%')
     .height('100%')
     .padding(16)
+    .backgroundColor($r('app.color.background_primary'))
   }
 
   private runWorkflow(name: string): void {

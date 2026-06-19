@@ -1,4 +1,5 @@
 import { notificationManager } from '@kit.NotificationKit';
+import { wantAgent, WantAgent } from '@kit.AbilityKit';
 import { uiContextManager } from '../../platformOhos/UIContextManager';
 import { ISystemNotificationManager, NGFNotificationRequest, NGFNotificationType } from '../contracts/ISystemNotificationManager';
 import { logger } from '../../utils/Logger';
@@ -74,8 +75,18 @@ class SystemNotificationManagerFacade implements ISystemNotificationManager {
       const req: notificationManager.NotificationRequest = {
         id: request.id,
         content: notificationContent,
-        isOngoing: request.isOngoing
+        isOngoing: request.isOngoing,
+        isAlertOnce: request.isAlertOnce
       };
+      try {
+        const notificationWantAgent: WantAgent | null = await this.buildDefaultWantAgent();
+        if (notificationWantAgent !== null) {
+          req.wantAgent = notificationWantAgent;
+          req.tapDismissed = !request.isOngoing;
+        }
+      } catch (e) {
+        logger.warn(TAG, '创建通知跳转失败: ' + e);
+      }
 
       if (request.type === NGFNotificationType.PROGRESS) {
         let defaultData: Record<string, Object> = {
@@ -103,6 +114,25 @@ class SystemNotificationManagerFacade implements ISystemNotificationManager {
     } catch (e) {
       logger.error(TAG, '发送通知失败: ' + e);
     }
+  }
+
+  private async buildDefaultWantAgent(): Promise<WantAgent | null> {
+    const context = uiContextManager.getFullAbilityContext();
+    if (!context) {
+      return null;
+    }
+    const wantAgentInfo: wantAgent.WantAgentInfo = {
+      wants: [
+        {
+          bundleName: context.abilityInfo.bundleName,
+          abilityName: context.abilityInfo.name
+        }
+      ],
+      actionType: wantAgent.OperationType.START_ABILITY,
+      requestCode: 0,
+      wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
+    };
+    return wantAgent.getWantAgent(wantAgentInfo);
   }
 
   async cancel(id: number): Promise<void> {

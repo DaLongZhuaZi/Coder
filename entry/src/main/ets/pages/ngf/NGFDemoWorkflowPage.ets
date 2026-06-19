@@ -136,7 +136,7 @@ export struct NGFDemoWorkflowPage {
       Text($r('app.string.ui_str_2316'))
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor($r('app.color.panel_background'))
+        .fontColor($r('app.color.text_white'))
       Text($r('app.string.ui_str_2317'))
         .fontSize(13)
         .lineHeight(20)
@@ -171,7 +171,8 @@ export struct NGFDemoWorkflowPage {
           .height(40)
           .fontSize(14)
           .borderRadius(12)
-          .backgroundColor('#FF4F46E5')
+          .backgroundColor($r('app.color.tag_indigo'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             this.handleRegisterWorkflow();
           })
@@ -181,6 +182,7 @@ export struct NGFDemoWorkflowPage {
           .fontSize(14)
           .borderRadius(12)
           .backgroundColor($r('app.color.tag_purple'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             void this.handleExecuteWorkflow();
           })
@@ -190,7 +192,7 @@ export struct NGFDemoWorkflowPage {
       if (this.registeredName.length > 0) {
         Text($r('app.string.ui_str_2322', this.registeredName))
           .fontSize(13)
-          .fontColor('#FF4F46E5')
+          .fontColor($r('app.color.tag_indigo'))
           .fontWeight(FontWeight.Medium)
       }
 
@@ -274,6 +276,7 @@ export struct NGFDemoWorkflowPage {
           .fontSize(13)
           .borderRadius(10)
           .backgroundColor($r('app.color.tag_green'))
+          .fontColor($r('app.color.component_control_bg'))
           .onClick((): void => {
             this.handleSaveState();
           })
@@ -283,6 +286,7 @@ export struct NGFDemoWorkflowPage {
           .fontSize(13)
           .borderRadius(10)
           .backgroundColor($r('app.color.button_primary'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             this.handleLoadState();
           })
@@ -292,6 +296,7 @@ export struct NGFDemoWorkflowPage {
           .fontSize(13)
           .borderRadius(10)
           .backgroundColor($r('app.color.tag_purple'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             this.handleListSaved();
           })
@@ -301,6 +306,7 @@ export struct NGFDemoWorkflowPage {
           .fontSize(13)
           .borderRadius(10)
           .backgroundColor($r('app.color.tag_red'))
+          .fontColor($r('app.color.panel_background'))
           .onClick((): void => {
             ngfWorkflowPersistenceFacade.clearAll();
             this.savedStates = [];
@@ -312,7 +318,7 @@ export struct NGFDemoWorkflowPage {
       if ((typeof this.statusMessage === "string" ? this.statusMessage : '').length > 0) {
         Text(this.statusMessage)
           .fontSize(12)
-          .fontColor('#FF4F46E5')
+          .fontColor($r('app.color.tag_indigo'))
           .width('100%')
       }
 

@@ -20,4 +20,5 @@ export { RelationalStoreFacade, ngfRelationalStoreFacade } from './facades/Relat
 export { SyncManagerFacade, ngfSyncManagerFacade } from './facades/SyncManagerFacade';
 export { NGFDataIntegrationFacade, ngfDataIntegrationFacade } from './facades/NGFDataIntegrationFacade';
 export { ngfEncryptedSettingsStore } from './facades/EncryptedSettingsStoreFacade';
+export { NGFRdbCell, NGFRdbConfig, NGFRdbRow } from './rdb/contracts/IRelationalStore';
 export { ngfRdbManager } from './rdb/facades/RdbManagerFacade';
