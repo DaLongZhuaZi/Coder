@@ -621,10 +621,6 @@
       "value": "isViewportLandscape=%s, 宽=%s, 高=%s, "
     },
     {
-      "name": "ngf_auto_str_1007",
-      "value": "位置服务由系统提供"
-    },
-    {
       "name": "ngf_auto_str_1008",
       "value": "蓝牙由系统支持"
     },
@@ -4914,11 +4910,11 @@
     },
     {
       "name": "ngf_card_hardware_title",
-      "value": "硬件与定位服务"
+      "value": "硬件与传感服务"
     },
     {
       "name": "ngf_card_hardware_desc",
-      "value": "高精度 GPS 探测与加速度计 (摇一摇) 传感器读取"
+      "value": "加速度计 (摇一摇) 等设备传感能力验证"
     },
     {
       "name": "ngf_card_media_title",
@@ -4959,10 +4955,6 @@
     {
       "name": "ngf_btn_auth_fingerprint",
       "value": "拉起身份验证"
-    },
-    {
-      "name": "ngf_btn_hardware_location",
-      "value": "获取当前经纬度"
     },
     {
       "name": "ngf_btn_hardware_sensor",

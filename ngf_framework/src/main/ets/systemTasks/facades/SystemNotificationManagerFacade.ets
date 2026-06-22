@@ -78,14 +78,10 @@ class SystemNotificationManagerFacade implements ISystemNotificationManager {
         isOngoing: request.isOngoing,
         isAlertOnce: request.isAlertOnce
       };
-      try {
-        const notificationWantAgent: WantAgent | null = await this.buildDefaultWantAgent();
-        if (notificationWantAgent !== null) {
-          req.wantAgent = notificationWantAgent;
-          req.tapDismissed = !request.isOngoing;
-        }
-      } catch (e) {
-        logger.warn(TAG, '创建通知跳转失败: ' + e);
+      const notificationWantAgent: WantAgent | null = await this.buildDefaultWantAgent();
+      if (notificationWantAgent !== null) {
+        req.wantAgent = notificationWantAgent;
+        req.tapDismissed = !request.isOngoing;
       }
 
       if (request.type === NGFNotificationType.PROGRESS) {
@@ -132,7 +128,12 @@ class SystemNotificationManagerFacade implements ISystemNotificationManager {
       requestCode: 0,
       wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
     };
-    return wantAgent.getWantAgent(wantAgentInfo);
+    try {
+      return await wantAgent.getWantAgent(wantAgentInfo);
+    } catch (e) {
+      logger.warn(TAG, '创建通知跳转失败: ' + e);
+      return null;
+    }
   }
 
   async cancel(id: number): Promise<void> {

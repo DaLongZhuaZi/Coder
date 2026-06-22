@@ -1,3 +1,5 @@
+const AGENT_BRIDGE_NESTED_SCAN_LIMIT: number = 120000;
+
 export class AgentBridgeConnectionStatus {
   static readonly DISCONNECTED: string = 'disconnected';
   static readonly CONNECTING: string = 'connecting';
@@ -16,11 +18,13 @@ export class AgentBridgeProviderId {
 }
 
 export class AgentBridgeRequestType {
+  static readonly PING: string = 'bridge.ping';
   static readonly CAPABILITIES_GET: string = 'capabilities.get';
   static readonly SESSION_CREATE: string = 'session.create';
   static readonly SESSION_LIST: string = 'session.list';
   static readonly SESSION_MESSAGES: string = 'session.messages';
   static readonly SESSION_REVERT: string = 'session.revert';
+  static readonly SESSION_ABORT: string = 'session.abort';
   static readonly MESSAGE_SEND: string = 'message.send';
   static readonly PREVIEW_GET: string = 'preview.get';
   static readonly PERMISSION_RESPOND: string = 'permission.respond';
@@ -32,6 +36,7 @@ export class AgentBridgeRequestType {
   static readonly WORKSPACE_FILES_LIST: string = 'workspace.files.list';
   static readonly WORKSPACE_FILE_GET: string = 'workspace.file.get';
   static readonly WORKSPACE_FILE_DOWNLOAD: string = 'workspace.file.download';
+  static readonly ATTACHMENT_FILE_DOWNLOAD: string = 'attachment.file.download';
   static readonly WORKSPACE_GIT_STAGE: string = 'workspace.git.stage';
   static readonly WORKSPACE_GIT_UNSTAGE: string = 'workspace.git.unstage';
   static readonly WORKSPACE_GIT_DISCARD: string = 'workspace.git.discard';
@@ -78,10 +83,12 @@ export class AgentBridgeTimelineKind {
 export class AgentBridgeConnectionConfig {
   endpoint: string;
   token: string;
+  clientId: string;
 
-  constructor(endpoint: string, token: string) {
+  constructor(endpoint: string, token: string, clientId: string = 'harmony-coder-app') {
     this.endpoint = endpoint;
     this.token = token;
+    this.clientId = clientId;
   }
 }
 
@@ -135,13 +142,15 @@ export class AgentBridgeInteractionModeOption {
   description: string;
   isDefault: boolean;
   agent: string;
+  category: string;
 
-  constructor(id: string, displayName: string, description: string, isDefault: boolean, agent: string = '') {
+  constructor(id: string, displayName: string, description: string, isDefault: boolean, agent: string = '', category: string = 'run') {
     this.id = id;
     this.displayName = displayName;
     this.description = description;
     this.isDefault = isDefault;
     this.agent = agent;
+    this.category = category;
   }
 }
 
@@ -358,7 +367,6 @@ export class AgentBridgeImportedToolCall {
 export class AgentBridgeDefaultOptions {
   static buildProviders(): Array<AgentBridgeProviderOption> {
     const providers: Array<AgentBridgeProviderOption> = [];
-    providers.push(AgentBridgeDefaultOptions.buildMockProvider());
     providers.push(AgentBridgeDefaultOptions.buildOpenCodeProvider());
     providers.push(AgentBridgeDefaultOptions.buildDevEcoProvider());
     providers.push(AgentBridgeDefaultOptions.buildMimoProvider());
@@ -366,32 +374,6 @@ export class AgentBridgeDefaultOptions {
     providers.push(AgentBridgeDefaultOptions.buildClaudeProvider());
     providers.push(AgentBridgeDefaultOptions.buildAntigravityProvider());
     return providers;
-  }
-
-  private static buildMockProvider(): AgentBridgeProviderOption {
-    const models: Array<AgentBridgeModelOption> = [];
-    models.push(new AgentBridgeModelOption('mock-fast', 'Mock Fast', 'mock', true, 32000));
-    models.push(new AgentBridgeModelOption('mock-deep', 'Mock Deep', 'mock', false, 128000));
-    return new AgentBridgeProviderOption(
-      AgentBridgeProviderId.MOCK,
-      'Mock Agent',
-      'available',
-      'Local protocol test provider.',
-      '',
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      true,
-      models,
-      AgentBridgeDefaultOptions.buildDefaultSpeedModes(),
-      AgentBridgeDefaultOptions.buildDefaultReasoningModes(),
-      AgentBridgeDefaultOptions.buildDefaultInteractionModes(),
-      AgentBridgeDefaultOptions.buildMockTools()
-    );
   }
 
   private static buildOpenCodeProvider(): AgentBridgeProviderOption {
@@ -517,7 +499,7 @@ export class AgentBridgeDefaultOptions {
       models,
       AgentBridgeDefaultOptions.buildOpenCodeSpeedModes('Claude Code'),
       AgentBridgeDefaultOptions.buildDefaultReasoningModes(),
-      AgentBridgeDefaultOptions.buildCodexInteractionModes(),
+      AgentBridgeDefaultOptions.buildDefaultInteractionModes(),
       AgentBridgeDefaultOptions.buildCliTools('claude', 'Claude Print')
     );
   }
@@ -585,13 +567,17 @@ export class AgentBridgeDefaultOptions {
   }
 
   static buildDefaultInteractionModes(): Array<AgentBridgeInteractionModeOption> {
-    return AgentBridgeDefaultOptions.buildCodexInteractionModes();
+    const modes: Array<AgentBridgeInteractionModeOption> = [];
+    modes.push(new AgentBridgeInteractionModeOption('goal', 'Goal', 'Run the prompt as an implementation request.', true, '', 'run'));
+    modes.push(new AgentBridgeInteractionModeOption('plan', 'Plan', 'Draft a plan first and wait for approval.', false, '', 'run'));
+    return modes;
   }
 
   static buildCodexInteractionModes(): Array<AgentBridgeInteractionModeOption> {
-    const modes: Array<AgentBridgeInteractionModeOption> = [];
-    modes.push(new AgentBridgeInteractionModeOption('goal', 'Goal', 'Run the prompt as an implementation request.', true, ''));
-    modes.push(new AgentBridgeInteractionModeOption('plan', 'Plan', 'Draft a plan first and wait for approval.', false, ''));
+    const modes = AgentBridgeDefaultOptions.buildDefaultInteractionModes();
+    modes.push(new AgentBridgeInteractionModeOption('codex-permissions-default', 'Default permissions', 'Use the Codex configured approval and sandbox defaults.', true, '', 'approval'));
+    modes.push(new AgentBridgeInteractionModeOption('codex-permissions-auto-review', 'Auto-review', 'Use workspace-write sandboxing and let Codex request approvals when needed.', false, '', 'approval'));
+    modes.push(new AgentBridgeInteractionModeOption('codex-permissions-full-access', 'Full access', 'Run Codex with danger-full-access sandboxing and no approval prompts.', false, '', 'approval'));
     return modes;
   }
 
@@ -600,13 +586,6 @@ export class AgentBridgeDefaultOptions {
     modes.push(new AgentBridgeInteractionModeOption('build', 'Build', 'Use the OpenCode build agent for implementation work.', true, 'build'));
     modes.push(new AgentBridgeInteractionModeOption('plan', 'Plan', 'Use the OpenCode plan agent before implementation.', false, 'plan'));
     return modes;
-  }
-
-  private static buildMockTools(): Array<AgentBridgeToolOption> {
-    const tools: Array<AgentBridgeToolOption> = [];
-    tools.push(new AgentBridgeToolOption('mock.context', 'Context Loader', 'Loads simulated workspace context.', 'read'));
-    tools.push(new AgentBridgeToolOption('mock.preview', 'Preview Reader', 'Returns simulated file preview content.', 'read'));
-    return tools;
   }
 
   private static buildOpenCodeTools(): Array<AgentBridgeToolOption> {
@@ -646,6 +625,31 @@ export class AgentBridgeCreateSessionPayload {
   }
 }
 
+export class AgentBridgeContextItem {
+  kind: string;
+  path: string;
+  uri: string;
+  title: string;
+  content: string;
+  mediaType: string;
+
+  constructor(
+    kind: string,
+    path: string,
+    uri: string,
+    title: string,
+    content: string = '',
+    mediaType: string = ''
+  ) {
+    this.kind = kind;
+    this.path = path;
+    this.uri = uri;
+    this.title = title;
+    this.content = content;
+    this.mediaType = mediaType;
+  }
+}
+
 export class AgentBridgeSendMessagePayload {
   sessionId: string;
   text: string;
@@ -655,6 +659,7 @@ export class AgentBridgeSendMessagePayload {
   interactionMode: string;
   interactionModes: Array<string>;
   agent: string;
+  contextItems: Array<AgentBridgeContextItem>;
 
   constructor(
     sessionId: string,
@@ -664,7 +669,8 @@ export class AgentBridgeSendMessagePayload {
     reasoningMode: string,
     interactionMode: string,
     interactionModes: Array<string>,
-    agent: string
+    agent: string,
+    contextItems: Array<AgentBridgeContextItem> = []
   ) {
     this.sessionId = sessionId;
     this.text = text;
@@ -674,6 +680,7 @@ export class AgentBridgeSendMessagePayload {
     this.interactionMode = interactionMode;
     this.interactionModes = interactionModes;
     this.agent = agent;
+    this.contextItems = contextItems;
   }
 }
 
@@ -684,6 +691,18 @@ export class AgentBridgeSessionRevertPayload {
   constructor(sessionId: string, messageId: string) {
     this.sessionId = sessionId;
     this.messageId = messageId;
+  }
+}
+
+export class AgentBridgeSessionAbortPayload {
+  providerId: string;
+  sessionId: string;
+  remoteSessionId: string;
+
+  constructor(providerId: string, sessionId: string, remoteSessionId: string) {
+    this.providerId = providerId;
+    this.sessionId = sessionId;
+    this.remoteSessionId = remoteSessionId;
   }
 }
 
@@ -812,6 +831,18 @@ export class AgentBridgeWorkspacePathPayload {
   }
 }
 
+export class AgentBridgeAttachmentDownloadPayload {
+  sessionId: string;
+  path: string;
+  kind: string;
+
+  constructor(sessionId: string, path: string, kind: string) {
+    this.sessionId = sessionId;
+    this.path = path;
+    this.kind = kind;
+  }
+}
+
 export class AgentBridgeWorkspaceGitPathsPayload {
   sessionId: string;
   workspaceId: string;
@@ -909,95 +940,102 @@ export class AgentBridgeParsedMessage {
 export class AgentBridgeIncomingParser {
   static parse(source: string): AgentBridgeParsedMessage {
     const parsed = new AgentBridgeParsedMessage();
-    const payloadObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'payload');
-    parsed.envelopeType = AgentBridgeIncomingParser.extractStringProperty(source, 'type');
+    const propertyIndex = AgentBridgeIncomingParser.collectPropertyValueStarts(source);
+    parsed.envelopeType = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'type');
     if (parsed.envelopeType.length === 0) {
       parsed.envelopeType = AgentBridgeEnvelopeType.RAW;
     }
-    parsed.requestId = AgentBridgeIncomingParser.extractStringProperty(source, 'id');
-    parsed.eventType = AgentBridgeIncomingParser.extractStringProperty(source, 'event');
-    parsed.sessionId = AgentBridgeIncomingParser.extractStringProperty(source, 'sessionId');
-    parsed.role = AgentBridgeIncomingParser.extractStringProperty(source, 'role');
+    parsed.requestId = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'id');
+    parsed.eventType = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'event');
+    parsed.sessionId = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'sessionId');
+    const payloadObject = AgentBridgeIncomingParser.shouldUseNestedObjectScan(source)
+      ? AgentBridgeIncomingParser.extractObjectProperty(source, 'payload')
+      : '';
+    parsed.role = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'role');
     parsed.text = AgentBridgeIncomingParser.cleanJsonText(
-      AgentBridgeIncomingParser.extractStringProperty(source, 'text')
+      AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'text')
     );
     parsed.reasoningText = AgentBridgeIncomingParser.cleanJsonText(
-      AgentBridgeIncomingParser.extractStringProperty(source, 'reasoningText')
+      AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'reasoningText')
     );
     parsed.contentKind = AgentBridgeIncomingParser.extractContentKind(source);
     parsed.messageId = AgentBridgeIncomingParser.extractMessageId(source);
     parsed.partId = AgentBridgeIncomingParser.extractPartId(source);
-    parsed.agentName = AgentBridgeIncomingParser.extractAgentName(source);
-    parsed.toolCallId = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'toolCallId');
+    parsed.agentName = AgentBridgeIncomingParser.extractIndexedAgentNameValue(source, propertyIndex);
+    parsed.toolCallId = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'toolCallId');
     if (parsed.toolCallId.length === 0) {
-      parsed.toolCallId = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'tool_call_id');
+      parsed.toolCallId = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'tool_call_id');
     }
     if (parsed.toolCallId.length === 0) {
-      parsed.toolCallId = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'toolUseId');
+      parsed.toolCallId = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'toolUseId');
     }
     if (parsed.toolCallId.length === 0) {
-      parsed.toolCallId = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'tool_use_id');
+      parsed.toolCallId = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'tool_use_id');
     }
     if (parsed.toolCallId.length === 0) {
-      parsed.toolCallId = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'call_id');
+      parsed.toolCallId = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'call_id');
     }
     if (parsed.toolCallId.length === 0) {
-      parsed.toolCallId = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'callID');
+      parsed.toolCallId = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'callID');
     }
-    parsed.toolName = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'name');
+    parsed.toolName = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'name');
     if (parsed.toolName.length === 0) {
-      parsed.toolName = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'toolName');
+      parsed.toolName = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'toolName');
     }
-    parsed.toolStatus = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'status');
+    parsed.toolStatus = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'status');
     parsed.toolInputText = AgentBridgeIncomingParser.cleanJsonText(
-      AgentBridgeIncomingParser.extractPayloadFirstPairStringProperty(payloadObject, source, 'inputText', 'input')
+      AgentBridgeIncomingParser.extractIndexedPayloadFirstPairStringProperty(payloadObject, source, propertyIndex, 'inputText', 'input')
     );
     parsed.toolOutputText = AgentBridgeIncomingParser.cleanJsonText(
-      AgentBridgeIncomingParser.extractPayloadFirstPairStringProperty(payloadObject, source, 'outputText', 'output')
+      AgentBridgeIncomingParser.extractIndexedPayloadFirstPairStringProperty(payloadObject, source, propertyIndex, 'outputText', 'output')
     );
     parsed.toolErrorText = AgentBridgeIncomingParser.cleanJsonText(
-      AgentBridgeIncomingParser.extractPayloadFirstPairStringProperty(payloadObject, source, 'errorText', 'error')
+      AgentBridgeIncomingParser.extractIndexedPayloadFirstPairStringProperty(payloadObject, source, propertyIndex, 'errorText', 'error')
     );
     parsed.rawJson = AgentBridgeIncomingParser.cleanJsonText(
-      AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'rawJson')
+      AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'rawJson')
     );
-    const previewObject = AgentBridgeIncomingParser.extractObjectProperty(payloadObject, 'preview');
-    parsed.previewPath = AgentBridgeIncomingParser.extractStringProperty(previewObject, 'path');
-    parsed.previewMediaType = AgentBridgeIncomingParser.extractStringProperty(previewObject, 'mediaType');
+    const previewObject = payloadObject.length > 0
+      ? AgentBridgeIncomingParser.extractObjectProperty(payloadObject, 'preview')
+      : (AgentBridgeIncomingParser.shouldUseNestedObjectScan(source)
+        ? AgentBridgeIncomingParser.extractObjectProperty(source, 'preview')
+        : '');
+    parsed.previewPath = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(previewObject, source, propertyIndex, 'path');
+    parsed.previewMediaType = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(previewObject, source, propertyIndex, 'mediaType');
     parsed.previewContent = AgentBridgeIncomingParser.cleanJsonText(
-      AgentBridgeIncomingParser.extractStringProperty(previewObject, 'content')
+      AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(previewObject, source, propertyIndex, 'content')
     );
-    parsed.downloadPath = AgentBridgeIncomingParser.extractStringProperty(source, 'downloadPath');
-    parsed.downloadToken = AgentBridgeIncomingParser.extractStringProperty(source, 'token');
-    parsed.downloadFilePath = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'path');
-    parsed.fileName = AgentBridgeIncomingParser.extractStringProperty(source, 'fileName');
-    parsed.sizeBytes = AgentBridgeIncomingParser.extractNumberProperty(source, 'sizeBytes', 0);
+    parsed.downloadPath = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'downloadPath');
+    parsed.downloadToken = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'token');
+    parsed.downloadFilePath = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'path');
+    parsed.fileName = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'fileName');
+    parsed.sizeBytes = AgentBridgeIncomingParser.extractIndexedNumberProperty(source, propertyIndex, 'sizeBytes', 0);
     if (parsed.requestId.length === 0) {
-      parsed.requestId = AgentBridgeIncomingParser.extractStringProperty(source, 'requestId');
+      parsed.requestId = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'requestId');
     }
-    parsed.requestKind = AgentBridgeIncomingParser.extractStringProperty(source, 'kind');
-    parsed.requestTitle = AgentBridgeIncomingParser.extractStringProperty(source, 'title');
+    parsed.requestKind = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'kind');
+    parsed.requestTitle = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'title');
     parsed.requestPrompt = AgentBridgeIncomingParser.cleanJsonText(
-      AgentBridgeIncomingParser.extractStringProperty(source, 'prompt')
+      AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'prompt')
     );
-    parsed.requestStatus = AgentBridgeIncomingParser.extractStringProperty(source, 'status');
+    parsed.requestStatus = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'status');
     parsed.requestAnswer = AgentBridgeIncomingParser.cleanJsonText(
-      AgentBridgeIncomingParser.extractStringProperty(source, 'answer')
+      AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'answer')
     );
-    parsed.requestOptionId = AgentBridgeIncomingParser.extractStringProperty(source, 'optionId');
-    parsed.planId = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'planId');
+    parsed.requestOptionId = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'optionId');
+    parsed.planId = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'planId');
     if (parsed.planId.length === 0 && payloadObject.length > 0) {
       parsed.planId = AgentBridgeIncomingParser.extractStringProperty(payloadObject, 'id');
     }
-    parsed.planTitle = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'title');
+    parsed.planTitle = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'title');
     parsed.planContent = AgentBridgeIncomingParser.cleanJsonText(
-      AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'content')
+      AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'content')
     );
-    parsed.planStatus = AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'status');
+    parsed.planStatus = AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'status');
     parsed.planMessage = AgentBridgeIncomingParser.cleanJsonText(
-      AgentBridgeIncomingParser.extractPayloadFirstStringProperty(payloadObject, source, 'message')
+      AgentBridgeIncomingParser.extractIndexedPayloadFirstStringProperty(payloadObject, source, propertyIndex, 'message')
     );
-    parsed.errorMessage = AgentBridgeIncomingParser.extractStringProperty(source, 'message');
+    parsed.errorMessage = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'message');
     parsed.isOk = source.indexOf('"ok":false') < 0;
     return parsed;
   }
@@ -1006,7 +1044,10 @@ export class AgentBridgeIncomingParser {
     const objects = AgentBridgeIncomingParser.extractObjectArray(source, 'providers');
     const providers: Array<AgentBridgeProviderOption> = [];
     for (let index = 0; index < objects.length; index++) {
-      providers.push(AgentBridgeIncomingParser.parseProviderObject(objects[index]));
+      const provider = AgentBridgeIncomingParser.parseProviderObject(objects[index]);
+      if (provider.id !== AgentBridgeProviderId.MOCK) {
+        providers.push(provider);
+      }
     }
     if (providers.length === 0) {
       return AgentBridgeDefaultOptions.buildProviders();
@@ -1093,7 +1134,7 @@ export class AgentBridgeIncomingParser {
     ) {
       return AgentBridgeDefaultOptions.buildOpenCodeInteractionModes();
     }
-    if (providerId === AgentBridgeProviderId.CODEX || providerId === AgentBridgeProviderId.CLAUDE) {
+    if (providerId === AgentBridgeProviderId.CODEX) {
       return AgentBridgeDefaultOptions.buildCodexInteractionModes();
     }
     return AgentBridgeDefaultOptions.buildDefaultInteractionModes();
@@ -1168,12 +1209,14 @@ export class AgentBridgeIncomingParser {
         continue;
       }
       const modeId = id.length > 0 ? id : displayName;
+      const category = AgentBridgeIncomingParser.extractStringProperty(item, 'category');
       modes.push(new AgentBridgeInteractionModeOption(
         modeId,
         displayName.length > 0 ? displayName : modeId,
         AgentBridgeIncomingParser.extractStringProperty(item, 'description'),
         AgentBridgeIncomingParser.extractBooleanProperty(item, 'isDefault'),
-        AgentBridgeIncomingParser.extractStringProperty(item, 'agent')
+        AgentBridgeIncomingParser.extractStringProperty(item, 'agent'),
+        category.length > 0 ? category : 'run'
       ));
     }
     return modes;
@@ -1201,7 +1244,7 @@ export class AgentBridgeIncomingParser {
       AgentBridgeIncomingParser.extractStringProperty(source, 'sessionId'),
       AgentBridgeIncomingParser.extractStringProperty(source, 'remoteSessionId'),
       AgentBridgeIncomingParser.extractStringProperty(source, 'providerId'),
-      AgentBridgeIncomingParser.extractStringProperty(source, 'title'),
+      AgentBridgeIncomingParser.extractRemoteSessionTitle(source),
       AgentBridgeIncomingParser.extractStringProperty(source, 'workspacePath'),
       AgentBridgeIncomingParser.extractStringProperty(source, 'workspaceTitle'),
       AgentBridgeIncomingParser.extractStringProperty(source, 'branchName'),
@@ -1213,6 +1256,26 @@ export class AgentBridgeIncomingParser {
       AgentBridgeIncomingParser.extractNumberProperty(source, 'messageCount', 0),
       AgentBridgeIncomingParser.extractNumberProperty(source, 'updatedAt', 0)
     );
+  }
+
+  private static extractRemoteSessionTitle(source: string): string {
+    let title = AgentBridgeIncomingParser.extractFirstStringProperty(source, 'title', 'displayTitle');
+    if (title.length === 0) {
+      title = AgentBridgeIncomingParser.extractFirstStringProperty(source, 'threadName', 'thread_name');
+    }
+    if (title.length === 0) {
+      title = AgentBridgeIncomingParser.extractFirstStringProperty(source, 'conversationTitle', 'conversation_title');
+    }
+    if (title.length === 0) {
+      title = AgentBridgeIncomingParser.extractFirstStringProperty(source, 'name', 'summary');
+    }
+    if (title.length === 0) {
+      title = AgentBridgeIncomingParser.extractFirstStringProperty(source, 'initialPrompt', 'prompt');
+    }
+    if (title.length === 0) {
+      title = AgentBridgeIncomingParser.extractFirstStringProperty(source, 'firstMessage', 'message');
+    }
+    return AgentBridgeIncomingParser.cleanJsonText(title).trim();
   }
 
   private static parseImportedMessageObject(source: string): AgentBridgeImportedMessage {
@@ -1332,6 +1395,10 @@ export class AgentBridgeIncomingParser {
   }
 
   private static extractMessageId(source: string): string {
+    const directMessageId = AgentBridgeIncomingParser.extractFirstStringProperty(source, 'messageID', 'messageId');
+    if (directMessageId.length > 0) {
+      return directMessageId;
+    }
     const partObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'part');
     const partMessageId = AgentBridgeIncomingParser.extractFirstStringProperty(partObject, 'messageID', 'messageId');
     if (partMessageId.length > 0) {
@@ -1358,10 +1425,14 @@ export class AgentBridgeIncomingParser {
       return infoMessageIdFallback;
     }
 
-    return AgentBridgeIncomingParser.extractFirstStringProperty(source, 'messageID', 'messageId');
+    return '';
   }
 
   private static extractPartId(source: string): string {
+    const directPartId = AgentBridgeIncomingParser.extractStringProperty(source, 'partId');
+    if (directPartId.length > 0) {
+      return directPartId;
+    }
     const partObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'part');
     if (partObject.length === 0) {
       return '';
@@ -1393,11 +1464,102 @@ export class AgentBridgeIncomingParser {
     return AgentBridgeIncomingParser.extractFirstStringProperty(source, firstKey, secondKey);
   }
 
+  private static extractIndexedPayloadFirstStringProperty(
+    payload: string,
+    source: string,
+    propertyIndex: Map<string, number>,
+    key: string
+  ): string {
+    const payloadValue = AgentBridgeIncomingParser.extractStringProperty(payload, key);
+    if (payloadValue.length > 0) {
+      return payloadValue;
+    }
+    return AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, key);
+  }
+
+  private static extractIndexedPayloadFirstPairStringProperty(
+    payload: string,
+    source: string,
+    propertyIndex: Map<string, number>,
+    firstKey: string,
+    secondKey: string
+  ): string {
+    const payloadValue = AgentBridgeIncomingParser.extractFirstStringProperty(payload, firstKey, secondKey);
+    if (payloadValue.length > 0) {
+      return payloadValue;
+    }
+    const firstValue = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, firstKey);
+    if (firstValue.length > 0) {
+      return firstValue;
+    }
+    return AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, secondKey);
+  }
+
+  private static extractIndexedStringProperty(source: string, propertyIndex: Map<string, number>, key: string): string {
+    const valueStart = AgentBridgeIncomingParser.indexedPropertyValueStart(propertyIndex, key);
+    if (valueStart < 0 || valueStart >= source.length || source.charAt(valueStart) !== '"') {
+      return '';
+    }
+    return AgentBridgeIncomingParser.extractStringValueAt(source, valueStart);
+  }
+
+  private static extractIndexedNumberProperty(
+    source: string,
+    propertyIndex: Map<string, number>,
+    key: string,
+    fallbackValue: number
+  ): number {
+    const valueStart = AgentBridgeIncomingParser.indexedPropertyValueStart(propertyIndex, key);
+    if (valueStart < 0) {
+      return fallbackValue;
+    }
+    return AgentBridgeIncomingParser.extractNumberValueAt(source, valueStart, fallbackValue);
+  }
+
+  private static extractIndexedAgentNameValue(source: string, propertyIndex: Map<string, number>): string {
+    const directAgent = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'agent');
+    if (directAgent.length > 0) {
+      return directAgent;
+    }
+    const agentName = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'agentName');
+    if (agentName.length > 0) {
+      return agentName;
+    }
+    const subagent = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'subagent');
+    if (subagent.length > 0) {
+      return subagent;
+    }
+    const subAgent = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'subAgent');
+    if (subAgent.length > 0) {
+      return subAgent;
+    }
+    const agentId = AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'agentId');
+    if (agentId.length > 0) {
+      return agentId;
+    }
+    return AgentBridgeIncomingParser.extractIndexedStringProperty(source, propertyIndex, 'agentID');
+  }
+
+  private static indexedPropertyValueStart(propertyIndex: Map<string, number>, key: string): number {
+    if (!propertyIndex.has(key)) {
+      return -1;
+    }
+    const value = propertyIndex.get(key);
+    if (value === undefined) {
+      return -1;
+    }
+    return value;
+  }
+
   static extractStringProperty(source: string, key: string): string {
     const valueStart = AgentBridgeIncomingParser.findPropertyValueStart(source, key);
     if (valueStart < 0 || valueStart >= source.length || source.charAt(valueStart) !== '"') {
       return '';
     }
+    return AgentBridgeIncomingParser.extractStringValueAt(source, valueStart);
+  }
+
+  private static extractStringValueAt(source: string, valueStart: number): string {
     const contentStart = valueStart + 1;
     let valueEnd = contentStart;
     let isEscaped = false;
@@ -1433,6 +1595,10 @@ export class AgentBridgeIncomingParser {
     if (valueStart < 0) {
       return fallbackValue;
     }
+    return AgentBridgeIncomingParser.extractNumberValueAt(source, valueStart, fallbackValue);
+  }
+
+  private static extractNumberValueAt(source: string, valueStart: number, fallbackValue: number): number {
     let valueEnd = valueStart;
     while (valueEnd < source.length) {
       const current = source.charAt(valueEnd);
@@ -1469,6 +1635,56 @@ export class AgentBridgeIncomingParser {
       return '';
     }
     return AgentBridgeIncomingParser.scanObject(source, objectStart);
+  }
+
+  static shouldUseNestedObjectScan(source: string): boolean {
+    return source.length <= AGENT_BRIDGE_NESTED_SCAN_LIMIT;
+  }
+
+  private static collectPropertyValueStarts(source: string): Map<string, number> {
+    const positions: Map<string, number> = new Map<string, number>();
+    let index = 0;
+    let isEscaped = false;
+    let inString = false;
+    let stringStart = -1;
+    while (index < source.length) {
+      const current = source.charAt(index);
+      if (inString) {
+        if (current === '\\' && !isEscaped) {
+          isEscaped = true;
+          index = index + 1;
+          continue;
+        }
+        if (current === '"' && !isEscaped) {
+          const key = source.substring(stringStart + 1, index);
+          let valueStart = index + 1;
+          while (valueStart < source.length && AgentBridgeIncomingParser.isJsonWhitespace(source.charAt(valueStart))) {
+            valueStart = valueStart + 1;
+          }
+          if (valueStart < source.length && source.charAt(valueStart) === ':') {
+            valueStart = valueStart + 1;
+            while (valueStart < source.length && AgentBridgeIncomingParser.isJsonWhitespace(source.charAt(valueStart))) {
+              valueStart = valueStart + 1;
+            }
+            if (!positions.has(key)) {
+              positions.set(key, valueStart);
+            }
+          }
+          inString = false;
+          stringStart = -1;
+        }
+        isEscaped = false;
+        index = index + 1;
+        continue;
+      }
+      if (current === '"') {
+        inString = true;
+        isEscaped = false;
+        stringStart = index;
+      }
+      index = index + 1;
+    }
+    return positions;
   }
 
   private static findPropertyValueStart(source: string, key: string): number {

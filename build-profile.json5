@@ -5,13 +5,13 @@
         "name": "default",
         "type": "HarmonyOS",
         "material": {
-          "certpath": "C:\\Users\\13359\\.ohos\\config\\default_Coder_v4wQCv96KRIoxFXKa_0UZ8S2KTL9XKRc0cZABG8z7O8=.cer",
-          "keyAlias": "debugKey",
+          "storeFile": "F:/DevEcoStudioKey/Coder/NGF.p12",
+          "storePassword": "__REMOVED__",
+          "keyAlias": "NGF",
           "keyPassword": "__REMOVED__",
-          "profile": "C:\\Users\\13359\\.ohos\\config\\default_Coder_v4wQCv96KRIoxFXKa_0UZ8S2KTL9XKRc0cZABG8z7O8=.p7b",
           "signAlg": "SHA256withECDSA",
-          "storeFile": "C:\\Users\\13359\\.ohos\\config\\default_Coder_v4wQCv96KRIoxFXKa_0UZ8S2KTL9XKRc0cZABG8z7O8=.p12",
-          "storePassword": "__REMOVED__"
+          "profile": "F:/DevEcoStudioKey/Coder/CoderRelease.p7b",
+          "certpath": "F:/DevEcoStudioKey/Coder/NGF.cer"
         }
       }
     ],

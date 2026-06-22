@@ -1,4 +1,7 @@
 import web_webview from '@ohos.web.webview';
+import { fileIo as fs } from '@kit.CoreFileKit';
+import { logger } from '../../utils/Logger';
+import { uiContextManager } from '../../platformOhos/UIContextManager';
 
 const NGF_RICH_CONTENT_MARKDOWN_MAX_CHARS: number = 140000;
 const NGF_RICH_CONTENT_MARKDOWN_MAX_LINES: number = 1800;
@@ -9,6 +12,8 @@ const NGF_RICH_CONTENT_PLAIN_MAX_LINES: number = 2200;
 const NGF_RICH_CONTENT_DIFF_MAX_CHARS: number = 180000;
 const NGF_RICH_CONTENT_DIFF_MAX_LINES: number = 1800;
 const NGF_RICH_CONTENT_MAX_LINE_CHARS: number = 1400;
+const NGF_RICH_CONTENT_CACHE_DIR: string = 'ngf-rich-content';
+const NGF_RICH_CONTENT_LOG_TAG: string = 'NGFRichContentRenderer';
 
 export class NGFRichContentKind {
   static readonly MARKDOWN: string = 'markdown';
@@ -21,25 +26,200 @@ export class NGFRichContentKind {
 
 @Component
 export struct NGFRichContentRenderer {
-  @Prop content: string = '';
-  @Prop contentKind: string = 'markdown';
-  @Prop mediaType: string = '';
-  @Prop isDarkMode: boolean = false;
-  @Prop previewSurfaceDark: boolean = false;
-  @Prop bottomPadding: number = 16;
+  @Prop @Watch('onRenderInputChanged') content: string = '';
+  @Prop @Watch('onRenderInputChanged') contentKind: string = 'markdown';
+  @Prop @Watch('onRenderInputChanged') mediaType: string = '';
+  @Prop @Watch('onRenderInputChanged') isDarkMode: boolean = false;
+  @Prop @Watch('onRenderInputChanged') previewSurfaceDark: boolean = false;
+  @Prop @Watch('onRenderInputChanged') bottomPadding: number = 16;
+  @Prop @Watch('onRenderInputChanged') forceLoadData: boolean = false;
+  @Prop diagnosticSurface: boolean = false;
+  @State private controllerAttached: boolean = false;
+  @State private loadedDocumentSignature: string = '';
+  @State private loadFailureText: string = '';
+  onLinkClick: (url: string) => boolean = (_url: string): boolean => false;
   private controller: web_webview.WebviewController = new web_webview.WebviewController();
 
   build() {
-    Web({ src: this.documentDataUrl(), controller: this.controller })
-      .width('100%')
-      .height('100%')
-      .javaScriptAccess(false)
-      .domStorageAccess(false)
-      .backgroundColor(Color.Transparent)
+    Stack() {
+      Web({ src: this.initialDocumentUrl(), controller: this.controller })
+        .width('100%')
+        .height('100%')
+        .javaScriptAccess(false)
+        .domStorageAccess(false)
+        .fileAccess(true)
+        .imageAccess(true)
+        .onlineImageAccess(true)
+        .backgroundColor(this.webSurfaceBackgroundColor())
+        .onControllerAttached((): void => {
+          this.controllerAttached = true;
+          this.loadDocumentUrl();
+        })
+        .onPageBegin((event: OnPageBeginEvent): void => {
+          this.loadFailureText = '';
+          if (this.diagnosticSurface) {
+            logger.debug(NGF_RICH_CONTENT_LOG_TAG, 'page.begin url=' + this.compactLogText(event.url));
+          }
+        })
+        .onPageEnd((event: OnPageEndEvent): void => {
+          if (this.diagnosticSurface) {
+            logger.debug(NGF_RICH_CONTENT_LOG_TAG, 'page.end url=' + this.compactLogText(event.url));
+          }
+        })
+        .onErrorReceive((event: OnErrorReceiveEvent): void => {
+          this.loadFailureText = 'WebView error ' + event.error.getErrorCode().toString() + ': ' + event.error.getErrorInfo();
+          logger.warn(NGF_RICH_CONTENT_LOG_TAG, this.loadFailureText);
+        })
+        .onRenderExited((event: OnRenderExitedEvent): void => {
+          this.loadFailureText = 'WebView render exited: ' + event.renderExitReason.toString();
+          logger.warn(NGF_RICH_CONTENT_LOG_TAG, this.loadFailureText);
+        })
+        .onOverrideUrlLoading((request: WebResourceRequest): boolean => {
+          return this.handleOverrideUrlLoading(request);
+        })
+
+      if (this.loadFailureText.length > 0) {
+        Column() {
+          Text(this.loadFailureText)
+            .fontSize(12)
+            .lineHeight(18)
+            .fontColor(this.isDarkMode ? 'rgba(255,255,255,0.78)' : '#5F6B7A')
+            .maxLines(3)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .width('100%')
+        .height('100%')
+        .justifyContent(FlexAlign.Center)
+        .padding(12)
+        .backgroundColor(this.webSurfaceBackgroundColor())
+      }
+    }
+    .width('100%')
+    .height('100%')
   }
 
-  private documentDataUrl(): string {
-    return 'data:text/html;charset=utf-8,' + encodeURIComponent(this.buildDocumentHtml());
+  onRenderInputChanged(_changedPropertyName?: string): void {
+    this.loadDocumentUrl();
+  }
+
+  private initialDocumentUrl(): string {
+    return this.documentUrlForHtml(this.buildDocumentHtml());
+  }
+
+  private loadDocumentUrl(): void {
+    if (!this.controllerAttached) {
+      return;
+    }
+    const signature = this.documentSignature();
+    if (signature === this.loadedDocumentSignature) {
+      return;
+    }
+    const url = this.documentUrlForHtml(this.buildDocumentHtml());
+    try {
+      this.controller.loadUrl(url);
+      this.loadedDocumentSignature = signature;
+      this.loadFailureText = '';
+      if (this.diagnosticSurface) {
+        logger.debug(NGF_RICH_CONTENT_LOG_TAG, 'loadUrl ok signature=' + signature + ' url=' + this.compactLogText(url));
+      }
+    } catch (_error) {
+      this.loadFailureText = 'WebView loadUrl failed';
+      logger.warn(NGF_RICH_CONTENT_LOG_TAG, this.loadFailureText);
+    }
+  }
+
+  private documentUrlForHtml(html: string): string {
+    const filePath = this.writeDocumentHtml(html);
+    if (filePath.length > 0) {
+      return 'file://' + filePath;
+    }
+    return 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+  }
+
+  private writeDocumentHtml(html: string): string {
+    const context = uiContextManager.getAbilityContext();
+    if (context === null || context.filesDir.length === 0) {
+      return '';
+    }
+    const dirPath = context.filesDir + '/' + NGF_RICH_CONTENT_CACHE_DIR;
+    try {
+      fs.mkdirSync(dirPath, true);
+      const filePath = dirPath + '/' + this.safeDocumentFileName() + '.html';
+      let file: fs.File | null = null;
+      try {
+        file = fs.openSync(filePath, fs.OpenMode.CREATE | fs.OpenMode.WRITE_ONLY | fs.OpenMode.TRUNC);
+        fs.writeSync(file.fd, html);
+      } finally {
+        if (file !== null) {
+          fs.closeSync(file);
+        }
+      }
+      return filePath;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.warn(NGF_RICH_CONTENT_LOG_TAG, 'write rich content html failed: ' + message);
+      return '';
+    }
+  }
+
+  private safeDocumentFileName(): string {
+    const signature = this.documentSignature();
+    let result = 'rich_' + signature;
+    result = result.split('-').join('_').split('.').join('_').split('/').join('_').split('\\').join('_');
+    return result;
+  }
+
+  private webSurfaceBackgroundColor(): ResourceColor {
+    if (this.isDarkMode) {
+      return '#101826';
+    }
+    return '#FFFFFF';
+  }
+
+  private compactLogText(text: string): string {
+    if (text.length <= 96) {
+      return text;
+    }
+    return text.substring(0, 96) + '...';
+  }
+
+  private documentSignature(): string {
+    let hash = 17;
+    hash = this.hashStringIntoNumber(hash, this.contentKind);
+    hash = this.hashStringIntoNumber(hash, this.mediaType);
+    hash = this.hashStringIntoNumber(hash, this.isDarkMode ? 'dark' : 'light');
+    hash = this.hashStringIntoNumber(hash, this.previewSurfaceDark ? 'previewDark' : 'previewLight');
+    hash = this.hashStringIntoNumber(hash, this.bottomPadding.toString());
+    hash = this.hashStringIntoNumber(hash, this.forceLoadData ? 'forceLoadData' : 'autoLoad');
+    hash = this.hashStringIntoNumber(hash, this.content);
+    return this.content.length.toString() + '-' + hash.toString();
+  }
+
+  private hashStringIntoNumber(seed: number, value: string): number {
+    let hash = seed;
+    for (let index = 0; index < value.length; index++) {
+      hash = (hash * 131 + value.charCodeAt(index)) % 1000000007;
+    }
+    return hash;
+  }
+
+  private handleOverrideUrlLoading(request: WebResourceRequest): boolean {
+    const url = request.getRequestUrl();
+    if (url.startsWith('data:') || url.startsWith('about:') || url.startsWith('blob:')) {
+      return false;
+    }
+    if (url.startsWith('ngf-rich-link:')) {
+      return this.onLinkClick(this.decodeRichLinkTarget(url.substring(14)));
+    }
+    return this.onLinkClick(url);
+  }
+
+  private decodeRichLinkTarget(target: string): string {
+    try {
+      return decodeURIComponent(target);
+    } catch (_error) {
+      return target;
+    }
   }
 
   private buildDocumentHtml(): string {
@@ -65,9 +245,9 @@ export struct NGFRichContentRenderer {
   }
 
   private buildDocumentStyle(): string {
-    const textColor = this.isDarkMode ? '#F7FFFFFF' : '#111827';
-    const secondaryColor = this.isDarkMode ? '#B8FFFFFF' : '#5F6B7A';
-    const mutedColor = this.isDarkMode ? '#80FFFFFF' : '#96A2B2';
+    const textColor = this.isDarkMode ? 'rgba(255,255,255,0.97)' : '#111827';
+    const secondaryColor = this.isDarkMode ? 'rgba(255,255,255,0.72)' : '#5F6B7A';
+    const mutedColor = this.isDarkMode ? 'rgba(255,255,255,0.50)' : '#96A2B2';
     const surfaceColor = this.isDarkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.74)';
     const strongSurfaceColor = this.isDarkMode ? 'rgba(255,255,255,0.12)' : 'rgba(244,247,251,0.92)';
     const borderColor = this.isDarkMode ? 'rgba(255,255,255,0.14)' : 'rgba(148,163,184,0.28)';
@@ -78,12 +258,15 @@ export struct NGFRichContentRenderer {
     const delText = this.isDarkMode ? '#FFC6C2' : '#9B1C1C';
     const hunkBg = this.isDarkMode ? 'rgba(10,132,255,0.18)' : 'rgba(10,132,255,0.12)';
     const hunkText = this.isDarkMode ? '#BFDFFF' : '#1D4ED8';
-    const bodyBg = this.isDarkMode ? 'rgba(12,18,28,0)' : 'rgba(255,255,255,0)';
+    const bodyBg = this.isDarkMode ? '#101826' : '#FFFFFF';
     const mediaStageBg = this.previewSurfaceDark ? '#101826' : '#F8FAFC';
     const mediaStageText = this.previewSurfaceDark ? '#F8FAFC' : '#111827';
     const mediaChecker = this.previewSurfaceDark ? 'rgba(255,255,255,0.08)' : 'rgba(15,23,42,0.08)';
     return 'html,body{margin:0;padding:0;background:' + bodyBg + ';color:' + textColor +
+      ';color-scheme:' + (this.isDarkMode ? 'dark' : 'light') +
       ';font-family:HarmonyOS Sans,Arial,sans-serif;font-size:15px;line-height:1.68;}' +
+      'html,body{scrollbar-width:none;-ms-overflow-style:none;}' +
+      'html::-webkit-scrollbar,body::-webkit-scrollbar,pre::-webkit-scrollbar,.diff::-webkit-scrollbar{width:0;height:0;display:none;}' +
       'body{-webkit-text-size-adjust:100%;overflow-x:hidden;}' +
       '.ngf-rich{box-sizing:border-box;width:100%;min-height:100%;padding:4px 0 ' + this.bottomPadding.toString() + 'px 0;}' +
       'h1,h2,h3,h4,h5,h6{margin:18px 0 8px;color:' + textColor + ';font-weight:700;line-height:1.28;}' +
@@ -94,7 +277,7 @@ export struct NGFRichContentRenderer {
       'ul,ol{margin:8px 0 12px 0;padding-left:24px;}li{margin:5px 0;padding-left:2px;}' +
       'blockquote{margin:12px 0;padding:8px 12px;border-left:4px solid #0A84FF;border-radius:8px;background:' + surfaceColor + ';color:' + secondaryColor + ';}' +
       'hr{border:0;border-top:1px solid ' + borderColor + ';margin:18px 0;}' +
-      'pre{box-sizing:border-box;width:100%;overflow:auto;margin:12px 0;padding:12px;border-radius:12px;background:' + strongSurfaceColor +
+      'pre{box-sizing:border-box;width:100%;overflow:auto;scrollbar-width:none;-ms-overflow-style:none;margin:12px 0;padding:12px;border-radius:12px;background:' + strongSurfaceColor +
       ';border:1px solid ' + borderColor + ';color:' + codeTextColor + ';font-family:HarmonyOS Sans Mono,Consolas,monospace;font-size:13px;line-height:1.58;}' +
       'code{font-family:HarmonyOS Sans Mono,Consolas,monospace;}' +
       'p code,li code,td code{padding:2px 5px;border-radius:6px;background:' + strongSurfaceColor + ';color:' + codeTextColor + ';font-size:0.92em;}' +
@@ -103,7 +286,7 @@ export struct NGFRichContentRenderer {
       'th{background:' + strongSurfaceColor + ';font-weight:700;text-align:left;}tr:last-child td{border-bottom:0;}th:last-child,td:last-child{border-right:0;}' +
       'img{max-width:100%;height:auto;border-radius:12px;margin:10px 0;}' +
       '.plain{white-space:pre-wrap;word-break:break-word;}' +
-      '.diff{box-sizing:border-box;width:100%;overflow:auto;border:1px solid ' + borderColor + ';border-radius:14px;background:' + strongSurfaceColor + ';font-family:HarmonyOS Sans Mono,Consolas,monospace;font-size:13px;line-height:1.62;}' +
+      '.diff{box-sizing:border-box;width:100%;overflow:auto;scrollbar-width:none;-ms-overflow-style:none;border:1px solid ' + borderColor + ';border-radius:14px;background:' + strongSurfaceColor + ';font-family:HarmonyOS Sans Mono,Consolas,monospace;font-size:13px;line-height:1.62;}' +
       '.diff-line{display:flex;min-width:max-content;border-bottom:1px solid rgba(148,163,184,0.10);}' +
       '.diff-no{box-sizing:border-box;width:44px;flex:none;padding:2px 8px;text-align:right;color:' + mutedColor + ';user-select:none;}' +
       '.diff-code{box-sizing:border-box;white-space:pre;padding:2px 12px 2px 4px;color:' + codeTextColor + ';}' +
@@ -548,7 +731,8 @@ export struct NGFRichContentRenderer {
           if (targetClose > labelClose + 2) {
             const label = text.substring(index + 1, labelClose);
             const target = text.substring(labelClose + 2, targetClose);
-            html = html + '<a href="' + this.escapeHtmlAttribute(target) + '">' + this.renderInlineMarkdown(label) + '</a>';
+            const href = 'ngf-rich-link:' + encodeURIComponent(target);
+            html = html + '<a href="' + this.escapeHtmlAttribute(href) + '">' + this.renderInlineMarkdown(label) + '</a>';
             index = targetClose + 1;
             continue;
           }

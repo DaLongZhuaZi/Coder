@@ -287,6 +287,47 @@ export class AgentHomePersistenceRepository {
     await this.saveRemoteSessionWithoutReady(providerId, session);
   }
 
+  async deleteRemoteSessionCache(providerId: string, sessionId: string, remoteSessionId: string): Promise<void> {
+    await this.ensureReady();
+    if (sessionId.length === 0 && remoteSessionId.length === 0) {
+      logger.warn(TAG, 'delete remote session cache ignored: empty ids');
+      return;
+    }
+    logger.info(TAG, 'delete remote session cache start: providerId=' + providerId +
+      ', sessionId=' + sessionId +
+      ', remoteSessionId=' + remoteSessionId);
+    if (providerId.length > 0) {
+      if (sessionId.length > 0) {
+        await ngfRdbManager.executeSql(
+          'DELETE FROM agent_remote_session WHERE provider_id = ? AND (session_id = ? OR remote_session_id = ?)',
+          [providerId, sessionId, sessionId]
+        );
+      }
+      if (remoteSessionId.length > 0 && remoteSessionId !== sessionId) {
+        await ngfRdbManager.executeSql(
+          'DELETE FROM agent_remote_session WHERE provider_id = ? AND (session_id = ? OR remote_session_id = ?)',
+          [providerId, remoteSessionId, remoteSessionId]
+        );
+      }
+    } else {
+      if (sessionId.length > 0) {
+        await ngfRdbManager.executeSql(
+          'DELETE FROM agent_remote_session WHERE session_id = ? OR remote_session_id = ?',
+          [sessionId, sessionId]
+        );
+      }
+      if (remoteSessionId.length > 0 && remoteSessionId !== sessionId) {
+        await ngfRdbManager.executeSql(
+          'DELETE FROM agent_remote_session WHERE session_id = ? OR remote_session_id = ?',
+          [remoteSessionId, remoteSessionId]
+        );
+      }
+    }
+    logger.info(TAG, 'delete remote session cache done: providerId=' + providerId +
+      ', sessionId=' + sessionId +
+      ', remoteSessionId=' + remoteSessionId);
+  }
+
   async replaceWorkspaceSessionState(
     workspaces: Array<AgentHomeWorkspaceItem>,
     sessions: Array<AgentHomeSessionItem>,
@@ -369,6 +410,20 @@ export class AgentHomePersistenceRepository {
         preview.updatedAt
       ]
     );
+  }
+
+  async loadPreviewContentsForSession(sessionId: string): Promise<Array<string>> {
+    await this.ensureReady();
+    const rows = await ngfRdbManager.queryRows(
+      'SELECT content FROM agent_preview WHERE session_id = ?',
+      [sessionId]
+    );
+    const contents: Array<string> = [];
+    for (let index = 0; index < rows.length; index++) {
+      contents.push(rows[index].getString('content', ''));
+    }
+    logger.info(TAG, 'loaded preview contents for session: ' + sessionId + ', count=' + String(contents.length));
+    return contents;
   }
 
   async saveToolCall(toolCall: AgentHomeToolCallItem): Promise<void> {
@@ -504,20 +559,36 @@ export class AgentHomePersistenceRepository {
   async deleteMessagesForSession(sessionId: string): Promise<void> {
     await this.ensureReady();
     await ngfRdbManager.executeSql('DELETE FROM agent_message WHERE session_id = ?', [sessionId]);
+    logger.info(TAG, 'deleted messages for session: ' + sessionId);
   }
 
   async deletePreviewsForSession(sessionId: string): Promise<void> {
     await this.ensureReady();
     await ngfRdbManager.executeSql('DELETE FROM agent_preview WHERE session_id = ?', [sessionId]);
+    logger.info(TAG, 'deleted previews for session: ' + sessionId);
   }
 
   async deleteToolCallsForSession(sessionId: string): Promise<void> {
     await this.ensureReady();
     await ngfRdbManager.executeSql('DELETE FROM agent_tool_call WHERE session_id = ?', [sessionId]);
+    logger.info(TAG, 'deleted tool calls for session: ' + sessionId);
+  }
+
+  async deleteUserRequestsForSession(sessionId: string): Promise<void> {
+    await this.ensureReady();
+    await ngfRdbManager.executeSql('DELETE FROM agent_user_request WHERE session_id = ?', [sessionId]);
+    logger.info(TAG, 'deleted user requests for session: ' + sessionId);
+  }
+
+  async deletePlansForSession(sessionId: string): Promise<void> {
+    await this.ensureReady();
+    await ngfRdbManager.executeSql('DELETE FROM agent_plan WHERE session_id = ?', [sessionId]);
+    logger.info(TAG, 'deleted plans for session: ' + sessionId);
   }
 
   async deleteSessionCascade(sessionId: string): Promise<void> {
     await this.ensureReady();
+    logger.info(TAG, 'delete session cascade start: ' + sessionId);
     await ngfRdbManager.beginTransaction();
     try {
       await ngfRdbManager.executeSql('DELETE FROM agent_preview WHERE session_id = ?', [sessionId]);
@@ -529,6 +600,7 @@ export class AgentHomePersistenceRepository {
       await ngfRdbManager.executeSql('DELETE FROM agent_message WHERE session_id = ?', [sessionId]);
       await ngfRdbManager.executeSql('DELETE FROM agent_session WHERE id = ?', [sessionId]);
       await ngfRdbManager.commit();
+      logger.info(TAG, 'delete session cascade done: ' + sessionId);
     } catch (e) {
       await ngfRdbManager.rollback();
       logger.error(TAG, 'delete agent session failed: ' + e);
@@ -576,6 +648,7 @@ export class AgentHomePersistenceRepository {
 
   async clearAll(): Promise<void> {
     await this.ensureReady();
+    logger.info(TAG, 'clear all agent home data start');
     await ngfRdbManager.beginTransaction();
     try {
       await ngfRdbManager.executeSql('DELETE FROM agent_remote_session');
@@ -591,6 +664,7 @@ export class AgentHomePersistenceRepository {
       await ngfRdbManager.executeSql('DELETE FROM agent_workspace');
       await ngfRdbManager.executeSql('DELETE FROM agent_profile');
       await ngfRdbManager.commit();
+      logger.info(TAG, 'clear all agent home data done');
     } catch (e) {
       await ngfRdbManager.rollback();
       logger.error(TAG, 'clear all agent data failed: ' + e);

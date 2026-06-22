@@ -609,10 +609,6 @@
       "value": "isViewportLandscape=%s, width=%s, height=%s, "
     },
     {
-      "name": "ngf_auto_str_1007",
-      "value": "Location services provided by system"
-    },
-    {
       "name": "ngf_auto_str_1008",
       "value": "Bluetooth supported by system"
     },
@@ -4546,11 +4542,11 @@
     },
     {
       "name": "ngf_card_hardware_title",
-      "value": "Hardware & Location"
+      "value": "Hardware & Sensors"
     },
     {
       "name": "ngf_card_hardware_desc",
-      "value": "GPS coordinates and accelerometer sensing"
+      "value": "Accelerometer sensing and device capability checks"
     },
     {
       "name": "ngf_card_media_title",
@@ -4591,10 +4587,6 @@
     {
       "name": "ngf_btn_auth_fingerprint",
       "value": "Authenticate Identity"
-    },
-    {
-      "name": "ngf_btn_hardware_location",
-      "value": "Get Coordinates"
     },
     {
       "name": "ngf_btn_hardware_sensor",

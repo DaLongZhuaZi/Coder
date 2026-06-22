@@ -1,8 +1,5 @@
 {
   "src": [
-    "pages/ngf/NGFAgentHomePage",
-    "pages/ngf/MainMenuPage",
-    "pages/ngf/NGFDemoMultitonPage",
-    "pages/ngf/NGFDemoSubWindowPage"
+    "pages/ngf/NGFAgentHomePage"
   ]
 }

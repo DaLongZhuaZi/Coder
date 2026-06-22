@@ -2,15 +2,27 @@
 
 Agent Bridge Desktop 运行在电脑侧，负责把 HarmonyOS App 的统一会话协议转换成本机 Agent 的实际接口。它默认使用跨平台 Node 启动器，支持 Windows、macOS 和 Linux。
 
-## 一行命令启动
+## 安装与启动
 
-在仓库根目录执行：
+Agent Bridge Desktop 已发布到 npm。它是需要在电脑侧长时间存在的工具服务，推荐先全局安装一次：
 
 ```bash
-npm run agent-bridge
+npm install -g @dlzz/agent-bridge
 ```
 
-这个命令会启动带 TUI 风格输出的桌面连接器：
+首次使用先运行交互式配置：
+
+```bash
+ngf-agent-bridge --setup
+```
+
+完成配置后，之后直接启动常驻桌面连接器：
+
+```bash
+ngf-agent-bridge
+```
+
+启动后会显示 TUI 风格输出：
 
 - 扫描本机可用 Provider：OpenCode、DevEco Code、MiMo Code、Codex CLI、Claude Code、Antigravity CLI、Mock Provider。
 - 用表格显示命令、状态、下一步动作。
@@ -22,12 +34,18 @@ npm run agent-bridge
 
 停止服务时，在终端按 `Ctrl+C`。
 
-## 首次配置
-
-首次使用建议先运行交互式配置：
+如果你正在本仓库内开发 Agent Bridge，也可以在仓库根目录执行：
 
 ```bash
-npm run agent-bridge:setup
+npm run agent-bridge
+```
+
+## 首次配置流程
+
+首次配置命令：
+
+```bash
+ngf-agent-bridge --setup
 ```
 
 配置向导会：
@@ -43,34 +61,43 @@ npm run agent-bridge:setup
 之后直接运行：
 
 ```bash
-npm run agent-bridge
+ngf-agent-bridge
 ```
 
 ## 常用命令
+
+```bash
+ngf-agent-bridge
+ngf-agent-bridge --setup
+ngf-agent-bridge --doctor
+ngf-agent-bridge --start opencode
+ngf-agent-bridge --lang zh
+ngf-agent-bridge --lang en
+ngf-agent-bridge --terminal-qr
+ngf-agent-bridge --no-open-qr
+```
+
+`--doctor` 只扫描环境并输出 Provider 状态，不启动服务。
+
+仓库开发脚本仍然可用：
 
 ```bash
 npm run agent-bridge
 npm run agent-bridge:setup
 npm run agent-bridge:doctor
 npm run agent-bridge:start -- --start opencode
-npm run agent-bridge:start -- --lang zh
-npm run agent-bridge:start -- --lang en
-npm run agent-bridge:start -- --terminal-qr
-npm run agent-bridge:start -- --no-open-qr
 ```
-
-`agent-bridge:doctor` 只扫描环境并输出 Provider 状态，不启动服务。
 
 ## 可用参数
 
 ```bash
-npm run agent-bridge:start -- --connect-host 192.168.1.23
-npm run agent-bridge:start -- --bind-host 0.0.0.0
-npm run agent-bridge:start -- --port 8787
-npm run agent-bridge:start -- --token dev-token
-npm run agent-bridge:start -- --lang zh
-npm run agent-bridge:start -- --start opencode,deveco,mimo
-npm run agent-bridge:start -- --no-start-providers
+ngf-agent-bridge --connect-host 192.168.1.23
+ngf-agent-bridge --bind-host 0.0.0.0
+ngf-agent-bridge --port 8787
+ngf-agent-bridge --token dev-token
+ngf-agent-bridge --lang zh
+ngf-agent-bridge --start opencode,deveco,mimo
+ngf-agent-bridge --no-start-providers
 ```
 
 参数含义：
@@ -114,7 +141,7 @@ TUI 使用集中式 i18n 资源，当前支持 `zh` 和 `en`。语言选择顺�
 - `deveco`：连接本机 `deveco serve`。
 - `mimo`：连接 MiMo/OpenCode-compatible server。
 - `codex`：调用 `codex exec --json`。
-- `claude`：调用 `claude -p --output-format stream-json --include-partial-messages`。
+- `claude`：调用 `claude -p --verbose --output-format stream-json --include-partial-messages`。
 - `antigravity`：保留显式 CLI 配置入口。
 
 OpenCode、DevEco Code、MiMo Code 这类 server 型 Provider 可以由启动器自动拉起；Codex、Claude、Antigravity 这类 CLI 型 Provider 会在收到消息时由 Bridge 调用。
@@ -124,7 +151,7 @@ OpenCode、DevEco Code、MiMo Code 这类 server 型 Provider 可以由启动器
 真机不能使用 `127.0.0.1` 连接电脑。首次配置时请选择电脑局域网 IP，或显式传入：
 
 ```bash
-npm run agent-bridge:start -- --connect-host 192.168.1.23 --bind-host 0.0.0.0
+ngf-agent-bridge --connect-host 192.168.1.23 --bind-host 0.0.0.0
 ```
 
 还需要确认：
@@ -149,66 +176,55 @@ curl -H "Authorization: Bearer dev-token" http://127.0.0.1:8787/capabilities
 
 如果端口或 Token 来自配置向导，请以 TUI 输出的实际值为准。
 
-## npm / npx 形态
+## npm 包形态
 
-当前仓库内的一行命令是：
+当前电脑端包已发布到 npm：
 
 ```bash
-npm run agent-bridge
+npm view @dlzz/agent-bridge version
 ```
 
-`tools/agent-bridge/package.json` 已提供 `bin` 入口 `ngf-agent-bridge`。发布到 npm 后，用户可以用：
+包名是 `@dlzz/agent-bridge`，`bin` 入口是 `ngf-agent-bridge`。面向普通用户的推荐方式是全局安装后长期使用固定命令启动：
 
 ```bash
-npx @ngf/agent-bridge
-npx @ngf/agent-bridge --setup
-npm install -g @ngf/agent-bridge
-ngf-agent-bridge
+npm install -g @dlzz/agent-bridge
 ngf-agent-bridge --setup
+ngf-agent-bridge
 ngf-agent-bridge --lang zh
 ```
 
-如果只想作为项目依赖安装：
+如果只想作为项目依赖安装，可以在项目脚本中固定调用 `ngf-agent-bridge`：
 
 ```bash
-npm install @ngf/agent-bridge
-npx ngf-agent-bridge
-npx ngf-agent-bridge --setup
+npm install @dlzz/agent-bridge
+node ./node_modules/@dlzz/agent-bridge/src/desktop-launcher.js --setup
+node ./node_modules/@dlzz/agent-bridge/src/desktop-launcher.js
 ```
 
-## 发布到公共 npm 仓库
+## 维护者发布流程
 
-推荐把 `tools/agent-bridge` 拆成一个独立公共仓库，让它的 `package.json` 位于仓库根目录。这样用户、CI 和 npm 都不会依赖当前 NGF 工程的完整目录结构。
+电脑端包已经是公共 npm 包。后续版本发布前需要确认：
 
-发布前需要确认：
-
-- npm 包名可用。当前包名是 `@ngf/agent-bridge`，这要求你拥有 npm 上的 `ngf` scope；如果没有，需要改成你拥有的 scope，例如 `@your-scope/agent-bridge`，或改成未加 scope 的唯一名称。
+- 当前包名仍为 `@dlzz/agent-bridge`，发布账号拥有 npm 上的 `dlzz` scope。
 - `package.json` 中 `private` 为 `false`。
 - `publishConfig.access` 为 `public`。
 - `bin.ngf-agent-bridge` 指向 `src/desktop-launcher.js`。
 - `files` 至少包含 `src` 和 `README.md`。
 - README、LICENSE、版本号和仓库地址准备好。
 
-发布流程：
+发布检查：
 
 ```bash
 cd tools/agent-bridge
-npm login
+npm login --registry https://registry.npmjs.org/
+npm whoami --registry https://registry.npmjs.org/
 npm pack --dry-run
-npm publish --access public
 ```
 
-后续版本发布：
+发新版本：
 
 ```bash
 cd tools/agent-bridge
 npm version patch
-npm publish --access public
-```
-
-如果你暂时不想发布到 npm registry，也可以先放到 GitHub 公共仓库。更推荐独立仓库根目录就是这个包；用户可以直接运行：
-
-```bash
-npm install -g github:your-org/agent-bridge
-ngf-agent-bridge
+npm publish --access public --registry https://registry.npmjs.org/
 ```

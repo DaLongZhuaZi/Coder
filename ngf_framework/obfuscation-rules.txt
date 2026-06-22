@@ -1,0 +1,7 @@
+# Define ngf_framework specific obfuscation rules here.
+# Keep this HAR module conservative by default because entry imports its exported APIs.
+#
+# For more details, see
+#   https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/source-obfuscation
+
+-disable-obfuscation

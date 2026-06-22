@@ -9,6 +9,8 @@ const { execFile } = require('child_process');
 const MAX_TEXT_BYTES = 1024 * 1024;
 const MAX_IMAGE_BYTES = 6 * 1024 * 1024;
 const DOWNLOAD_TOKEN_TTL_MS = 15 * 60 * 1000;
+const SHORT_FILE_SEARCH_MAX_DIRECTORIES = 8000;
+const SHORT_FILE_SEARCH_MAX_MATCHES = 2;
 
 function readStringValue(source, key, fallbackValue) {
   if (!source || typeof source !== 'object') {
@@ -64,6 +66,16 @@ function normalizeRelativePath(inputPath) {
   return normalized.replace(/\\/g, '/');
 }
 
+function filePathFromPayload(payload) {
+  const rawPath = readStringValue(payload, 'path', '');
+  const filePath = normalizeRelativePath(rawPath);
+  const parentPath = normalizeRelativePath(readStringValue(payload, 'parentPath', ''));
+  if (parentPath.length > 0 && filePath.length > 0 && filePath.indexOf('/') < 0) {
+    return normalizeRelativePath(parentPath + '/' + filePath);
+  }
+  return filePath;
+}
+
 function resolveInside(rootPath, relativePath) {
   const root = path.resolve(rootPath);
   const rel = normalizeRelativePath(relativePath);
@@ -76,6 +88,66 @@ function resolveInside(rootPath, relativePath) {
     relativePath: rel,
     absolutePath: target
   };
+}
+
+function shouldSkipShortFileSearchDirectory(name) {
+  return name === '.git' ||
+    name === 'node_modules' ||
+    name === 'oh_modules' ||
+    name === 'build' ||
+    name === '.cxx' ||
+    name === '.hvigor' ||
+    name === '.preview' ||
+    name === '.test' ||
+    name === '.appanalyzer';
+}
+
+function findUniqueFileByName(rootPath, fileName) {
+  if (fileName.length === 0 || fileName.indexOf('/') >= 0 || fileName.indexOf('\\') >= 0) {
+    return '';
+  }
+  const queue = [''];
+  const matches = [];
+  let scannedDirectories = 0;
+  while (queue.length > 0 && scannedDirectories < SHORT_FILE_SEARCH_MAX_DIRECTORIES && matches.length < SHORT_FILE_SEARCH_MAX_MATCHES) {
+    const parentPath = queue.shift();
+    scannedDirectories += 1;
+    const absoluteParentPath = parentPath.length > 0 ? path.join(rootPath, parentPath) : rootPath;
+    let entries = [];
+    try {
+      entries = fs.readdirSync(absoluteParentPath, { withFileTypes: true });
+    } catch (_error) {
+      continue;
+    }
+    for (const entry of entries) {
+      const relativePath = formatRelativePath(parentPath, entry.name);
+      if (entry.isFile() && entry.name === fileName) {
+        matches.push(relativePath);
+        if (matches.length >= SHORT_FILE_SEARCH_MAX_MATCHES) {
+          break;
+        }
+      } else if (entry.isDirectory() && !shouldSkipShortFileSearchDirectory(entry.name)) {
+        queue.push(relativePath);
+      }
+    }
+  }
+  return matches.length === 1 ? matches[0] : '';
+}
+
+function resolveWorkspaceFileForPayload(rootPath, payload) {
+  const requestedPath = filePathFromPayload(payload);
+  const requested = resolveInside(rootPath, requestedPath);
+  if (fs.existsSync(requested.absolutePath)) {
+    return requested;
+  }
+  if (requestedPath.indexOf('/') >= 0 || requestedPath.indexOf('\\') >= 0) {
+    return requested;
+  }
+  const matchedPath = findUniqueFileByName(rootPath, requestedPath);
+  if (matchedPath.length === 0) {
+    return requested;
+  }
+  return resolveInside(rootPath, matchedPath);
 }
 
 function normalizeWorkspaceRoot(session) {
@@ -602,9 +674,18 @@ class WorkspaceService {
 
   async getFile(payload) {
     const sessionId = readStringValue(payload, 'sessionId', '');
-    const filePath = normalizeRelativePath(readStringValue(payload, 'path', ''));
+    const rawPath = readStringValue(payload, 'path', '');
+    const rawParentPath = readStringValue(payload, 'parentPath', '');
     const context = this.resolveSession(sessionId);
-    const resolved = resolveInside(context.rootPath, filePath);
+    const resolved = resolveWorkspaceFileForPayload(context.rootPath, payload);
+    const filePath = resolved.relativePath;
+    console.info('[workspace.file.get]', JSON.stringify({
+      sessionId,
+      rawPath,
+      rawParentPath,
+      filePath,
+      absolutePath: resolved.absolutePath
+    }));
     const stat = fs.statSync(resolved.absolutePath);
     if (!stat.isFile()) {
       throw new Error('Requested path is not a file.');
@@ -670,9 +751,9 @@ class WorkspaceService {
 
   async prepareDownload(payload) {
     const sessionId = readStringValue(payload, 'sessionId', '');
-    const filePath = normalizeRelativePath(readStringValue(payload, 'path', ''));
     const context = this.resolveSession(sessionId);
-    const resolved = resolveInside(context.rootPath, filePath);
+    const resolved = resolveWorkspaceFileForPayload(context.rootPath, payload);
+    const filePath = resolved.relativePath;
     const stat = fs.statSync(resolved.absolutePath);
     if (!stat.isFile()) {
       throw new Error('Requested path is not a file.');
@@ -691,6 +772,43 @@ class WorkspaceService {
       token,
       downloadPath: '/download/' + encodeURIComponent(token),
       fileName: path.basename(filePath),
+      sizeBytes: stat.size,
+      expiresAt: Date.now() + DOWNLOAD_TOKEN_TTL_MS
+    };
+  }
+
+  async prepareAttachmentDownload(payload) {
+    const sessionId = readStringValue(payload, 'sessionId', '');
+    const requestedPath = readStringValue(payload, 'path', '').trim();
+    const kind = readStringValue(payload, 'kind', 'attachment.preview');
+    if (requestedPath.length === 0) {
+      throw new Error('Attachment path is required.');
+    }
+    if (!path.isAbsolute(requestedPath)) {
+      throw new Error('Attachment path must be absolute.');
+    }
+    const absolutePath = path.resolve(requestedPath);
+    const stat = fs.statSync(absolutePath);
+    if (!stat.isFile()) {
+      throw new Error('Requested attachment is not a file.');
+    }
+    const token = crypto.randomBytes(20).toString('hex');
+    const fileName = path.basename(absolutePath);
+    this.downloadTokens.set(token, {
+      token,
+      sessionId,
+      path: absolutePath,
+      absolutePath,
+      expiresAt: Date.now() + DOWNLOAD_TOKEN_TTL_MS
+    });
+    return {
+      sessionId,
+      path: absolutePath,
+      kind,
+      token,
+      downloadPath: '/download/' + encodeURIComponent(token),
+      fileName,
+      mediaType: mediaTypeForPath(fileName),
       sizeBytes: stat.size,
       expiresAt: Date.now() + DOWNLOAD_TOKEN_TTL_MS
     };

@@ -1,52 +1,25 @@
-import { logger } from 'ngf_framework';
-import { ngfPagePolicyHostFacade } from 'ngf_framework';
-import { NGFDisplayMode } from 'ngf_framework';
+import window from '@ohos.window';
 import {
+  logger,
+  NGFDisplayMode,
   NGFPageWindowProfile,
   NGFWindowOrientationPreference,
   NGFWindowSystemBarPolicy,
-  NGFWindowSystemBarStyle
+  NGFWindowSystemBarStyle,
+  ngfPagePolicyHostFacade,
+  ngfPlatformWindowManagerFacade
 } from 'ngf_framework';
-import { ngfPlatformWindowManagerFacade } from 'ngf_framework';
-import { NGFHdsDemoRouteName } from './HdsDemoRoutes';
-
-import window from '@ohos.window';
 
 const TAG: string = 'NGFPageWindowSupport';
 
 export class NGFPageWindowName {
   static readonly AGENT_HOME: string = 'pages/ngf/NGFAgentHomePage';
-  static readonly MAIN_MENU: string = 'pages/ngf/MainMenuPage';
-  static readonly HDS_SHOWCASE: string = NGFHdsDemoRouteName.SHOWCASE;
-  static readonly HDS_OFFICIAL_NAVIGATION: string = NGFHdsDemoRouteName.OFFICIAL_NAVIGATION;
-  static readonly HDS_OFFICIAL_NAVIGATION_OVERVIEW: string = NGFHdsDemoRouteName.OFFICIAL_NAVIGATION_OVERVIEW;
-  static readonly HDS_OFFICIAL_NAVIGATION_MATERIAL: string = NGFHdsDemoRouteName.OFFICIAL_NAVIGATION_MATERIAL;
-  static readonly HDS_OFFICIAL_NAVIGATION_EFFECT: string = NGFHdsDemoRouteName.OFFICIAL_NAVIGATION_EFFECT;
-  static readonly DEMO_SECURITY_PERF: string = NGFHdsDemoRouteName.DEMO_SECURITY_PERF;
-  static readonly DEMO_DATA_STORAGE: string = NGFHdsDemoRouteName.DEMO_DATA_STORAGE;
-  static readonly DEMO_WORKFLOW: string = NGFHdsDemoRouteName.DEMO_WORKFLOW;
-  static readonly DEMO_DEVICE_DISPLAY: string = NGFHdsDemoRouteName.DEMO_DEVICE_DISPLAY;
-  static readonly SYSTEM_RESOURCE_PREVIEW: string = NGFHdsDemoRouteName.SYSTEM_RESOURCE_PREVIEW;
 }
 
 class NGFPageWindowStyleFactory {
   private static isDarkMode(): boolean {
     const value = AppStorage.get<boolean>('ngf_is_dark_mode');
     return value === true;
-  }
-
-  static buildTransparentLightStyle(): NGFWindowSystemBarStyle {
-    const style = new NGFWindowSystemBarStyle();
-    style.enabled = true;
-    style.statusBarColor = '#00000000';
-    style.navigationBarColor = '#00000000';
-    style.statusBarContentColor = '#FFFFFFFF';
-    style.navigationBarContentColor = '#FFFFFFFF';
-    style.isStatusBarLightIcon = true;
-    style.isNavigationBarLightIcon = true;
-    style.enableStatusBarAnimation = true;
-    style.enableNavigationBarAnimation = true;
-    return style;
   }
 
   static buildTransparentDarkTextStyle(): NGFWindowSystemBarStyle {
@@ -64,29 +37,17 @@ class NGFPageWindowStyleFactory {
     style.enableNavigationBarAnimation = true;
     return style;
   }
-
-  static buildSurfaceDarkTextStyle(): NGFWindowSystemBarStyle {
-    const isDark = NGFPageWindowStyleFactory.isDarkMode();
-    const surfaceColor = isDark ? '#1A1A1A' : '#FFF8FAFC';
-    const contentColor = isDark ? '#FFFFFFFF' : '#0F172A';
-    const style = new NGFWindowSystemBarStyle();
-    style.enabled = true;
-    style.statusBarColor = surfaceColor;
-    style.navigationBarColor = surfaceColor;
-    style.statusBarContentColor = contentColor;
-    style.navigationBarContentColor = contentColor;
-    style.isStatusBarLightIcon = isDark;
-    style.isNavigationBarLightIcon = isDark;
-    style.enableStatusBarAnimation = true;
-    style.enableNavigationBarAnimation = true;
-    return style;
-  }
 }
 
 export class NGFPageWindowSupport {
   private static initialized: boolean = false;
 
-  static loadDynamicTopInset(uiCtx: UIContext | undefined, baseTitleHeight: number, fallbackInset: number, callback: (inset: number) => void): void {
+  static loadDynamicTopInset(
+    uiCtx: UIContext | undefined,
+    baseTitleHeight: number,
+    fallbackInset: number,
+    callback: (inset: number) => void
+  ): void {
     if (!uiCtx) {
       callback(fallbackInset);
       return;
@@ -110,110 +71,16 @@ export class NGFPageWindowSupport {
       return;
     }
 
-    const profiles: Array<NGFPageWindowProfile> = [];
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.AGENT_HOME,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentDarkTextStyle(),
-        48
-      )
+    const profile = NGFPageWindowSupport.buildProfile(
+      NGFPageWindowName.AGENT_HOME,
+      NGFDisplayMode.IMMERSIVE_WITH_BARS,
+      NGFPageWindowStyleFactory.buildTransparentDarkTextStyle(),
+      48
     );
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.MAIN_MENU,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentLightStyle(),
-        0
-      )
-    );
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.HDS_SHOWCASE,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentLightStyle(),
-        48
-      )
-    );
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.HDS_OFFICIAL_NAVIGATION,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentLightStyle(),
-        48
-      )
-    );
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.HDS_OFFICIAL_NAVIGATION_OVERVIEW,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentLightStyle(),
-        48
-      )
-    );
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.HDS_OFFICIAL_NAVIGATION_MATERIAL,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentLightStyle(),
-        48
-      )
-    );
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.HDS_OFFICIAL_NAVIGATION_EFFECT,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentLightStyle(),
-        48
-      )
-    );
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.DEMO_SECURITY_PERF,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentLightStyle(),
-        48
-      )
-    );
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.DEMO_DATA_STORAGE,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentLightStyle(),
-        48
-      )
-    );
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.DEMO_WORKFLOW,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentLightStyle(),
-        48
-      )
-    );
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.DEMO_DEVICE_DISPLAY,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentLightStyle(),
-        48
-      )
-    );
-    profiles.push(
-      NGFPageWindowSupport.buildProfile(
-        NGFPageWindowName.SYSTEM_RESOURCE_PREVIEW,
-        NGFDisplayMode.IMMERSIVE_WITH_BARS,
-        NGFPageWindowStyleFactory.buildTransparentLightStyle(),
-        48
-      )
-    );
-
-    for (let index = 0; index < profiles.length; index++) {
-      ngfPlatformWindowManagerFacade.registerPageProfile(profiles[index]);
-    }
+    ngfPlatformWindowManagerFacade.registerPageProfile(profile);
 
     NGFPageWindowSupport.initialized = true;
-    logger.info(TAG, '注册演示窗口配置: 数量=' + String(profiles.length));
+    logger.info(TAG, 'registered agent window profile');
   }
 
   static apply(pageName: string): void {
@@ -224,10 +91,6 @@ export class NGFPageWindowSupport {
 
   static restore(pageName: string): void {
     NGFPageWindowSupport.apply(pageName);
-  }
-
-  static restoreMainMenu(): void {
-    NGFPageWindowSupport.apply(NGFPageWindowName.MAIN_MENU);
   }
 
   private static buildProfile(
@@ -256,7 +119,6 @@ export class NGFPageWindowSupport {
       case NGFDisplayMode.STATUS_SAFE_BOTTOM_IMMERSIVE:
         return new NGFWindowSystemBarPolicy(true, false, false, true, style);
       case NGFDisplayMode.IMMERSIVE_WITH_BARS:
-        return new NGFWindowSystemBarPolicy(true, true, true, true, style);
       case NGFDisplayMode.DEFAULT:
       default:
         return new NGFWindowSystemBarPolicy(true, true, true, true, style);

@@ -6,12 +6,14 @@ const os = require('os');
 const path = require('path');
 const { spawn } = require('child_process');
 const { EventType, makeEvent } = require('../protocol');
+const { buildPromptWithContext } = require('./context-utils');
 
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
 const MAX_HISTORY_SESSIONS = 500;
 const MAX_HISTORY_LINE_BYTES = 2 * 1024 * 1024;
 const MAX_HISTORY_READ_BYTES = 4 * 1024 * 1024;
 const MAX_HISTORY_TAIL_BYTES = 16 * 1024 * 1024;
+const CODEX_TITLE_DEEP_SCAN_MAX_LINES = 4096;
 
 function readStringValue(source, key, fallbackValue) {
   if (!source || typeof source !== 'object') {
@@ -55,6 +57,19 @@ function readArrayValue(source, key) {
     return value;
   }
   return [];
+}
+
+function normalizeStringArray(value) {
+  const items = [];
+  if (!Array.isArray(value)) {
+    return items;
+  }
+  for (const item of value) {
+    if (typeof item === 'string' && item.length > 0) {
+      items.push(item);
+    }
+  }
+  return items;
 }
 
 function readObjectValue(source, key) {
@@ -126,6 +141,70 @@ function splitArgs(value) {
     args.push(current);
   }
   return args;
+}
+
+function normalizeClaudeCommandArgs(args) {
+  if (!Array.isArray(args)) {
+    return [];
+  }
+  const items = [];
+  let hasPrint = false;
+  let hasStreamJson = false;
+  let hasVerbose = false;
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (typeof arg !== 'string' || arg.length === 0) {
+      continue;
+    }
+    items.push(arg);
+    if (arg === '-p' || arg === '--print') {
+      hasPrint = true;
+    }
+    if (arg === '--verbose') {
+      hasVerbose = true;
+    }
+    if (arg === '--output-format' && index + 1 < args.length && args[index + 1] === 'stream-json') {
+      hasStreamJson = true;
+    }
+    if (arg === '--output-format=stream-json') {
+      hasStreamJson = true;
+    }
+  }
+  if (hasPrint && hasStreamJson && !hasVerbose) {
+    const insertIndex = Math.min(1, items.length);
+    items.splice(insertIndex, 0, '--verbose');
+  }
+  return items;
+}
+
+function terminateChildProcess(child) {
+  if (!child || typeof child.kill !== 'function') {
+    return false;
+  }
+  let requested = false;
+  if (process.platform === 'win32' && child.pid) {
+    try {
+      const killer = spawn('taskkill', ['/pid', String(child.pid), '/T', '/F'], {
+        stdio: 'ignore',
+        windowsHide: true
+      });
+      killer.on('error', () => {});
+      requested = true;
+    } catch (error) {
+      // Fall back to child.kill below.
+    }
+  }
+  try {
+    if (process.platform === 'win32') {
+      child.kill();
+    } else {
+      child.kill('SIGTERM');
+    }
+    requested = true;
+  } catch (error) {
+    // Ignore kill failures; the process may already be gone.
+  }
+  return requested;
 }
 
 function commandExists(command) {
@@ -228,6 +307,26 @@ function runCommandCapture(command, args, timeoutMs) {
 
 function createSessionId(providerId) {
   return providerId + ':' + crypto.randomBytes(8).toString('hex');
+}
+
+function createUuidSessionId(providerId) {
+  return providerId + ':' + crypto.randomUUID();
+}
+
+function remoteSessionIdFromLocalSessionId(providerId, sessionId) {
+  if (typeof sessionId !== 'string' || sessionId.length === 0) {
+    return '';
+  }
+  const prefix = providerId + ':';
+  if (sessionId.startsWith(prefix)) {
+    return sessionId.substring(prefix.length);
+  }
+  return sessionId;
+}
+
+function isUuidText(value) {
+  return typeof value === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 function safeFileStat(filePath) {
@@ -397,6 +496,7 @@ const CODEX_INTERNAL_WRAPPER_TAGS = [
   'environment_context',
   'turn_aborted'
 ];
+const CODEX_SESSION_TITLE_MAX_LENGTH = 80;
 
 function isCodexInternalWrapperText(text) {
   const normalized = typeof text === 'string' ? text.trim() : '';
@@ -413,25 +513,287 @@ function isCodexInternalWrapperText(text) {
   return false;
 }
 
+function isCodexSystemUserMessageText(text) {
+  const normalized = typeof text === 'string' ? text.trim() : '';
+  if (normalized.length === 0) {
+    return true;
+  }
+  if (isCodexInternalWrapperText(normalized)) {
+    return true;
+  }
+  if (normalized.startsWith('# AGENTS.md instructions') || normalized.startsWith('AGENTS.md instructions')) {
+    return true;
+  }
+  if (normalized.startsWith('<environment_context>') || normalized.indexOf('<environment_context>') >= 0) {
+    return true;
+  }
+  if (normalized.startsWith('<permissions instructions>') || normalized.indexOf('<permissions instructions>') >= 0) {
+    return true;
+  }
+  if (normalized.indexOf('<INSTRUCTIONS>') >= 0 && normalized.indexOf('# AGENTS') >= 0) {
+    return true;
+  }
+  if (normalized.startsWith('The following is the Codex agent history whose request action')) {
+    return true;
+  }
+  return false;
+}
+
+function isClaudeInternalUserMessage(record, text) {
+  if (!record || typeof record !== 'object') {
+    return true;
+  }
+  if (readBooleanValue(record, 'isMeta', false) || readBooleanValue(record, 'isSidechain', false)) {
+    return true;
+  }
+  const userType = readStringValue(record, 'userType', '');
+  if (userType === 'system' || userType === 'internal') {
+    return true;
+  }
+  const normalized = typeof text === 'string' ? text.trim() : '';
+  if (normalized.length === 0) {
+    return true;
+  }
+  if (normalized.startsWith('<system-reminder>') || normalized.indexOf('<system-reminder>') >= 0) {
+    return true;
+  }
+  if (normalized.startsWith('<environment_context>') || normalized.indexOf('<environment_context>') >= 0) {
+    return true;
+  }
+  if (normalized.startsWith('<permissions instructions>') || normalized.indexOf('<permissions instructions>') >= 0) {
+    return true;
+  }
+  if (normalized.startsWith('# AGENTS.md instructions') || normalized.indexOf('<INSTRUCTIONS>') >= 0) {
+    return true;
+  }
+  return false;
+}
+
+function contentPartText(part) {
+  if (typeof part === 'string') {
+    return part;
+  }
+  if (!part || typeof part !== 'object') {
+    return '';
+  }
+  return readStringValue(part, 'text', '');
+}
+
+function textFromClaudeUserContent(content) {
+  if (typeof content === 'string') {
+    return content.trim();
+  }
+  if (!Array.isArray(content)) {
+    return textFromContentParts(content);
+  }
+  const fragments = [];
+  for (const part of content) {
+    if (typeof part === 'string') {
+      if (part.trim().length > 0) {
+        fragments.push(part.trim());
+      }
+      continue;
+    }
+    if (!part || typeof part !== 'object') {
+      continue;
+    }
+    const partType = readStringValue(part, 'type', '');
+    if (partType.length > 0 && partType !== 'text') {
+      continue;
+    }
+    const text = contentPartText(part).trim();
+    if (text.length > 0 && !isClaudeInternalUserMessage({}, text)) {
+      fragments.push(text);
+    }
+  }
+  return fragments.join('\n').trim();
+}
+
 function shouldImportCodexHistoryMessage(role, phase, text) {
   if (typeof text !== 'string' || text.trim().length === 0) {
     return false;
   }
   if (role === 'assistant') {
-    if (phase === 'commentary') {
-      return false;
-    }
-    return phase.length === 0 || phase === 'final_answer';
+    return phase.length === 0 || phase === 'commentary' || phase === 'final_answer';
   }
   if (role === 'user') {
     if (phase.length > 0) {
       return false;
     }
-    return !isCodexInternalWrapperText(text);
+    return !isCodexSystemUserMessageText(text);
   }
   return false;
 }
 
+function normalizeCodexSessionTitleText(text) {
+  if (typeof text !== 'string') {
+    return '';
+  }
+  let normalized = text.split(/\s+/).join(' ').trim();
+  if (normalized.length === 0) {
+    return '';
+  }
+  const slashCommand = normalized.match(/^\/([A-Za-z0-9_-]+)\s+(.+)$/);
+  if (slashCommand && typeof slashCommand[2] === 'string') {
+    normalized = slashCommand[2].trim();
+  }
+  if (normalized.length <= CODEX_SESSION_TITLE_MAX_LENGTH) {
+    return normalized;
+  }
+  return normalized.substring(0, CODEX_SESSION_TITLE_MAX_LENGTH - 3).trim() + '...';
+}
+
+function isCodexNonTitleInstructionText(text) {
+  const normalized = typeof text === 'string' ? text.trim() : '';
+  if (normalized.length === 0) {
+    return true;
+  }
+  if (normalized.startsWith('# AGENTS.md instructions')) {
+    return true;
+  }
+  if (normalized.startsWith('AGENTS.md instructions')) {
+    return true;
+  }
+  if (normalized === 'AGENTS' || normalized.startsWith('# AGENTS') || normalized.startsWith('AGENTS ')) {
+    return true;
+  }
+  if (normalized.startsWith('# Files mentioned by the user:')) {
+    return true;
+  }
+  if (normalized.startsWith('<permissions instructions>')) {
+    return true;
+  }
+  if (normalized.startsWith('<environment_context>')) {
+    return true;
+  }
+  if (normalized.startsWith('The following is the Codex agent history whose request action')) {
+    return true;
+  }
+  return normalized.indexOf('<INSTRUCTIONS>') >= 0 && normalized.indexOf('# AGENTS') >= 0;
+}
+
+function extractCodexRequestText(source) {
+  if (typeof source !== 'string' || source.trim().length === 0) {
+    return '';
+  }
+  const marker = '## My request for Codex:';
+  const fallbackMarker = 'My request for Codex:';
+  let text = source.trim();
+  let markerIndex = text.indexOf(marker);
+  if (markerIndex >= 0) {
+    text = text.substring(markerIndex + marker.length).trim();
+  } else {
+    markerIndex = text.indexOf(fallbackMarker);
+    if (markerIndex >= 0) {
+      text = text.substring(markerIndex + fallbackMarker.length).trim();
+    }
+  }
+  if (isCodexNonTitleInstructionText(text)) {
+    return '';
+  }
+  const lines = text.split(/\r?\n/);
+  const titleLines = [];
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0) {
+      continue;
+    }
+    if (trimmed.startsWith('# Files mentioned by the user:')) {
+      continue;
+    }
+    if (trimmed.startsWith('## ') && trimmed.endsWith(':')) {
+      continue;
+    }
+    if (trimmed.startsWith('<image ')) {
+      continue;
+    }
+    if (isCodexNonTitleInstructionText(trimmed)) {
+      return '';
+    }
+    titleLines.push(trimmed);
+    if (titleLines.join(' ').length >= CODEX_SESSION_TITLE_MAX_LENGTH) {
+      break;
+    }
+  }
+  return titleLines.join(' ');
+}
+
+function codexSessionTitleFromText(text) {
+  return normalizeCodexSessionTitleText(extractCodexRequestText(text));
+}
+
+function codexSessionTitleFromRecord(record) {
+  if (!record || typeof record !== 'object') {
+    return '';
+  }
+  if (record.type === 'turn_context') {
+    const payload = readObjectValue(record, 'payload');
+    if (payload) {
+      const title = codexSessionTitleFromText(readStringValue(payload, 'user_instructions', ''));
+      if (title.length > 0) {
+        return title;
+      }
+    }
+    return '';
+  }
+  if (record.type === 'event_msg') {
+    const payload = readObjectValue(record, 'payload');
+    if (!payload || readStringValue(payload, 'type', '') !== 'user_message') {
+      return '';
+    }
+    const directTitle = codexSessionTitleFromText(readStringValue(payload, 'message', ''));
+    if (directTitle.length > 0) {
+      return directTitle;
+    }
+    return codexSessionTitleFromText(textFromContentParts(payload.text_elements));
+  }
+  if (record.type !== 'response_item') {
+    return '';
+  }
+  const payload = readObjectValue(record, 'payload');
+  if (!payload || readStringValue(payload, 'type', '') !== 'message') {
+    return '';
+  }
+  const role = readStringValue(payload, 'role', '');
+  const phase = readStringValue(payload, 'phase', '');
+  const text = textFromContentParts(payload.content);
+  if (!shouldImportCodexHistoryMessage(role, phase, text)) {
+    return '';
+  }
+  return codexSessionTitleFromText(text);
+}
+
+function firstCodexSessionTitleFromRecords(records) {
+  if (!Array.isArray(records)) {
+    return '';
+  }
+  for (const record of records) {
+    const title = codexSessionTitleFromRecord(record);
+    if (title.length > 0) {
+      return title;
+    }
+  }
+  return '';
+}
+
+function firstCodexSessionTitleFromFile(filePath) {
+  const records = readFirstJsonLines(filePath, CODEX_TITLE_DEEP_SCAN_MAX_LINES);
+  return firstCodexSessionTitleFromRecords(records);
+}
+
+function isSpecificCodexHistoryTitle(title, workspaceTitle, displayName) {
+  if (typeof title !== 'string' || title.trim().length === 0) {
+    return false;
+  }
+  const normalized = title.trim();
+  if (normalized === displayName + ' Session') {
+    return false;
+  }
+  if (isCodexNonTitleInstructionText(normalized)) {
+    return false;
+  }
+  return workspaceTitle.length === 0 || normalized !== workspaceTitle;
+}
 function decodeClaudeProjectPath(projectKey) {
   if (typeof projectKey !== 'string' || projectKey.length === 0) {
     return '';
@@ -441,6 +803,49 @@ function decodeClaudeProjectPath(projectKey) {
     return normalized;
   }
   return projectKey;
+}
+
+function encodeClaudeProjectPath(workspacePath) {
+  if (typeof workspacePath !== 'string' || workspacePath.trim().length === 0) {
+    return '';
+  }
+  const normalized = path.resolve(workspacePath.trim()).split('\\').join('/');
+  return normalized.split(':').join('').split('/').join('-');
+}
+
+function safeAppendJsonLine(filePath, value) {
+  try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.appendFileSync(filePath, JSON.stringify(value) + '\n', 'utf8');
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function safePrependJsonLines(filePath, values) {
+  try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    const prefix = values.map((value) => JSON.stringify(value)).join('\n') + '\n';
+    const existing = safeReadTextFile(filePath);
+    fs.writeFileSync(filePath, prefix + existing, 'utf8');
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function firstJsonLineType(filePath) {
+  const records = readFirstJsonLines(filePath, 1);
+  if (records.length === 0) {
+    return '';
+  }
+  return readStringValue(records[0], 'type', '');
+}
+
+function isClaudeResumeCompatibleHistoryFile(filePath) {
+  const firstType = firstJsonLineType(filePath);
+  return firstType.length > 0 && firstType !== 'queue-operation';
 }
 
 function normalizeHistoryTimestamp(value, fallbackValue) {
@@ -526,7 +931,7 @@ function textFromJsonLine(line) {
   }
   try {
     const parsed = JSON.parse(line);
-    if (isToolJsonValue(parsed)) {
+    if (isToolJsonValue(parsed) || isUserRoleJsonValue(parsed)) {
       return '';
     }
     const fragments = [];
@@ -535,6 +940,62 @@ function textFromJsonLine(line) {
   } catch (error) {
     return '';
   }
+}
+
+function mergeCliStreamText(existingText, nextText) {
+  if (typeof nextText !== 'string' || nextText.length === 0) {
+    return typeof existingText === 'string' ? existingText : '';
+  }
+  if (typeof existingText !== 'string' || existingText.length === 0) {
+    return nextText;
+  }
+  if (existingText === nextText || existingText.endsWith(nextText)) {
+    return existingText;
+  }
+  if (nextText.startsWith(existingText)) {
+    return nextText;
+  }
+  return existingText + nextText;
+}
+
+function deltaFromCliStreamText(previousText, nextText) {
+  if (typeof nextText !== 'string' || nextText.length === 0) {
+    return '';
+  }
+  if (typeof previousText !== 'string' || previousText.length === 0) {
+    return nextText;
+  }
+  if (previousText === nextText || previousText.endsWith(nextText)) {
+    return '';
+  }
+  if (nextText.startsWith(previousText)) {
+    return nextText.substring(previousText.length);
+  }
+  return nextText;
+}
+
+function cliRunText(output) {
+  if (typeof output === 'string') {
+    return output;
+  }
+  if (output && typeof output === 'object') {
+    return readStringValue(output, 'text', '');
+  }
+  return '';
+}
+
+function cliRunToolStatus(output) {
+  if (output && typeof output === 'object') {
+    return readStringValue(output, 'toolStatus', 'completed');
+  }
+  return 'completed';
+}
+
+function cliRunSkipsAssistantCompletion(output) {
+  if (output && typeof output === 'object') {
+    return readBooleanValue(output, 'skipAssistantCompletion', false);
+  }
+  return false;
 }
 
 function firstStringValue(source, keys) {
@@ -621,7 +1082,231 @@ function isToolJsonValue(value) {
   if (item && isToolJsonValue(item)) {
     return true;
   }
+  const content = value.content;
+  if (content && isToolJsonValue(content)) {
+    return true;
+  }
+  const parts = value.parts;
+  if (parts && isToolJsonValue(parts)) {
+    return true;
+  }
   return false;
+}
+
+function isUserRoleJsonValue(value) {
+  if (value === null || value === undefined) {
+    return false;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (isUserRoleJsonValue(item)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  if (typeof value !== 'object') {
+    return false;
+  }
+  const typeText = firstStringValue(value, ['type', 'role']);
+  if (typeText.toLowerCase() === 'user') {
+    return true;
+  }
+  const message = readObjectValue(value, 'message');
+  if (message) {
+    const messageRole = readStringValue(message, 'role', '').toLowerCase();
+    if (messageRole === 'user') {
+      return true;
+    }
+  }
+  return false;
+}
+
+function normalizeCliPermissionReply(value) {
+  if (typeof value !== 'string' || value.length === 0) {
+    return 'once';
+  }
+  const lower = value.toLowerCase();
+  if (lower === 'allow' || lower === 'approve' || lower === 'approved' || lower === 'yes') {
+    return 'once';
+  }
+  if (lower === 'deny' || lower === 'denied' || lower === 'reject' || lower === 'rejected' || lower === 'no') {
+    return 'reject';
+  }
+  if (lower === 'always') {
+    return 'always';
+  }
+  if (lower === 'once') {
+    return 'once';
+  }
+  return 'once';
+}
+
+function extractClaudePermissionDenialText(value, depth) {
+  if (depth > 6 || value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    if (normalized.indexOf('Claude requested permissions to ') >= 0 &&
+      normalized.indexOf("but you haven't granted it yet") >= 0) {
+      return normalized;
+    }
+    return '';
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const text = extractClaudePermissionDenialText(item, depth + 1);
+      if (text.length > 0) {
+        return text;
+      }
+    }
+    return '';
+  }
+  if (typeof value !== 'object') {
+    return '';
+  }
+  const fields = ['text', 'content', 'result', 'message', 'output', 'error'];
+  for (const field of fields) {
+    const fieldValue = value[field];
+    const text = extractClaudePermissionDenialText(fieldValue, depth + 1);
+    if (text.length > 0) {
+      return text;
+    }
+  }
+  const payload = readObjectValue(value, 'payload');
+  if (payload) {
+    return extractClaudePermissionDenialText(payload, depth + 1);
+  }
+  return '';
+}
+
+function hasClaudePermissionToolResult(value, depth) {
+  if (depth > 6 || value === null || value === undefined) {
+    return false;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (hasClaudePermissionToolResult(item, depth + 1)) {
+        return true;
+      }
+    }
+    return false;
+  }
+  if (typeof value !== 'object') {
+    return false;
+  }
+  const typeText = readStringValue(value, 'type', '').toLowerCase();
+  if (typeText === 'tool_result' && extractClaudePermissionDenialText(value, depth).length > 0) {
+    return true;
+  }
+  const message = readObjectValue(value, 'message');
+  if (message && hasClaudePermissionToolResult(message, depth + 1)) {
+    return true;
+  }
+  const payload = readObjectValue(value, 'payload');
+  if (payload && hasClaudePermissionToolResult(payload, depth + 1)) {
+    return true;
+  }
+  const content = value.content;
+  if (content && hasClaudePermissionToolResult(content, depth + 1)) {
+    return true;
+  }
+  return false;
+}
+
+function isClaudePermissionDenialJsonLine(line) {
+  if (typeof line !== 'string' || line.trim().length === 0) {
+    return false;
+  }
+  try {
+    return hasClaudePermissionToolResult(JSON.parse(line), 0);
+  } catch (error) {
+    return false;
+  }
+}
+
+function claudePermissionTargetFromAction(actionText) {
+  const prefixes = [
+    'read from ',
+    'write to ',
+    'edit ',
+    'execute ',
+    'access '
+  ];
+  for (const prefix of prefixes) {
+    if (actionText.indexOf(prefix) === 0 && actionText.length > prefix.length) {
+      return actionText.substring(prefix.length).trim();
+    }
+  }
+  return '';
+}
+
+function claudePermissionTypeFromAction(actionText) {
+  if (actionText.indexOf('read') === 0) {
+    return 'read';
+  }
+  if (actionText.indexOf('write') === 0 || actionText.indexOf('edit') === 0) {
+    return 'write';
+  }
+  if (actionText.indexOf('execute') === 0) {
+    return 'execute';
+  }
+  return 'permission';
+}
+
+function makeClaudePermissionEvent(providerId, source) {
+  if (!hasClaudePermissionToolResult(source, 0)) {
+    return null;
+  }
+  const text = extractClaudePermissionDenialText(source, 0);
+  if (text.length === 0) {
+    return null;
+  }
+  const marker = 'Claude requested permissions to ';
+  const suffix = ", but you haven't granted it yet";
+  let actionText = '';
+  const markerIndex = text.indexOf(marker);
+  const suffixIndex = text.indexOf(suffix);
+  if (markerIndex >= 0 && suffixIndex > markerIndex) {
+    actionText = text.substring(markerIndex + marker.length, suffixIndex).trim();
+  }
+  const toolCallId = firstStringValue(source, ['tool_use_id', 'toolUseId', 'toolCallId', 'tool_call_id', 'id']);
+  const requestId = toolCallId.length > 0 ? toolCallId :
+    providerId + '_permission_' + crypto.createHash('sha1').update(safeJsonText(source)).digest('hex').substring(0, 12);
+  const permissionType = claudePermissionTypeFromAction(actionText);
+  const targetPath = claudePermissionTargetFromAction(actionText);
+  return {
+    requestId,
+    permissionId: requestId,
+    kind: 'permission',
+    title: 'Claude permission required',
+    prompt: text,
+    permission: {
+      type: permissionType,
+      path: targetPath,
+      action: actionText,
+      metadata: {
+        path: targetPath,
+        filePath: targetPath
+      }
+    },
+    status: 'pending',
+    rawJson: safeJsonText(source)
+  };
+}
+
+function parsePermissionEventsFromJsonLine(providerId, line) {
+  if (providerId !== 'claude' || typeof line !== 'string' || line.trim().length === 0) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(line);
+    const event = makeClaudePermissionEvent(providerId, parsed);
+    return event ? [event] : [];
+  } catch (error) {
+    return [];
+  }
 }
 
 function isRequestLikeType(typeText) {
@@ -680,8 +1365,9 @@ function normalizeRequestOptions(source) {
       if (label.length === 0) {
         continue;
       }
+      const id = firstStringValue(item, ['id', 'value', 'label']);
       result.push({
-        id: firstStringValue(item, ['id', 'value', 'label']),
+        id: id.length > 0 ? id : label,
         label,
         description: firstStringValue(item, ['description', 'detail', 'hint'])
       });
@@ -690,13 +1376,71 @@ function normalizeRequestOptions(source) {
   return result;
 }
 
-function makeRequestEvent(providerId, source) {
+function isAskUserQuestionToolName(nameText) {
+  const lower = typeof nameText === 'string' ? nameText.toLowerCase() : '';
+  return lower === 'askuserquestion' ||
+    lower === 'ask_user_question' ||
+    lower === 'ask-user-question' ||
+    lower.indexOf('askuserquestion') >= 0;
+}
+
+function firstAskUserQuestion(source) {
+  const directQuestions = readArrayValue(source, 'questions');
+  if (directQuestions.length > 0) {
+    const directQuestion = directQuestions[0];
+    if (directQuestion && typeof directQuestion === 'object' && !Array.isArray(directQuestion)) {
+      return directQuestion;
+    }
+  }
+  const input = readObjectValue(source, 'input');
+  const inputQuestions = readArrayValue(input, 'questions');
+  if (inputQuestions.length > 0) {
+    const inputQuestion = inputQuestions[0];
+    if (inputQuestion && typeof inputQuestion === 'object' && !Array.isArray(inputQuestion)) {
+      return inputQuestion;
+    }
+  }
+  return null;
+}
+
+function makeAskUserQuestionRequestEvent(providerId, source) {
+  const toolName = firstStringValue(source, ['name', 'toolName', 'tool_name', 'tool']);
+  const question = firstAskUserQuestion(source);
+  if (!question || !isAskUserQuestionToolName(toolName)) {
+    return null;
+  }
+  const input = readObjectValue(source, 'input');
   const requestId = firstStringValue(source, ['requestId', 'request_id', 'id', 'callId', 'call_id']);
+  const toolCallId = firstStringValue(source, ['toolCallId', 'tool_call_id', 'toolUseId', 'tool_use_id', 'id']);
+  const prompt = firstStringValue(question, ['question', 'prompt', 'message', 'text', 'content']);
+  const title = firstStringValue(question, ['header', 'title', 'name']);
+  const allowFreeText = readBooleanValue(question, 'allowFreeText', readBooleanValue(input, 'allowFreeText', true));
+  return {
+    requestId: requestId.length > 0 ? requestId : providerId + '_request_' + crypto.createHash('sha1').update(safeJsonText(source)).digest('hex').substring(0, 12),
+    toolCallId,
+    kind: 'request',
+    title,
+    prompt,
+    options: normalizeRequestOptions(question),
+    allowFreeText,
+    status: 'pending',
+    rawJson: safeJsonText(source)
+  };
+}
+
+function makeRequestEvent(providerId, source) {
+  const askUserQuestionEvent = makeAskUserQuestionRequestEvent(providerId, source);
+  if (askUserQuestionEvent) {
+    return askUserQuestionEvent;
+  }
+  const requestId = firstStringValue(source, ['requestId', 'request_id', 'id', 'callId', 'call_id']);
+  const toolCallId = firstStringValue(source, ['toolCallId', 'tool_call_id', 'toolUseId', 'tool_use_id']);
   const prompt = firstStringValue(source, ['question', 'prompt', 'message', 'text', 'content']);
   const title = firstStringValue(source, ['title', 'header', 'name']);
   const allowFreeText = source && typeof source === 'object' && source.allowFreeText === true;
   return {
     requestId: requestId.length > 0 ? requestId : providerId + '_request_' + crypto.createHash('sha1').update(safeJsonText(source)).digest('hex').substring(0, 12),
+    toolCallId,
     kind: 'request',
     title,
     prompt,
@@ -762,6 +1506,14 @@ function collectRequestEventsFromValue(providerId, value, events, depth) {
     return;
   }
   const typeText = firstStringValue(value, ['type', 'event', 'kind', 'name']);
+  const toolName = firstStringValue(value, ['name', 'toolName', 'tool_name', 'tool']);
+  if (isAskUserQuestionToolName(toolName)) {
+    const requestEvent = makeRequestEvent(providerId, value);
+    if (requestEvent.prompt.length > 0 || requestEvent.options.length > 0) {
+      events.push(requestEvent);
+    }
+    return;
+  }
   if (isRequestLikeType(typeText)) {
     events.push(makeRequestEvent(providerId, value));
   }
@@ -1239,6 +1991,7 @@ class CliProvider {
     this.goalPromptPrefix = readStringValue(config, 'goalPromptPrefix', '');
     this.supportsPlanMode = config && config.supportsPlanMode === true;
     this.supportsGoalMode = config && config.supportsGoalMode === true;
+    this.supportsPermissions = config && config.supportsPermissions === true;
     this.timeoutMs = readNumberValue(config, 'timeoutMs', DEFAULT_TIMEOUT_MS);
     this.models = buildConfiguredModels(this.id, Array.isArray(config && config.models) ? config.models : []);
     this.tools = Array.isArray(config && config.tools) ? config.tools : [];
@@ -1246,6 +1999,307 @@ class CliProvider {
     this.messages = new Map();
     this.sessionHistoryFiles = new Map();
     this.pendingPlans = new Map();
+    this.pendingPermissionRuns = new Map();
+    this.pendingRequestRuns = new Map();
+    this.activeRuns = new Map();
+  }
+
+  permissionRunKey(sessionId, requestId) {
+    return sessionId + ':' + requestId;
+  }
+
+  rememberPendingPermissionRun(session, promptText, interactionMode, permissionEvent) {
+    const requestId = readStringValue(permissionEvent, 'requestId', '');
+    const permissionId = readStringValue(permissionEvent, 'permissionId', requestId);
+    const effectiveRequestId = requestId.length > 0 ? requestId : permissionId;
+    if (session.sessionId.length === 0 || effectiveRequestId.length === 0) {
+      return null;
+    }
+    const key = this.permissionRunKey(session.sessionId, effectiveRequestId);
+    const existing = this.pendingPermissionRuns.get(key);
+    if (existing) {
+      return existing;
+    }
+    const pending = {
+      sessionId: session.sessionId,
+      requestId: effectiveRequestId,
+      permissionId: permissionId.length > 0 ? permissionId : effectiveRequestId,
+      promptText,
+      interactionMode,
+      resolved: false,
+      resolve: null,
+      promise: null
+    };
+    pending.promise = new Promise((resolve) => {
+      pending.resolve = resolve;
+    });
+    this.pendingPermissionRuns.set(this.permissionRunKey(pending.sessionId, pending.requestId), pending);
+    this.pendingPermissionRuns.set(this.permissionRunKey(pending.sessionId, pending.permissionId), pending);
+    return pending;
+  }
+
+  findPendingPermissionRun(sessionId, requestId, permissionId) {
+    const ids = [];
+    if (requestId.length > 0) {
+      ids.push(requestId);
+    }
+    if (permissionId.length > 0 && permissionId !== requestId) {
+      ids.push(permissionId);
+    }
+    if (sessionId.length > 0) {
+      for (const id of ids) {
+        const pending = this.pendingPermissionRuns.get(this.permissionRunKey(sessionId, id));
+        if (pending) {
+          return pending;
+        }
+      }
+    }
+    for (const pending of this.pendingPermissionRuns.values()) {
+      if (sessionId.length > 0 && pending.sessionId !== sessionId) {
+        continue;
+      }
+      if (pending.requestId === requestId || pending.permissionId === requestId ||
+        pending.requestId === permissionId || pending.permissionId === permissionId) {
+        return pending;
+      }
+    }
+    return null;
+  }
+
+  resolvePendingPermissionRun(pending, response) {
+    if (!pending || pending.resolved) {
+      return;
+    }
+    pending.resolved = true;
+    if (typeof pending.resolve === 'function') {
+      pending.resolve(response);
+    }
+  }
+
+  clearPendingPermissionRun(pending) {
+    if (!pending) {
+      return;
+    }
+    this.pendingPermissionRuns.delete(this.permissionRunKey(pending.sessionId, pending.requestId));
+    this.pendingPermissionRuns.delete(this.permissionRunKey(pending.sessionId, pending.permissionId));
+  }
+
+  requestRunKey(sessionId, requestId) {
+    return sessionId + ':' + requestId;
+  }
+
+  rememberPendingRequestRun(session, promptText, interactionMode, requestEvent) {
+    const requestId = readStringValue(requestEvent, 'requestId', '');
+    if (session.sessionId.length === 0 || requestId.length === 0) {
+      return null;
+    }
+    const key = this.requestRunKey(session.sessionId, requestId);
+    const existing = this.pendingRequestRuns.get(key);
+    if (existing) {
+      return existing;
+    }
+    const pending = {
+      sessionId: session.sessionId,
+      requestId,
+      toolCallId: readStringValue(requestEvent, 'toolCallId', ''),
+      title: readStringValue(requestEvent, 'title', ''),
+      prompt: readStringValue(requestEvent, 'prompt', ''),
+      promptText,
+      interactionMode,
+      resolved: false,
+      resolve: null,
+      promise: null
+    };
+    pending.promise = new Promise((resolve) => {
+      pending.resolve = resolve;
+    });
+    this.pendingRequestRuns.set(this.requestRunKey(pending.sessionId, pending.requestId), pending);
+    if (pending.toolCallId.length > 0) {
+      this.pendingRequestRuns.set(this.requestRunKey(pending.sessionId, pending.toolCallId), pending);
+    }
+    return pending;
+  }
+
+  findPendingRequestRun(sessionId, requestId) {
+    if (sessionId.length > 0 && requestId.length > 0) {
+      const pending = this.pendingRequestRuns.get(this.requestRunKey(sessionId, requestId));
+      if (pending) {
+        return pending;
+      }
+    }
+    for (const pending of this.pendingRequestRuns.values()) {
+      if (sessionId.length > 0 && pending.sessionId !== sessionId) {
+        continue;
+      }
+      if (pending.requestId === requestId || pending.toolCallId === requestId) {
+        return pending;
+      }
+    }
+    return null;
+  }
+
+  resolvePendingRequestRun(pending, response) {
+    if (!pending || pending.resolved) {
+      return;
+    }
+    pending.resolved = true;
+    if (typeof pending.resolve === 'function') {
+      pending.resolve(response);
+    }
+  }
+
+  clearPendingRequestRun(pending) {
+    if (!pending) {
+      return;
+    }
+    this.pendingRequestRuns.delete(this.requestRunKey(pending.sessionId, pending.requestId));
+    if (pending.toolCallId.length > 0) {
+      this.pendingRequestRuns.delete(this.requestRunKey(pending.sessionId, pending.toolCallId));
+    }
+  }
+
+  resolveAbortSessionId(sessionId, remoteSessionId) {
+    const candidates = [];
+    if (typeof sessionId === 'string' && sessionId.length > 0) {
+      candidates.push(sessionId);
+    }
+    if (typeof remoteSessionId === 'string' && remoteSessionId.length > 0) {
+      candidates.push(remoteSessionId);
+      candidates.push(this.id + ':' + remoteSessionId);
+    }
+    for (const candidate of candidates) {
+      if (this.sessions.has(candidate)) {
+        return candidate;
+      }
+    }
+    for (const candidate of candidates) {
+      if (this.activeRuns.has(candidate)) {
+        return candidate;
+      }
+    }
+    return candidates.length > 0 ? candidates[0] : '';
+  }
+
+  abortPendingInteractionRuns(sessionId, emit) {
+    let count = 0;
+    const permissionRuns = new Set();
+    for (const pending of this.pendingPermissionRuns.values()) {
+      if (pending && pending.sessionId === sessionId) {
+        permissionRuns.add(pending);
+      }
+    }
+    for (const pending of permissionRuns.values()) {
+      this.resolvePendingPermissionRun(pending, {
+        status: 'rejected',
+        requestId: pending.requestId,
+        permissionId: pending.permissionId,
+        reply: 'reject',
+        message: 'Session aborted.',
+        aborted: true
+      });
+      this.clearPendingPermissionRun(pending);
+      count += 1;
+      if (typeof emit === 'function') {
+        emit(makeEvent(EventType.PERMISSION_REQUESTED, sessionId, {
+          providerId: this.id,
+          requestId: pending.requestId,
+          permissionId: pending.permissionId,
+          status: 'rejected',
+          answer: 'Session aborted.',
+          optionId: 'abort',
+          reply: 'reject'
+        }));
+      }
+    }
+
+    const requestRuns = new Set();
+    for (const pending of this.pendingRequestRuns.values()) {
+      if (pending && pending.sessionId === sessionId) {
+        requestRuns.add(pending);
+      }
+    }
+    for (const pending of requestRuns.values()) {
+      this.resolvePendingRequestRun(pending, {
+        status: 'dismissed',
+        requestId: pending.requestId,
+        toolCallId: pending.toolCallId,
+        answer: '',
+        optionId: 'abort',
+        message: 'Session aborted.',
+        aborted: true
+      });
+      this.clearPendingRequestRun(pending);
+      count += 1;
+      if (typeof emit === 'function') {
+        emit(makeEvent(EventType.QUESTION_REQUESTED, sessionId, {
+          providerId: this.id,
+          requestId: pending.requestId,
+          toolCallId: pending.toolCallId,
+          status: 'dismissed',
+          answer: '',
+          optionId: 'abort'
+        }));
+      }
+    }
+    return count;
+  }
+
+  async abortSession(payload, emit) {
+    const sessionId = readStringValue(payload, 'sessionId', '');
+    const remoteSessionId = readStringValue(payload, 'remoteSessionId', '');
+    const effectiveSessionId = this.resolveAbortSessionId(sessionId, remoteSessionId);
+    if (effectiveSessionId.length === 0) {
+      throw new Error('Session id is required for abort request: ' + this.id);
+    }
+    const session = this.getSession(effectiveSessionId);
+    const runState = this.activeRuns.get(effectiveSessionId);
+    const pendingCount = this.abortPendingInteractionRuns(effectiveSessionId, emit);
+    let terminated = false;
+    if (runState) {
+      runState.aborted = true;
+      runState.abortReason = 'user';
+      terminated = terminateChildProcess(runState.child);
+    }
+    if (session) {
+      session.status = 'ready';
+      session.updatedAt = Date.now();
+      if (typeof emit === 'function') {
+        emit(makeEvent(EventType.SESSION_UPDATED, effectiveSessionId, { session }));
+      }
+    }
+    return {
+      status: runState || pendingCount > 0 ? 'aborted' : 'idle',
+      providerId: this.id,
+      sessionId: effectiveSessionId,
+      remoteSessionId,
+      terminated,
+      pendingCount
+    };
+  }
+
+  buildPromptWithRequestResponse(promptText, pending, response) {
+    const answer = readStringValue(response, 'answer', readStringValue(response, 'message', '')).trim();
+    const optionId = readStringValue(response, 'optionId', '').trim();
+    const title = readStringValue(pending, 'title', '').trim();
+    const question = readStringValue(pending, 'prompt', '').trim();
+    const replyText = answer.length > 0 ? answer : optionId;
+    const parts = [];
+    parts.push(promptText);
+    parts.push('');
+    parts.push('User answered an interactive question from the previous run. Continue the original task using this response.');
+    if (title.length > 0) {
+      parts.push('Question header: ' + title);
+    }
+    if (question.length > 0) {
+      parts.push('Question: ' + question);
+    }
+    if (optionId.length > 0) {
+      parts.push('Selected option: ' + optionId);
+    }
+    if (replyText.length > 0) {
+      parts.push('Answer: ' + replyText);
+    }
+    return parts.join('\n');
   }
 
   buildSessionFeatures() {
@@ -1256,7 +2310,7 @@ class CliProvider {
       messages: true,
       update: false,
       delete: false,
-      abort: false,
+      abort: true,
       fork: false,
       share: false,
       revert: false,
@@ -1279,7 +2333,7 @@ class CliProvider {
         streaming: this.jsonMode !== 'none',
         tools: this.tools.length > 0,
         previews: false,
-        permissions: false,
+        permissions: this.supportsPermissions,
         history: true,
         modelSelection: this.modelFlag.length > 0,
         speedProfiles: false,
@@ -1305,21 +2359,47 @@ class CliProvider {
       modes.push({
         id: 'goal',
         displayName: 'Goal',
-        description: 'Run the prompt as an implementation request.'
+        description: 'Run the prompt as an implementation request.',
+        category: 'run'
       });
     }
     if (this.supportsPlanMode) {
       modes.push({
         id: 'plan',
         displayName: 'Plan',
-        description: 'Draft a plan first and wait for approval.'
+        description: 'Draft a plan first and wait for approval.',
+        category: 'run'
+      });
+    }
+    if (this.id === 'claude' && this.supportsPermissions) {
+      modes.push({
+        id: 'claude-permissions-default',
+        displayName: 'Default permissions',
+        description: 'Use the Claude Code configured permission behavior.',
+        isDefault: true,
+        category: 'approval'
+      });
+      modes.push({
+        id: 'claude-permissions-accept-edits',
+        displayName: 'Accept edits',
+        description: 'Allow Claude Code to accept file edits while preserving other checks.',
+        isDefault: false,
+        category: 'approval'
+      });
+      modes.push({
+        id: 'claude-permissions-full-access',
+        displayName: 'Full access',
+        description: 'Run Claude Code with bypassPermissions for trusted local runs.',
+        isDefault: false,
+        category: 'approval'
       });
     }
     return modes;
   }
 
   createSession(payload) {
-    const sessionId = createSessionId(this.id);
+    const sessionId = this.id === 'claude' ? createUuidSessionId(this.id) : createSessionId(this.id);
+    const remoteSessionId = this.id === 'claude' ? remoteSessionIdFromLocalSessionId(this.id, sessionId) : sessionId;
     const requestedWorkspacePath = readStringValue(payload, 'workspacePath', '');
     const workspacePath = requestedWorkspacePath.length > 0 ? requestedWorkspacePath : process.cwd();
     const requestedWorkspaceTitle = readStringValue(payload, 'workspaceTitle', '');
@@ -1330,7 +2410,7 @@ class CliProvider {
     const now = Date.now();
     const session = {
       sessionId,
-      remoteSessionId: sessionId,
+      remoteSessionId,
       providerId: this.id,
       title: workspaceTitle.length > 0 ? workspaceTitle : (workspacePath.length > 0 ? this.displayName + ': ' + workspacePath : this.displayName + ' Session'),
       workspacePath,
@@ -1339,7 +2419,7 @@ class CliProvider {
       modelId,
       speedMode,
       reasoningMode,
-      interactionMode: 'goal',
+      interactionMode: '',
       messageCount: 0,
       status: 'ready',
       source: this.id,
@@ -1362,9 +2442,102 @@ class CliProvider {
         merged.set(item.sessionId, item);
       }
       this.collectPersistentSessions(merged);
-      return this.sessions.get(sessionId) || null;
+      const persistentSession = this.sessions.get(sessionId);
+      if (persistentSession) {
+        return persistentSession;
+      }
+      if (this.id === 'claude') {
+        return this.getLegacyClaudeSession(sessionId);
+      }
     }
     return null;
+  }
+
+  getLegacyClaudeSession(sessionId) {
+    const remoteSessionId = remoteSessionIdFromLocalSessionId(this.id, sessionId);
+    if (remoteSessionId.length === 0) {
+      return null;
+    }
+    const rootPath = path.join(os.homedir(), '.claude', 'projects');
+    const files = listJsonlFiles(rootPath, MAX_HISTORY_SESSIONS);
+    for (const filePath of files) {
+      if (path.basename(filePath, '.jsonl') !== remoteSessionId) {
+        continue;
+      }
+      const session = this.buildClaudeSessionFromFile(filePath, sessionId, remoteSessionId, false);
+      if (session) {
+        this.sessionHistoryFiles.set(session.sessionId, filePath);
+        return session;
+      }
+    }
+    return null;
+  }
+
+  buildClaudeSessionFromFile(filePath, requestedSessionId, requestedRemoteSessionId, requireResumeCompatible) {
+    if (requireResumeCompatible && !isClaudeResumeCompatibleHistoryFile(filePath)) {
+      return null;
+    }
+    const stat = safeFileStat(filePath);
+    if (!stat || !stat.isFile()) {
+      return null;
+    }
+    const records = readSampledJsonLines(filePath, 120, 80);
+    let remoteSessionId = requestedRemoteSessionId.length > 0 ? requestedRemoteSessionId : path.basename(filePath, '.jsonl');
+    let workspacePath = '';
+    let branchName = 'main';
+    let aiTitle = '';
+    let createdAt = stat.birthtimeMs > 0 ? stat.birthtimeMs : stat.mtimeMs;
+    let updatedAt = stat.mtimeMs;
+    let messageCount = 0;
+    for (const record of records) {
+      const recordSessionId = readStringValue(record, 'sessionId', '');
+      if (recordSessionId.length > 0) {
+        remoteSessionId = recordSessionId;
+      }
+      const cwd = readStringValue(record, 'cwd', '');
+      if (cwd.length > 0 && workspacePath.length === 0) {
+        workspacePath = cwd;
+      }
+      const gitBranch = readStringValue(record, 'gitBranch', '');
+      if (gitBranch.length > 0) {
+        branchName = gitBranch;
+      }
+      const title = readStringValue(record, 'aiTitle', '');
+      if (title.length > 0) {
+        aiTitle = title;
+      }
+      const timestamp = normalizeHistoryTimestamp(readStringValue(record, 'timestamp', ''), 0);
+      if (timestamp > 0) {
+        createdAt = Math.min(createdAt, timestamp);
+        updatedAt = Math.max(updatedAt, timestamp);
+      }
+      if (record.type === 'user' || record.type === 'assistant') {
+        messageCount += 1;
+      }
+    }
+    if (workspacePath.length === 0) {
+      workspacePath = decodeClaudeProjectPath(path.basename(path.dirname(filePath)));
+    }
+    const workspaceTitle = workspacePath.length > 0 ? path.basename(workspacePath) : '';
+    const sessionId = requestedSessionId.length > 0 ? requestedSessionId : this.id + ':' + remoteSessionId;
+    return {
+      sessionId,
+      remoteSessionId,
+      providerId: this.id,
+      title: aiTitle.length > 0 ? aiTitle : (workspaceTitle.length > 0 ? workspaceTitle : this.displayName + ' Session'),
+      workspacePath,
+      workspaceTitle,
+      branchName,
+      modelId: 'configured',
+      speedMode: 'auto',
+      reasoningMode: 'auto',
+      interactionMode: '',
+      messageCount,
+      status: 'ready',
+      source: this.id,
+      createdAt,
+      updatedAt
+    };
   }
 
   collectCodexIndexedSessions(merged) {
@@ -1382,18 +2555,19 @@ class CliProvider {
       const updatedAt = normalizeHistoryTimestamp(readStringValue(record, 'updated_at', ''), stat.mtimeMs);
       const title = readStringValue(record, 'thread_name', '');
       const modelId = codexModelIdFromValue(record);
+      const sessionTitle = isCodexNonTitleInstructionText(title) ? '' : title;
       const session = {
         sessionId: this.id + ':' + id,
         remoteSessionId: id,
         providerId: this.id,
-        title: title.length > 0 ? title : this.displayName + ' Session',
+        title: sessionTitle.length > 0 ? sessionTitle : this.displayName + ' Session',
         workspacePath: '',
         workspaceTitle: '',
         branchName: 'main',
         modelId: modelId.length > 0 ? modelId : 'configured',
         speedMode: 'auto',
         reasoningMode: 'auto',
-        interactionMode: 'goal',
+        interactionMode: '',
         messageCount: 0,
         status: 'ready',
         source: this.id,
@@ -1413,7 +2587,7 @@ class CliProvider {
       if (!stat || !stat.isFile()) {
         continue;
       }
-      const records = readSampledJsonLines(filePath, 64, 24);
+      const records = readSampledJsonLines(filePath, 192, 32);
       const metaEntries = [];
       let workspacePath = '';
       let primaryRemoteSessionId = codexSessionIdFromRolloutPath(filePath);
@@ -1421,6 +2595,7 @@ class CliProvider {
       let updatedAt = stat.mtimeMs;
       let messageCount = 0;
       let discoveredModelId = '';
+      let discoveredTitle = '';
       for (const record of records) {
         const timestamp = normalizeHistoryTimestamp(readStringValue(record, 'timestamp', ''), 0);
         if (timestamp > 0) {
@@ -1430,6 +2605,10 @@ class CliProvider {
         const recordModelId = codexModelIdFromValue(record);
         if (recordModelId.length > 0 && discoveredModelId.length === 0) {
           discoveredModelId = recordModelId;
+        }
+        const recordTitle = codexSessionTitleFromRecord(record);
+        if (recordTitle.length > 0 && discoveredTitle.length === 0) {
+          discoveredTitle = recordTitle;
         }
         if (record.type === 'session_meta') {
           const payload = readObjectValue(record, 'payload');
@@ -1472,6 +2651,9 @@ class CliProvider {
           messageCount += 1;
         }
       }
+      if (discoveredTitle.length === 0) {
+        discoveredTitle = firstCodexSessionTitleFromFile(filePath);
+      }
       if (metaEntries.length === 0) {
         metaEntries.push({
           remoteSessionId: primaryRemoteSessionId,
@@ -1494,9 +2676,9 @@ class CliProvider {
         const workspaceTitle = effectiveWorkspacePath.length > 0 ? path.basename(effectiveWorkspacePath) :
           (existing ? existing.workspaceTitle : '');
         const existingTitle = existing ? existing.title : '';
-        const hasSpecificTitle = existingTitle.length > 0 && existingTitle !== this.displayName + ' Session';
+        const hasSpecificTitle = isSpecificCodexHistoryTitle(existingTitle, workspaceTitle, this.displayName);
         const title = hasSpecificTitle ? existingTitle :
-          (workspaceTitle.length > 0 ? workspaceTitle : this.displayName + ' Session');
+          (discoveredTitle.length > 0 ? discoveredTitle : this.displayName + ' Session');
         const entryCreatedAt = entry.createdAt > 0 ? entry.createdAt : createdAt;
         const entryUpdatedAt = entry.updatedAt > 0 ? entry.updatedAt : updatedAt;
         const entryModelId = typeof entry.modelId === 'string' && entry.modelId.length > 0 ? entry.modelId : discoveredModelId;
@@ -1513,7 +2695,7 @@ class CliProvider {
             (entryModelId.length > 0 ? entryModelId : 'configured'),
           speedMode: existing && existing.speedMode.length > 0 ? existing.speedMode : 'auto',
           reasoningMode: existing && existing.reasoningMode && existing.reasoningMode.length > 0 ? existing.reasoningMode : 'auto',
-          interactionMode: existing && existing.interactionMode.length > 0 ? existing.interactionMode : 'goal',
+          interactionMode: existing && existing.interactionMode.length > 0 ? existing.interactionMode : '',
           messageCount: existing ? Math.max(existing.messageCount || 0, messageCount) : messageCount,
           status: 'ready',
           source: this.id,
@@ -1544,6 +2726,9 @@ class CliProvider {
       const workspaceTitle = workspacePath.length > 0 ? path.basename(workspacePath) : project;
       const updatedAt = normalizeHistoryTimestamp(readStringValue(record, 'timestamp', ''), stat.mtimeMs);
       const title = readStringValue(record, 'display', '');
+      if (title.trim().startsWith('/')) {
+        continue;
+      }
       const session = {
         sessionId: this.id + ':' + remoteSessionId,
         remoteSessionId,
@@ -1555,7 +2740,7 @@ class CliProvider {
         modelId: 'configured',
         speedMode: 'auto',
         reasoningMode: 'auto',
-        interactionMode: 'goal',
+        interactionMode: '',
         messageCount: 0,
         status: 'ready',
         source: this.id,
@@ -1576,6 +2761,9 @@ class CliProvider {
       }
       const stat = safeFileStat(filePath);
       if (!stat || !stat.isFile()) {
+        continue;
+      }
+      if (!isClaudeResumeCompatibleHistoryFile(filePath)) {
         continue;
       }
       const records = readSampledJsonLines(filePath, 120, 80);
@@ -1631,7 +2819,7 @@ class CliProvider {
         modelId: existing && existing.modelId.length > 0 ? existing.modelId : 'configured',
         speedMode: existing && existing.speedMode.length > 0 ? existing.speedMode : 'auto',
         reasoningMode: existing && existing.reasoningMode && existing.reasoningMode.length > 0 ? existing.reasoningMode : 'auto',
-        interactionMode: existing && existing.interactionMode.length > 0 ? existing.interactionMode : 'goal',
+        interactionMode: existing && existing.interactionMode.length > 0 ? existing.interactionMode : '',
         messageCount: existing ? Math.max(existing.messageCount || 0, messageCount) : messageCount,
         status: 'ready',
         source: this.id,
@@ -1685,6 +2873,27 @@ class CliProvider {
       messageId: stableMessageId,
       agentName: ''
     };
+  }
+
+  hasRecentDuplicateHistoryMessage(messages, message) {
+    if (!message || typeof message !== 'object') {
+      return true;
+    }
+    const startIndex = Math.max(0, messages.length - 4);
+    for (let index = startIndex; index < messages.length; index += 1) {
+      const existing = messages[index];
+      if (existing && existing.role === message.role && existing.text === message.text) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  pushHistoryMessage(messages, message) {
+    if (!message || this.hasRecentDuplicateHistoryMessage(messages, message)) {
+      return;
+    }
+    messages.push(message);
   }
 
   historyTimestampFromRecord(record, index) {
@@ -1753,6 +2962,55 @@ class CliProvider {
     let pendingReasoningText = '';
     for (let index = 0; index < records.length; index += 1) {
       const record = records[index];
+      if (record.type === 'event_msg') {
+        const payload = readObjectValue(record, 'payload');
+        if (!payload) {
+          continue;
+        }
+        const payloadType = readStringValue(payload, 'type', '');
+        if (payloadType === 'user_message') {
+          let text = readStringValue(payload, 'message', '');
+          if (text.length === 0) {
+            text = textFromContentParts(payload.text_elements);
+          }
+          if (!shouldImportCodexHistoryMessage('user', '', text)) {
+            continue;
+          }
+          pendingReasoningText = '';
+          const message = this.buildHistoryMessage(
+            sessionId,
+            'user',
+            text,
+            readStringValue(record, 'timestamp', ''),
+            readStringValue(payload, 'client_id', ''),
+            messages.length,
+            ''
+          );
+          this.pushHistoryMessage(messages, message);
+          continue;
+        }
+        if (payloadType === 'agent_message') {
+          const text = readStringValue(payload, 'message', '');
+          const phase = readStringValue(payload, 'phase', '');
+          if (!shouldImportCodexHistoryMessage('assistant', phase, text)) {
+            continue;
+          }
+          const message = this.buildHistoryMessage(
+            sessionId,
+            'assistant',
+            text,
+            readStringValue(record, 'timestamp', ''),
+            readStringValue(payload, 'turn_id', ''),
+            messages.length,
+            pendingReasoningText
+          );
+          this.pushHistoryMessage(messages, message);
+          if (pendingReasoningText.length > 0) {
+            pendingReasoningText = '';
+          }
+          continue;
+        }
+      }
       if (record.type !== 'response_item') {
         continue;
       }
@@ -1793,7 +3051,7 @@ class CliProvider {
         role === 'assistant' ? pendingReasoningText : ''
       );
       if (message) {
-        messages.push(message);
+        this.pushHistoryMessage(messages, message);
         if (role === 'assistant') {
           pendingReasoningText = '';
         }
@@ -1853,7 +3111,10 @@ class CliProvider {
       const messageObject = readObjectValue(record, 'message');
       const role = messageObject ? readStringValue(messageObject, 'role', type) : type;
       const content = messageObject ? messageObject.content : record.content;
-      const text = textFromContentParts(content);
+      const text = role === 'user' ? textFromClaudeUserContent(content) : textFromContentParts(content);
+      if (role === 'user' && isClaudeInternalUserMessage(record, text)) {
+        continue;
+      }
       const message = this.buildHistoryMessage(
         sessionId,
         role,
@@ -1931,6 +3192,7 @@ class CliProvider {
       session.reasoningMode = reasoningMode;
     }
     session.interactionMode = interactionMode;
+    session.interactionModes = normalizeStringArray(readArrayValue(payload, 'interactionModes'));
     session.status = 'running';
     session.updatedAt = Date.now();
     session.messageCount = session.messageCount + 1;
@@ -1955,9 +3217,13 @@ class CliProvider {
       }
     }));
 
-    const output = await this.runCli(session, text, interactionMode, emit);
-    const assistantText = output.trim();
-    if (interactionMode === 'plan' && assistantText.length > 0) {
+    const promptText = buildPromptWithContext(text, payload, session);
+    const output = await this.runCli(session, promptText, interactionMode, emit);
+    this.ensureClaudeResumeScaffold(session, text);
+    const assistantText = cliRunText(output).trim();
+    const skipAssistantCompletion = cliRunSkipsAssistantCompletion(output);
+    const toolStatus = cliRunToolStatus(output);
+    if (interactionMode === 'plan' && assistantText.length > 0 && !skipAssistantCompletion) {
       const planId = this.id + '_plan_' + crypto.createHash('sha1').update(sessionId + ':' + text + ':' + assistantText).digest('hex').substring(0, 16);
       this.pendingPlans.set(planId, {
         sessionId,
@@ -1966,7 +3232,8 @@ class CliProvider {
         planContent: assistantText,
         modelId: session.modelId,
         speedMode: session.speedMode,
-        reasoningMode: session.reasoningMode
+        reasoningMode: session.reasoningMode,
+        interactionModes: Array.isArray(session.interactionModes) ? session.interactionModes : []
       });
       emit(makeEvent(EventType.PLAN_REQUESTED, sessionId, {
         providerId: this.id,
@@ -1976,7 +3243,7 @@ class CliProvider {
         status: 'pending',
         originalPrompt: text
       }));
-    } else if (assistantText.length > 0) {
+    } else if (assistantText.length > 0 && !skipAssistantCompletion) {
       history.push({
         id: sessionId + ':assistant:' + String(history.length + 1),
         sessionId,
@@ -1991,13 +3258,19 @@ class CliProvider {
         text: assistantText,
         contentKind: 'text'
       }));
+    } else if (skipAssistantCompletion) {
+      emit(makeEvent(EventType.MESSAGE_COMPLETED, sessionId, {
+        role: 'assistant',
+        text: '',
+        contentKind: 'text'
+      }));
     }
     this.messages.set(sessionId, history);
     session.status = 'ready';
     session.updatedAt = Date.now();
     emit(makeEvent(EventType.TOOL_COMPLETED, sessionId, {
       toolCallId: this.id + '_cli',
-      status: 'completed'
+      status: toolStatus
     }));
     emit(makeEvent(EventType.SESSION_UPDATED, sessionId, { session }));
   }
@@ -2006,6 +3279,9 @@ class CliProvider {
     const mode = typeof value === 'string' ? value.toLowerCase() : '';
     if (mode === 'plan' && this.supportsPlanMode) {
       return 'plan';
+    }
+    if (mode === 'goal') {
+      return 'goal';
     }
     return 'goal';
   }
@@ -2022,7 +3298,11 @@ class CliProvider {
         return 'goal';
       }
     }
-    return this.normalizeInteractionMode(readStringValue(payload, 'interactionMode', readStringValue(payload, 'runMode', 'goal')));
+    const requestedMode = readStringValue(payload, 'interactionMode', readStringValue(payload, 'runMode', ''));
+    if (requestedMode.length === 0) {
+      return '';
+    }
+    return this.normalizeInteractionMode(requestedMode);
   }
 
   buildPromptText(promptText, interactionMode) {
@@ -2035,11 +3315,23 @@ class CliProvider {
     return promptText;
   }
 
-  buildArgs(session, promptText, interactionMode) {
+  buildArgs(session, promptText, interactionMode, runtimeOptions = {}) {
     const args = [];
     for (const arg of this.commandArgs) {
       if (typeof arg === 'string' && arg.length > 0) {
         args.push(arg);
+      }
+    }
+    if (this.id === 'claude') {
+      const remoteSessionId = readStringValue(session, 'remoteSessionId', remoteSessionIdFromLocalSessionId(this.id, session.sessionId));
+      if (isUuidText(remoteSessionId)) {
+        if (readNumberValue(session, 'messageCount', 0) > 1) {
+          args.push('--resume');
+          args.push(remoteSessionId);
+        } else {
+          args.push('--session-id');
+          args.push(remoteSessionId);
+        }
       }
     }
     if (this.cwdFlag.length > 0 && session.workspacePath.length > 0) {
@@ -2050,7 +3342,7 @@ class CliProvider {
       args.push(this.modelFlag);
       args.push(session.modelId);
     }
-    this.appendRuntimeModeArgs(args, session);
+    this.appendRuntimeModeArgs(args, session, runtimeOptions);
     const modeArgs = interactionMode === 'plan' ? this.planArgs : this.goalArgs;
     for (const arg of modeArgs) {
       if (typeof arg === 'string' && arg.length > 0) {
@@ -2065,33 +3357,199 @@ class CliProvider {
     return args;
   }
 
-  appendRuntimeModeArgs(args, session) {
+  appendRuntimeModeArgs(args, session, runtimeOptions = {}) {
+    if (this.id === 'claude') {
+      const permissionMode = this.selectedClaudePermissionMode(session, runtimeOptions);
+      if (permissionMode.length > 0) {
+        args.push('--permission-mode');
+        args.push(permissionMode);
+      }
+    }
     return args;
   }
 
-  runCli(session, promptText, interactionMode, emit) {
+  selectedClaudePermissionMode(session, runtimeOptions = {}) {
+    const override = readStringValue(runtimeOptions, 'claudePermissionMode', '');
+    if (override.length > 0) {
+      return override;
+    }
+    const modes = Array.isArray(session.interactionModes) ? session.interactionModes : [];
+    for (const mode of modes) {
+      if (mode === 'claude-permissions-full-access' || mode === 'full-access' || mode === 'bypassPermissions') {
+        return 'bypassPermissions';
+      }
+    }
+    for (const mode of modes) {
+      if (mode === 'claude-permissions-accept-edits' || mode === 'accept-edits' || mode === 'acceptEdits') {
+        return 'acceptEdits';
+      }
+    }
+    return '';
+  }
+
+  claudeSessionFilePath(session) {
+    if (this.id !== 'claude') {
+      return '';
+    }
+    const remoteSessionId = readStringValue(session, 'remoteSessionId', remoteSessionIdFromLocalSessionId(this.id, session.sessionId));
+    if (!isUuidText(remoteSessionId)) {
+      return '';
+    }
+    const workspacePath = readStringValue(session, 'workspacePath', '');
+    const projectKey = encodeClaudeProjectPath(workspacePath.length > 0 ? workspacePath : process.cwd());
+    if (projectKey.length === 0) {
+      return '';
+    }
+    return path.join(os.homedir(), '.claude', 'projects', projectKey, remoteSessionId + '.jsonl');
+  }
+
+  ensureClaudeHistoryIndex(session, promptText) {
+    if (this.id !== 'claude') {
+      return;
+    }
+    const remoteSessionId = readStringValue(session, 'remoteSessionId', remoteSessionIdFromLocalSessionId(this.id, session.sessionId));
+    if (!isUuidText(remoteSessionId)) {
+      return;
+    }
+    const historyPath = path.join(os.homedir(), '.claude', 'history.jsonl');
+    const records = readLastJsonLines(historyPath, MAX_HISTORY_SESSIONS);
+    for (const record of records) {
+      if (readStringValue(record, 'sessionId', '') === remoteSessionId) {
+        return;
+      }
+    }
+    let display = typeof promptText === 'string' ? promptText.split(/\s+/).join(' ').trim() : '';
+    if (display.length > 120) {
+      display = display.substring(0, 117).trim() + '...';
+    }
+    safeAppendJsonLine(historyPath, {
+      display: display.length > 0 ? display : readStringValue(session, 'title', this.displayName + ' Session'),
+      pastedContents: {},
+      timestamp: Date.now(),
+      project: readStringValue(session, 'workspacePath', ''),
+      sessionId: remoteSessionId
+    });
+  }
+
+  ensureClaudeResumeScaffold(session, promptText) {
+    if (this.id !== 'claude') {
+      return;
+    }
+    const remoteSessionId = readStringValue(session, 'remoteSessionId', remoteSessionIdFromLocalSessionId(this.id, session.sessionId));
+    if (!isUuidText(remoteSessionId)) {
+      return;
+    }
+    const filePath = this.claudeSessionFilePath(session);
+    if (filePath.length === 0) {
+      return;
+    }
+    const firstType = firstJsonLineType(filePath);
+    if (firstType !== 'mode') {
+      const nowIso = new Date().toISOString();
+      safePrependJsonLines(filePath, [
+        {
+          type: 'mode',
+          sessionId: remoteSessionId,
+          mode: 'normal'
+        },
+        {
+          type: 'permission-mode',
+          permissionMode: 'default',
+          sessionId: remoteSessionId
+        },
+        {
+          type: 'file-history-snapshot',
+          sessionId: remoteSessionId,
+          snapshot: {
+            trackedFileBackups: {}
+          },
+          timestamp: nowIso,
+          isSnapshotUpdate: false
+        }
+      ]);
+    }
+    this.sessionHistoryFiles.set(session.sessionId, filePath);
+    this.ensureClaudeHistoryIndex(session, promptText);
+  }
+
+  runCli(session, promptText, interactionMode, emit, runtimeOptions = {}) {
     return new Promise((resolve, reject) => {
       const effectivePrompt = this.buildPromptText(promptText, interactionMode);
-      const args = this.buildArgs(session, effectivePrompt, interactionMode);
+      if (this.id === 'claude') {
+        const filePath = this.claudeSessionFilePath(session);
+        if (filePath.length > 0 && safeFileStat(filePath)) {
+          this.ensureClaudeResumeScaffold(session, promptText);
+        }
+      }
+      const args = this.buildArgs(session, effectivePrompt, interactionMode, runtimeOptions);
       const child = spawn(this.command, args, {
         cwd: session.workspacePath.length > 0 ? session.workspacePath : process.cwd(),
         shell: process.platform === 'win32',
         stdio: ['pipe', 'pipe', 'pipe']
       });
+      const runState = {
+        sessionId: session.sessionId,
+        child,
+        aborted: false,
+        abortReason: ''
+      };
+      this.activeRuns.set(session.sessionId, runState);
       let stdout = '';
       let stderr = '';
       let jsonBuffer = '';
-      let lastEmittedText = '';
+      let lastEmittedText = readStringValue(runtimeOptions, 'initialEmittedText', '');
+      let pendingPermissionRun = null;
+      let pendingRequestRun = null;
+      let settled = false;
+      let timer = null;
+      const pendingRequestToolCallIds = new Set();
       const emittedToolEvents = new Set();
       const emittedRequestEvents = new Set();
       const emittedPlanEvents = new Set();
-      const timer = setTimeout(() => {
-        child.kill();
-        reject(new Error(this.displayName + ' timed out after ' + String(this.timeoutMs) + 'ms'));
+      const emittedPermissionEvents = new Set();
+      const clearActiveRun = () => {
+        if (this.activeRuns.get(session.sessionId) === runState) {
+          this.activeRuns.delete(session.sessionId);
+        }
+      };
+      const cancelledOutput = () => {
+        return {
+          text: '',
+          toolStatus: 'cancelled',
+          skipAssistantCompletion: true
+        };
+      };
+      const finishResolve = (output) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        if (timer !== null) {
+          clearTimeout(timer);
+        }
+        clearActiveRun();
+        resolve(output);
+      };
+      const finishReject = (error) => {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        if (timer !== null) {
+          clearTimeout(timer);
+        }
+        clearActiveRun();
+        reject(error);
+      };
+      timer = setTimeout(() => {
+        runState.aborted = true;
+        runState.abortReason = 'timeout';
+        terminateChildProcess(child);
+        finishReject(new Error(this.displayName + ' timed out after ' + String(this.timeoutMs) + 'ms'));
       }, this.timeoutMs);
 
       const emitText = (text, contentKind) => {
-        if (text.length === 0) {
+        if (runState.aborted || text.length === 0) {
           return;
         }
         emit(makeEvent(EventType.MESSAGE_DELTA, session.sessionId, {
@@ -2102,8 +3560,20 @@ class CliProvider {
       };
 
       const handleJsonLine = (line) => {
+        const permissionEvents = parsePermissionEventsFromJsonLine(this.id, line);
+        const requestEvents = parseRequestEventsFromJsonLine(this.id, line);
+        for (const requestEvent of requestEvents) {
+          if (requestEvent.toolCallId && requestEvent.toolCallId.length > 0) {
+            pendingRequestToolCallIds.add(requestEvent.toolCallId);
+          }
+        }
+        const hasPermissionEvent = permissionEvents.length > 0;
+        const hasRequestEvent = requestEvents.length > 0;
         const toolEvents = parseToolEventsFromJsonLine(this.id, line);
         for (const toolEvent of toolEvents) {
+          if (pendingRequestToolCallIds.has(toolEvent.toolCallId) || isAskUserQuestionToolName(toolEvent.name)) {
+            continue;
+          }
           const eventKey = toolEvent.toolCallId + ':' + toolEvent.status + ':' + crypto.createHash('sha1').update(toolEvent.rawJson).digest('hex');
           if (!emittedToolEvents.has(eventKey)) {
             emittedToolEvents.add(eventKey);
@@ -2116,7 +3586,7 @@ class CliProvider {
               }));
             } else {
               const outputText = toolEvent.status === 'error' && toolEvent.errorText.length > 0 ? toolEvent.errorText : toolEvent.outputText;
-              if (outputText.length > 0) {
+              if (outputText.length > 0 && !hasPermissionEvent && !hasRequestEvent) {
                 emit(makeEvent(EventType.TOOL_OUTPUT, session.sessionId, {
                   toolCallId: toolEvent.toolCallId,
                   name: toolEvent.name,
@@ -2137,14 +3607,40 @@ class CliProvider {
             }
           }
         }
-        const requestEvents = parseRequestEventsFromJsonLine(this.id, line);
+        for (const permissionEvent of permissionEvents) {
+          const eventKey = permissionEvent.requestId + ':' + crypto.createHash('sha1').update(permissionEvent.rawJson).digest('hex');
+          if (!emittedPermissionEvents.has(eventKey)) {
+            emittedPermissionEvents.add(eventKey);
+            if (pendingPermissionRun === null) {
+              pendingPermissionRun = this.rememberPendingPermissionRun(session, promptText, interactionMode, permissionEvent);
+            }
+            emit(makeEvent(EventType.PERMISSION_REQUESTED, session.sessionId, {
+              providerId: this.id,
+              requestId: permissionEvent.requestId,
+              permissionId: permissionEvent.permissionId,
+              kind: permissionEvent.kind,
+              title: permissionEvent.title,
+              prompt: permissionEvent.prompt,
+              permission: permissionEvent.permission,
+              status: permissionEvent.status,
+              rawJson: permissionEvent.rawJson
+            }));
+          }
+        }
         for (const requestEvent of requestEvents) {
           const eventKey = requestEvent.requestId + ':' + crypto.createHash('sha1').update(requestEvent.rawJson).digest('hex');
           if (!emittedRequestEvents.has(eventKey)) {
             emittedRequestEvents.add(eventKey);
+            if (requestEvent.toolCallId && requestEvent.toolCallId.length > 0) {
+              pendingRequestToolCallIds.add(requestEvent.toolCallId);
+            }
+            if (pendingRequestRun === null) {
+              pendingRequestRun = this.rememberPendingRequestRun(session, promptText, interactionMode, requestEvent);
+            }
             emit(makeEvent(EventType.QUESTION_REQUESTED, session.sessionId, {
               providerId: this.id,
               requestId: requestEvent.requestId,
+              toolCallId: requestEvent.toolCallId,
               kind: requestEvent.kind,
               title: requestEvent.title,
               prompt: requestEvent.prompt,
@@ -2170,7 +3666,8 @@ class CliProvider {
               planContent: planEvent.content,
               modelId: session.modelId,
               speedMode: session.speedMode,
-              reasoningMode: session.reasoningMode
+              reasoningMode: session.reasoningMode,
+              interactionModes: Array.isArray(session.interactionModes) ? session.interactionModes : []
             });
             emit(makeEvent(EventType.PLAN_REQUESTED, session.sessionId, {
               providerId: this.id,
@@ -2182,17 +3679,23 @@ class CliProvider {
             }));
           }
         }
-        const extracted = textFromJsonLine(line);
-        if (extracted.length === 0 || extracted === lastEmittedText) {
+        if (pendingPermissionRun !== null || pendingRequestRun !== null) {
           return;
         }
-        lastEmittedText = extracted;
-        emitText(extracted, 'text');
+        const extracted = isClaudePermissionDenialJsonLine(line) ? '' : textFromJsonLine(line);
+        const deltaText = deltaFromCliStreamText(lastEmittedText, extracted);
+        if (deltaText.length === 0) {
+          return;
+        }
+        lastEmittedText = mergeCliStreamText(lastEmittedText, extracted);
+        emitText(deltaText, 'text');
       };
-
       child.stdout.on('data', (chunk) => {
         const text = Buffer.from(chunk).toString('utf8');
         stdout = stdout + text;
+        if (runState.aborted) {
+          return;
+        }
         if (this.jsonMode === 'jsonl') {
           jsonBuffer = jsonBuffer + text;
           let newlineIndex = jsonBuffer.indexOf('\n');
@@ -2209,6 +3712,9 @@ class CliProvider {
       child.stderr.on('data', (chunk) => {
         const text = Buffer.from(chunk).toString('utf8');
         stderr = stderr + text;
+        if (runState.aborted) {
+          return;
+        }
         emit(makeEvent(EventType.TOOL_OUTPUT, session.sessionId, {
           toolCallId: this.id + '_cli',
           name: this.id + '.cli',
@@ -2216,31 +3722,108 @@ class CliProvider {
         }));
       });
       child.on('error', (error) => {
-        clearTimeout(timer);
-        reject(error);
+        if (runState.aborted) {
+          finishResolve(cancelledOutput());
+          return;
+        }
+        finishReject(error);
       });
-      child.on('exit', (code) => {
-        clearTimeout(timer);
-        if (this.jsonMode === 'jsonl' && jsonBuffer.trim().length > 0) {
-          handleJsonLine(jsonBuffer.trim());
+      child.on('exit', async (code) => {
+        if (timer !== null) {
+          clearTimeout(timer);
         }
-        if (code !== 0) {
-          reject(new Error(this.displayName + ' exited with code ' + String(code) + (stderr.length > 0 ? ': ' + stderr.trim() : '')));
-          return;
-        }
-        if (this.jsonMode === 'jsonl') {
-          const lines = stdout.split(/\r?\n/);
-          const fragments = [];
-          for (const line of lines) {
-            const text = textFromJsonLine(line);
-            if (text.length > 0) {
-              fragments.push(text);
-            }
+        try {
+          if (runState.aborted) {
+            finishResolve(cancelledOutput());
+            return;
           }
-          resolve(fragments.length > 0 ? fragments.join('\n') : stdout);
+          if (this.jsonMode === 'jsonl' && jsonBuffer.trim().length > 0) {
+            handleJsonLine(jsonBuffer.trim());
+          }
+          if (pendingPermissionRun !== null) {
+            session.status = 'waiting_permission';
+            session.updatedAt = Date.now();
+            emit(makeEvent(EventType.SESSION_UPDATED, session.sessionId, { session }));
+            const permissionResponse = await pendingPermissionRun.promise;
+            this.clearPendingPermissionRun(pendingPermissionRun);
+            if (runState.aborted || readBooleanValue(permissionResponse, 'aborted', false)) {
+              finishResolve(cancelledOutput());
+              return;
+            }
+            const responseStatus = readStringValue(permissionResponse, 'status', '');
+            if (responseStatus === 'rejected') {
+              finishResolve({
+                text: '',
+                toolStatus: 'rejected',
+                skipAssistantCompletion: true
+              });
+              return;
+            }
+            const rerunOutput = await this.runCli(session, promptText, interactionMode, emit, {
+              claudePermissionMode: 'bypassPermissions',
+              initialEmittedText: lastEmittedText
+            });
+            finishResolve(rerunOutput);
+            return;
+          }
+          if (pendingRequestRun !== null) {
+            session.status = 'waiting_request';
+            session.updatedAt = Date.now();
+            emit(makeEvent(EventType.SESSION_UPDATED, session.sessionId, { session }));
+            const requestResponse = await pendingRequestRun.promise;
+            this.clearPendingRequestRun(pendingRequestRun);
+            if (runState.aborted || readBooleanValue(requestResponse, 'aborted', false)) {
+              finishResolve(cancelledOutput());
+              return;
+            }
+            const responseStatus = readStringValue(requestResponse, 'status', '');
+            if (responseStatus === 'dismissed' || responseStatus === 'rejected') {
+              finishResolve({
+                text: '',
+                toolStatus: responseStatus,
+                skipAssistantCompletion: true
+              });
+              return;
+            }
+            const requestPrompt = this.buildPromptWithRequestResponse(promptText, pendingRequestRun, requestResponse);
+            const rerunOutput = await this.runCli(session, requestPrompt, interactionMode, emit, {
+              initialEmittedText: lastEmittedText
+            });
+            finishResolve(rerunOutput);
+            return;
+          }
+          if (code !== 0) {
+            finishReject(new Error(this.displayName + ' exited with code ' + String(code) + (stderr.length > 0 ? ': ' + stderr.trim() : '')));
+            return;
+          }
+          if (this.jsonMode === 'jsonl') {
+            const lines = stdout.split(/\r?\n/);
+            let mergedText = '';
+            for (const line of lines) {
+              if (isClaudePermissionDenialJsonLine(line)) {
+                continue;
+              }
+              const text = textFromJsonLine(line);
+              if (text.length > 0) {
+                mergedText = mergeCliStreamText(mergedText, text);
+              }
+            }
+            finishResolve({
+              text: mergedText.length > 0 ? mergedText : stdout,
+              toolStatus: 'completed',
+              skipAssistantCompletion: false
+            });
+            return;
+          }
+          finishResolve({
+            text: stdout,
+            toolStatus: 'completed',
+            skipAssistantCompletion: false
+          });
           return;
+        } catch (error) {
+          finishReject(error);
         }
-        resolve(stdout);
       });
       if (this.promptMode !== 'arg') {
         child.stdin.write(effectivePrompt);
@@ -2256,9 +3839,38 @@ class CliProvider {
     const requestId = readStringValue(payload, 'requestId', '');
     const answer = readStringValue(payload, 'answer', readStringValue(payload, 'message', ''));
     const optionId = readStringValue(payload, 'optionId', '');
-    const session = this.getSession(sessionId);
+    const status = optionId === 'dismissed' && answer.length === 0 ? 'dismissed' : 'answered';
+    const pending = this.findPendingRequestRun(sessionId, requestId);
+    const responseSessionId = pending ? pending.sessionId : sessionId;
+    const session = this.getSession(responseSessionId);
     if (!session) {
-      throw new Error('Session not found: ' + sessionId);
+      throw new Error('Session not found: ' + responseSessionId);
+    }
+    if (typeof emit === 'function' && responseSessionId.length > 0) {
+      emit(makeEvent(EventType.QUESTION_REQUESTED, responseSessionId, {
+        providerId: this.id,
+        requestId,
+        status,
+        answer,
+        optionId
+      }));
+    }
+    if (pending) {
+      this.resolvePendingRequestRun(pending, {
+        status,
+        requestId: pending.requestId,
+        toolCallId: pending.toolCallId,
+        answer,
+        optionId
+      });
+      return {
+        status,
+        requestId: pending.requestId,
+        continued: status === 'answered',
+        message: status === 'answered' ?
+          this.displayName + ' request answered; continuing the waiting run.' :
+          this.displayName + ' request dismissed; the waiting run will stop.'
+      };
     }
     const parts = [];
     parts.push('User response for request ' + (requestId.length > 0 ? requestId : 'latest') + ':');
@@ -2269,22 +3881,64 @@ class CliProvider {
       parts.push(answer);
     }
     const responseText = parts.join('\n');
-    emit(makeEvent(EventType.QUESTION_REQUESTED, sessionId, {
-      providerId: this.id,
-      requestId,
-      status: 'answered',
-      answer,
-      optionId
-    }));
     await this.sendMessage({
-      sessionId,
+      sessionId: responseSessionId,
       text: responseText,
       modelId: session.modelId,
       speedMode: session.speedMode,
       reasoningMode: session.reasoningMode,
-      interactionMode: 'goal'
+      interactionMode: 'goal',
+      interactionModes: Array.isArray(session.interactionModes) ? session.interactionModes : []
     }, emit);
-    return { status: 'answered', requestId };
+    return { status, requestId, continued: true };
+  }
+
+  async respondPermission(payload, emit) {
+    const sessionId = readStringValue(payload, 'sessionId', '');
+    const requestId = readStringValue(payload, 'requestId', readStringValue(payload, 'permissionId', ''));
+    const permissionId = readStringValue(payload, 'permissionId', requestId);
+    const reply = normalizeCliPermissionReply(readStringValue(payload, 'reply', readStringValue(payload, 'response', 'once')));
+    const message = readStringValue(payload, 'message', '');
+    const status = reply === 'reject' ? 'rejected' : 'allowed';
+    const pending = this.findPendingPermissionRun(sessionId, requestId, permissionId);
+    if (typeof emit === 'function' && sessionId.length > 0) {
+      emit(makeEvent(EventType.PERMISSION_REQUESTED, sessionId, {
+        providerId: this.id,
+        requestId,
+        permissionId,
+        status,
+        answer: message,
+        optionId: reply,
+        reply
+      }));
+    }
+    if (pending) {
+      this.resolvePendingPermissionRun(pending, {
+        status,
+        requestId: pending.requestId,
+        permissionId: pending.permissionId,
+        reply,
+        message
+      });
+      return {
+        status,
+        requestId: pending.requestId,
+        permissionId: pending.permissionId,
+        reply,
+        continued: status !== 'rejected',
+        message: status === 'rejected' ?
+          this.displayName + ' permission rejected; the waiting run will stop.' :
+          this.displayName + ' permission accepted; continuing the waiting run with a permission-enabled rerun.'
+      };
+    }
+    return {
+      status,
+      requestId,
+      permissionId,
+      reply,
+      continued: false,
+      message: this.displayName + ' print-mode permission responses update the request state; rerun with an appropriate permission mode to apply the grant.'
+    };
   }
 
   async respondPlan(payload, emit) {
@@ -2323,7 +3977,8 @@ class CliProvider {
       modelId: pending.modelId,
       speedMode: pending.speedMode,
       reasoningMode: pending.reasoningMode,
-      interactionMode: 'goal'
+      interactionMode: 'goal',
+      interactionModes: Array.isArray(pending.interactionModes) ? pending.interactionModes : []
     }, emit);
     this.pendingPlans.delete(planId);
     emit(makeEvent(EventType.PLAN_UPDATED, sessionId, {
@@ -2528,7 +4183,74 @@ class CodexCliProvider extends CliProvider {
       args.push('-c');
       args.push('service_tier="priority"');
     }
+    const permissionMode = this.selectedCodexPermissionMode(session);
+    if (permissionMode === 'auto-review') {
+      args.push('--ask-for-approval');
+      args.push('on-request');
+      args.push('--sandbox');
+      args.push('workspace-write');
+    } else if (permissionMode === 'full-access') {
+      args.push('--ask-for-approval');
+      args.push('never');
+      args.push('--sandbox');
+      args.push('danger-full-access');
+    }
     return args;
+  }
+
+  buildInteractionModes() {
+    const modes = [];
+    modes.push({
+      id: 'goal',
+      displayName: 'Goal',
+      description: 'Run the prompt as an implementation request.',
+      isDefault: true,
+      category: 'run'
+    });
+    modes.push({
+      id: 'plan',
+      displayName: 'Plan',
+      description: 'Draft a plan first and wait for approval.',
+      isDefault: false,
+      category: 'run'
+    });
+    modes.push({
+      id: 'codex-permissions-default',
+      displayName: 'Default permissions',
+      description: 'Use the approval and sandbox defaults from the local Codex configuration.',
+      isDefault: true,
+      category: 'approval'
+    });
+    modes.push({
+      id: 'codex-permissions-auto-review',
+      displayName: 'Auto-review',
+      description: 'Run with workspace-write sandboxing and let Codex request approvals when needed.',
+      isDefault: false,
+      category: 'approval'
+    });
+    modes.push({
+      id: 'codex-permissions-full-access',
+      displayName: 'Full access',
+      description: 'Run with danger-full-access sandboxing and no approval prompts.',
+      isDefault: false,
+      category: 'approval'
+    });
+    return modes;
+  }
+
+  selectedCodexPermissionMode(session) {
+    const modes = Array.isArray(session.interactionModes) ? session.interactionModes : [];
+    for (const mode of modes) {
+      if (mode === 'codex-permissions-full-access' || mode === 'full-access') {
+        return 'full-access';
+      }
+    }
+    for (const mode of modes) {
+      if (mode === 'codex-permissions-auto-review' || mode === 'auto-review') {
+        return 'auto-review';
+      }
+    }
+    return 'default';
   }
 
   buildCodexToolOptions(rootHelp, execHelp, enabledFeatures) {
@@ -2635,13 +4357,14 @@ function createClaudeProvider(config) {
     displayName: 'Claude Code',
     description: 'Runs Anthropic Claude Code through the official `claude -p` non-interactive mode.',
     command: readStringValue(config, 'command', 'claude'),
-    commandArgs: splitArgs(readStringValue(config, 'args', '-p --output-format stream-json --include-partial-messages')),
+    commandArgs: normalizeClaudeCommandArgs(splitArgs(readStringValue(config, 'args', '-p --verbose --output-format stream-json --include-partial-messages'))),
     promptMode: 'arg',
     modelFlag: '--model',
     cwdFlag: '',
     jsonMode: 'jsonl',
     supportsGoalMode: true,
     supportsPlanMode: true,
+    supportsPermissions: true,
     planArgs: readStringValue(config, 'planArgs', '--permission-mode plan'),
     goalArgs: readStringValue(config, 'goalArgs', ''),
     timeoutMs: readNumberValue(config, 'timeoutMs', DEFAULT_TIMEOUT_MS),

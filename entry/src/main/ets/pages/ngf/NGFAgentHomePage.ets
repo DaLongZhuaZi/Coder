@@ -1,23 +1,41 @@
-﻿import window from '@ohos.window';
+import window from '@ohos.window';
+import { ConfigurationConstant, common } from '@kit.AbilityKit';
 import { BusinessError, pasteboard } from '@kit.BasicServicesKit';
 import { image } from '@kit.ImageKit';
 import { util } from '@kit.ArkTS';
 import { http } from '@kit.NetworkKit';
 import { scanBarcode, scanCore } from '@kit.ScanKit';
-import { hdsMaterial, HdsNavigation, HdsNavigationAttribute, HdsNavigationTitleMode } from '@kit.UIDesignKit';
+import {
+  hdsMaterial,
+  HdsNavigation,
+  HdsNavigationAttribute,
+  HdsNavigationTitleMode,
+  HdsSceneController,
+  HdsSceneType,
+  HdsVisualComponent
+} from '@kit.UIDesignKit';
 import { uiContextManager } from 'ngf_framework';
-import { FileUtils } from 'ngf_framework';
-import { NGFHdsEffectPresetFactory, NGFHdsMaterialSurfacePreset } from 'ngf_framework';
+import { FileUtils, NGFFileEntry } from 'ngf_framework';
+import {
+  NGFHdsEffectPresetFactory,
+  NGFHdsInteractiveEffectPreset,
+  NGFHdsMaterialSurfacePreset,
+  NGFHdsSceneFlowPreset
+} from 'ngf_framework';
 import { NGFHdsTitleBarMenuAction, NGFHdsTitleBarOptionsFactory } from 'ngf_framework';
 import { NGFRichContentKind, NGFRichContentRenderer } from 'ngf_framework';
+import { NGFThemeMode } from 'ngf_framework';
 import { logger } from 'ngf_framework';
 import { ngfMediaPickerFacade } from 'ngf_framework';
+import { ngfThemeManagerFacade } from 'ngf_framework';
+import { ngfI18nManagerFacade } from 'ngf_framework';
 import { NGFNotificationRequest, NGFNotificationType, ngfBackgroundTaskManager, ngfSystemNotificationManager } from 'ngf_framework';
 import { resolveResourceString } from 'ngf_framework';
 import { AgentBridgeClient } from '../../features/agentBridge/AgentBridgeClient';
 import {
   AgentBridgeConnectionConfig,
   AgentBridgeConnectionStatus,
+  AgentBridgeContextItem,
   AgentBridgeDefaultOptions,
   AgentBridgeEnvelopeType,
   AgentBridgeEventType,
@@ -79,13 +97,36 @@ const AGENT_HOME_COMPOSER_SETTLE_DURATION_MS: number = 220;
 const AGENT_HOME_CONVERSATION_RENDER_SETTLE_MS: number = 220;
 const AGENT_HOME_CONVERSATION_RENDER_FADE_MS: number = 180;
 const AGENT_HOME_CONVERSATION_RENDER_TIMEOUT_MS: number = 8000;
+const AGENT_HOME_STARTUP_HISTORY_SYNC_TIMEOUT_MS: number = 45000;
+const AGENT_HOME_DESKTOP_SETUP_COMMAND: string = 'npm install -g @dlzz/agent-bridge\nngf-agent-bridge --setup';
 const AGENT_HOME_DIFF_LARGE_LINE_THRESHOLD: number = 18;
 const AGENT_HOME_DIFF_TABLE_MAX_LINES: number = 600;
 const AGENT_HOME_DIFF_TABLE_MAX_LINE_CHARS: number = 420;
 const AGENT_HOME_RICH_HEIGHT_ESTIMATE_MAX_CHARS: number = 60000;
+const AGENT_HOME_DEFERRED_RICH_RENDER_CHARS: number = 6000;
+const AGENT_HOME_DEFERRED_RICH_RENDER_DELAY_MS: number = 48;
+const AGENT_HOME_ONBOARDING_RICH_RENDER_DELAY_MS: number = 120;
+const AGENT_HOME_ONBOARDING_PROBE_ADVANCE_DELAY_MS: number = 900;
+const AGENT_HOME_ONBOARDING_WEB_PROBE_HEIGHT: number = 64;
+const AGENT_HOME_ONBOARDING_RICH_RENDER_HEIGHT: number = 360;
+const AGENT_HOME_ONBOARDING_PROBE_NATIVE_STAGE: number = 0;
+const AGENT_HOME_ONBOARDING_PROBE_INLINE_WEB_STAGE: number = 1;
+const AGENT_HOME_ONBOARDING_PROBE_LOAD_DATA_STAGE: number = 2;
+const AGENT_HOME_ONBOARDING_PROBE_MARKDOWN_STAGE: number = 3;
 const AGENT_HOME_AGENT_TASK_NOTIFICATION_ID: number = 32001;
 const AGENT_HOME_AGENT_REQUEST_NOTIFICATION_ID: number = 32002;
 const AGENT_HOME_NOTIFICATION_TEXT_LIMIT: number = 180;
+const AGENT_HOME_PREVIEW_CACHE_DIR: string = 'agent-previews';
+const AGENT_HOME_ATTACHMENT_PREVIEW_CACHE_DIR: string = 'agent-attachment-previews';
+const AGENT_HOME_ATTACHMENT_PREVIEW_DOWNLOAD_KIND: string = 'attachment.preview';
+const AGENT_HOME_AFDIAN_URL: string = 'https://afdian.com/a/dalongzz';
+const AGENT_HOME_APP_GALLERY_MANXIA_URL: string =
+  'https://appgallery.huawei.com/app/detail?id=com.dlzz.manxia&channelId=SHARE&source=appshare';
+const AGENT_HOME_APP_GALLERY_LUMABLOOM_URL: string =
+  'https://appgallery.huawei.com/app/detail?id=com.dlzz.lumabloom&channelId=SHARE&source=appshare';
+const AGENT_HOME_APP_GALLERY_SHUMAI_URL: string =
+  'https://appgallery.huawei.com/app/detail?id=com.dlzz.ebookparser&channelId=SHARE&source=appshare';
+const AGENT_HOME_MAIN_DESTINATION_NAME: string = 'agent_home_main_content';
 
 class AgentHomeActionKey {
   static readonly OPEN_WORKSPACES: string = 'open_workspaces';
@@ -109,13 +150,15 @@ class AgentHomeActionKey {
   static readonly SET_GOAL_MODE: string = 'set_goal_mode';
   static readonly SET_PLAN_MODE: string = 'set_plan_mode';
   static readonly OPEN_HOME: string = 'open_home';
-  static readonly OPEN_FRAMEWORK: string = 'open_framework';
   static readonly REFRESH_REMOTE_SESSIONS: string = 'refresh_remote_sessions';
   static readonly RENAME_WORKSPACE: string = 'rename_workspace';
   static readonly DELETE_WORKSPACE: string = 'delete_workspace';
   static readonly RENAME_SESSION: string = 'rename_session';
   static readonly DELETE_SESSION: string = 'delete_session';
   static readonly COPY_SESSION_ID: string = 'copy_session_id';
+  static readonly COPY_DESKTOP_COMMAND: string = 'copy_desktop_command';
+  static readonly SCAN_BRIDGE_QR: string = 'scan_bridge_qr';
+  static readonly OPEN_GLOBAL_SETTINGS: string = 'open_global_settings';
 }
 
 class AgentHomeSheetKey {
@@ -123,6 +166,9 @@ class AgentHomeSheetKey {
   static readonly WORKSPACES: string = 'workspaces';
   static readonly SESSIONS: string = 'sessions';
   static readonly SETTINGS: string = 'settings';
+  static readonly GLOBAL_SETTINGS: string = 'global_settings';
+  static readonly DEVELOPER_APPS: string = 'developer_apps';
+  static readonly SUPPORT_PROJECT: string = 'support_project';
   static readonly MODELS: string = 'models';
   static readonly RUNTIME: string = 'runtime';
   static readonly ATTACHMENTS: string = 'attachments';
@@ -195,6 +241,14 @@ class AgentHomeMainPageIndex {
   static readonly WORKSPACE_BROWSER: number = 2;
 }
 
+class AgentHomeNavPayload {
+  createdAt: number;
+
+  constructor() {
+    this.createdAt = Date.now();
+  }
+}
+
 class AgentHomeConversationItemKind {
   static readonly MESSAGE: string = 'message';
   static readonly TOOL_CALL: string = 'tool_call';
@@ -206,6 +260,33 @@ class AgentHomeAgentFilter {
   static readonly ALL: string = 'all';
   static readonly MAIN: string = 'main';
   static readonly SUBAGENT_PREFIX: string = 'subagent:';
+}
+
+class AgentHomeRemoteWorkspaceFilter {
+  static readonly ALL: string = 'all';
+}
+
+class AgentHomeGlobalSettingGroup {
+  static readonly THEME: string = 'theme';
+  static readonly LANGUAGE: string = 'language';
+}
+
+class AgentHomeDeveloperAppItem {
+  id: string;
+  title: ResourceStr;
+  description: ResourceStr;
+  icon: Resource;
+  appGalleryUrl: string;
+  isAvailable: boolean;
+
+  constructor(id: string, title: ResourceStr, description: ResourceStr, icon: Resource, appGalleryUrl: string, isAvailable: boolean) {
+    this.id = id;
+    this.title = title;
+    this.description = description;
+    this.icon = icon;
+    this.appGalleryUrl = appGalleryUrl;
+    this.isAvailable = isAvailable;
+  }
 }
 
 class AgentHomeAgentFilterOption {
@@ -229,6 +310,8 @@ class AgentHomeRichBlockKind {
   static readonly CODE: string = 'code';
   static readonly HEADING: string = 'heading';
   static readonly QUOTE: string = 'quote';
+  static readonly IMAGE: string = 'image';
+  static readonly TABLE: string = 'table';
 }
 
 class AgentHomeRichInlineKind {
@@ -236,17 +319,20 @@ class AgentHomeRichInlineKind {
   static readonly STRONG: string = 'strong';
   static readonly EMPHASIS: string = 'emphasis';
   static readonly CODE: string = 'code';
+  static readonly LINK: string = 'link';
 }
 
 class AgentHomeRichInlineRun {
   id: string;
   kind: string;
   text: string;
+  target: string;
 
-  constructor(id: string, kind: string, text: string) {
+  constructor(id: string, kind: string, text: string, target: string = '') {
     this.id = id;
     this.kind = kind;
     this.text = text;
+    this.target = target;
   }
 }
 
@@ -265,6 +351,28 @@ class AgentHomeRichBlock {
     this.marker = marker;
     this.meta = meta;
     this.level = level;
+  }
+}
+
+class AgentHomeMarkdownTableRow {
+  id: string;
+  cells: Array<AgentHomeMarkdownTableCell>;
+  isHeader: boolean;
+
+  constructor(id: string, cells: Array<AgentHomeMarkdownTableCell>, isHeader: boolean) {
+    this.id = id;
+    this.cells = cells;
+    this.isHeader = isHeader;
+  }
+}
+
+class AgentHomeMarkdownTableCell {
+  id: string;
+  text: string;
+
+  constructor(id: string, text: string) {
+    this.id = id;
+    this.text = text;
   }
 }
 
@@ -362,6 +470,40 @@ class AgentHomeAttachmentItem {
   }
 }
 
+class AgentHomeMessageAttachmentItem {
+  id: string;
+  kind: string;
+  displayName: string;
+  path: string;
+
+  constructor(id: string, kind: string, displayName: string, path: string) {
+    this.id = id;
+    this.kind = kind;
+    this.displayName = displayName;
+    this.path = path;
+  }
+}
+
+class AgentHomeMessageAttachmentParseResult {
+  bodyText: string;
+  attachments: Array<AgentHomeMessageAttachmentItem>;
+
+  constructor(bodyText: string, attachments: Array<AgentHomeMessageAttachmentItem>) {
+    this.bodyText = bodyText;
+    this.attachments = attachments;
+  }
+}
+
+class AgentHomeMessageAttachmentImageCache {
+  path: string;
+  content: string;
+
+  constructor(path: string, content: string) {
+    this.path = path;
+    this.content = content;
+  }
+}
+
 class AgentBridgeQrPayload {
   endpoint: string;
   token: string;
@@ -390,11 +532,47 @@ class AgentHomeRequestOptionItem {
   }
 }
 
+class AgentHomeRemoteWorkspaceFilterOption {
+  id: string;
+  title: string;
+  path: string;
+  count: number;
+
+  constructor(id: string, title: string, path: string, count: number) {
+    this.id = id;
+    this.title = title;
+    this.path = path;
+    this.count = count;
+  }
+}
+
+class AgentHomeRemoteSessionSection {
+  id: string;
+  title: string;
+  path: string;
+  count: number;
+  updatedAt: number;
+  sessions: Array<AgentBridgeRemoteSession>;
+
+  constructor(id: string, title: string, path: string, count: number, updatedAt: number, sessions: Array<AgentBridgeRemoteSession>) {
+    this.id = id;
+    this.title = title;
+    this.path = path;
+    this.count = count;
+    this.updatedAt = updatedAt;
+    this.sessions = sessions;
+  }
+}
+
 @Entry
 @Component
 struct NGFAgentHomePage {
   @StorageProp('ngf_visual_effects_effective_material_level')
   private effectiveMaterialLevel: number = hdsMaterial.MaterialLevel.GENTLE;
+  @StorageProp('ngf_current_theme')
+  private currentTheme: string = NGFThemeMode.AUTO;
+  @StorageProp('ngf_system_color_mode')
+  private systemColorMode: number = ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET;
   @StorageProp('ngf_is_dark_mode')
   private isDarkMode: boolean = false;
   @State private statusInsetVp: number = AGENT_HOME_DEFAULT_STATUS_INSET;
@@ -428,31 +606,36 @@ struct NGFAgentHomePage {
   @State private selectedRequestOptionId: string = '';
   @State private requestAnswerDraft: string = '';
   @State private workspacePanelTabIndex: number = AgentHomeWorkspacePanelTab.CHANGES;
+  @State private globalSettingsThemeSelection: string = NGFThemeMode.AUTO;
+  @State private globalSettingsLocaleSelection: string = '';
   @State private commitMessageDraft: string = '';
   @State private draftText: string = '';
-  @State private agentRunMode: string = AgentHomeRunMode.GOAL;
-  @State private selectedInteractionModeIds: Array<string> = [AgentHomeRunMode.GOAL];
+  @State private agentRunMode: string = '';
+  @State private selectedInteractionModeIds: Array<string> = [];
   @State private previewPath: string = '';
   @State private bridgeEndpoint: string = '';
   @State private bridgeToken: string = '';
   @State private workspaceTitleDraft: string = '';
   @State private workspacePathDraft: string = '';
-  @State private selectedProviderId: string = AgentBridgeProviderId.MOCK;
-  @State private selectedModelId: string = 'mock-fast';
+  @State private selectedProviderId: string = AgentBridgeProviderId.CODEX;
+  @State private selectedModelId: string = 'configured';
   @State private selectedSpeedMode: string = 'auto';
   @State private selectedReasoningMode: string = 'auto';
   @State private providerOptions: Array<AgentBridgeProviderOption> = AgentBridgeDefaultOptions.buildProviders();
   @State private remoteSessions: Array<AgentBridgeRemoteSession> = [];
-  @State private sessionImportProviderId: string = AgentBridgeProviderId.MOCK;
+  @State private loadingRemoteSessions: boolean = false;
+  @State private sessionImportProviderId: string = AgentBridgeProviderId.CODEX;
   @State private sessionSheetSearchText: string = '';
-  @State private newSessionProviderId: string = AgentBridgeProviderId.MOCK;
-  @State private newSessionModelId: string = 'mock-fast';
+  @State private remoteWorkspaceFilterId: string = AgentHomeRemoteWorkspaceFilter.ALL;
+  @State private newSessionProviderId: string = AgentBridgeProviderId.CODEX;
+  @State private newSessionModelId: string = 'configured';
   @State private newSessionSpeedMode: string = 'auto';
   @State private newSessionReasoningMode: string = 'auto';
   @State private pendingBridgeCreateLocalSessionId: string = '';
   @State private pendingBridgeCreateProviderId: string = '';
   @State private stoppedBridgeSessionId: string = '';
   @State private attachments: Array<AgentHomeAttachmentItem> = [];
+  @State private messageAttachmentImageCache: Array<AgentHomeMessageAttachmentImageCache> = [];
   @State private connectionStatus: string = AgentBridgeConnectionStatus.DISCONNECTED;
   @State private bridgeConnectionReasonText: string = '';
   @State private replyState: string = AgentHomeReplyState.IDLE;
@@ -461,6 +644,11 @@ struct NGFAgentHomePage {
   @State private selectedAgentFilterId: string = AgentHomeAgentFilter.ALL;
   @State private activeTurnElapsedText: string = '';
   @State private activeTurnTimerVisible: boolean = false;
+  @State private richContentReadyMessageIds: Array<string> = [];
+  @State private onboardingRichContentReady: boolean = false;
+  @State private onboardingRichContentProbeStage: number = AGENT_HOME_ONBOARDING_PROBE_NATIVE_STAGE;
+  @State private onboardingRichContentImageDataUrl: string = '';
+  @State private isLargeScreenNavigation: boolean = false;
   @State private pressedHomeActionKey: string = '';
   @State private isContextCompacting: boolean = false;
   @State private showConversationBottomButton: boolean = false;
@@ -473,16 +661,22 @@ struct NGFAgentHomePage {
   @State private transientStatusVisible: boolean = false;
   @State private transientStatusOpacity: number = 0;
   @State private sessionStatusPulseValue: number = 0;
+  @State private isPersistentStateLoading: boolean = true;
   @State private isConversationRenderPending: boolean = false;
   @State private conversationRenderOverlayOpacity: number = 0;
   @State private mainPageIndex: number = AgentHomeMainPageIndex.CHAT;
   @State private isWorkspaceSheetOpen: boolean = false;
   @State private isSessionSheetOpen: boolean = false;
   @State private isSettingsSheetOpen: boolean = false;
+  @State private isGlobalSettingsSheetOpen: boolean = false;
+  @State private isDeveloperAppsSheetOpen: boolean = false;
+  @State private isSupportProjectSheetOpen: boolean = false;
   @State private isModelSheetOpen: boolean = false;
   @State private isRuntimeSheetOpen: boolean = false;
   @State private isAttachmentSheetOpen: boolean = false;
   @State private isPreviewSheetOpen: boolean = false;
+  @State private isPermissionModePopupOpen: boolean = false;
+  @State private isRemoteWorkspaceFilterPopupOpen: boolean = false;
   @State private isSessionDetailsSheetOpen: boolean = false;
   @State private isWorkspaceBrowserSheetOpen: boolean = false;
   @State private isToolDetailSheetOpen: boolean = false;
@@ -507,6 +701,32 @@ struct NGFAgentHomePage {
   @State private settingsTabIndex: number = AgentHomeSettingsTabIndex.CONNECTION;
   private readonly client: AgentBridgeClient = new AgentBridgeClient();
   private readonly persistence: AgentHomePersistenceRepository = new AgentHomePersistenceRepository();
+  private readonly developerAppItems: Array<AgentHomeDeveloperAppItem> = [
+    new AgentHomeDeveloperAppItem(
+      'manxia',
+      $r('app.string.agent_home_developer_app_manxia_name'),
+      $r('app.string.agent_home_developer_app_manxia_desc'),
+      $r('app.media.developer_app_manxia_icon'),
+      AGENT_HOME_APP_GALLERY_MANXIA_URL,
+      true
+    ),
+    new AgentHomeDeveloperAppItem(
+      'lumabloom',
+      $r('app.string.agent_home_developer_app_lumabloom_name'),
+      $r('app.string.agent_home_developer_app_lumabloom_desc'),
+      $r('app.media.developer_app_lumabloom_icon'),
+      AGENT_HOME_APP_GALLERY_LUMABLOOM_URL,
+      true
+    ),
+    new AgentHomeDeveloperAppItem(
+      'shumai',
+      $r('app.string.agent_home_developer_app_shumai_name'),
+      $r('app.string.agent_home_developer_app_shumai_desc'),
+      $r('app.media.developer_app_shumai_icon'),
+      AGENT_HOME_APP_GALLERY_SHUMAI_URL,
+      true
+    )
+  ];
   private readonly mainTabsController: TabsController = new TabsController();
   private readonly conversationScroller: Scroller = new Scroller();
   private messageSequence: number = 0;
@@ -515,6 +735,8 @@ struct NGFAgentHomePage {
   private toolCallSequence: number = 0;
   private pendingFirstMessage: string = '';
   private pendingHistoryImportSessionId: string = '';
+  private startupHistoryImportSessionId: string = '';
+  private persistentStateLoadingTimeoutTimer: number = -1;
   private transientStatusTimer: number = -1;
   private transientStatusSequence: number = 0;
   private composerSettleTimer: number = -1;
@@ -532,12 +754,19 @@ struct NGFAgentHomePage {
   private activeAssistantStreamKey: string = '';
   private activeAssistantLocalMessageId: string = '';
   private handledBridgeDownloadPaths: Array<string> = [];
+  private pendingMessageAttachmentImagePaths: Array<string> = [];
   private pendingRemoteSessionsRequestPairs: Array<string> = [];
+  private pendingOpenSessionsSheetAfterBridgeQrConnect: boolean = false;
   private pendingWorkspaceFilesParentPath: string = '';
   private conversationRenderSessionId: string = '';
   private conversationRenderSequence: number = 0;
   private conversationRenderSettleTimer: number = -1;
   private conversationRenderTimeoutTimer: number = -1;
+  private richContentRenderTimer: number = -1;
+  private richContentPendingMessageIds: Array<string> = [];
+  private onboardingRichContentRenderTimer: number = -1;
+  private onboardingRichContentProbeTimer: number = -1;
+  private onboardingRichContentIconLoadRequested: boolean = false;
   private agentNotificationPermissionChecked: boolean = false;
   private agentNotificationPermissionEnabled: boolean = false;
   private agentNotificationPermissionPending: Promise<boolean> | null = null;
@@ -548,6 +777,10 @@ struct NGFAgentHomePage {
   private agentContinuousTaskPending: boolean = false;
   private agentContinuousTaskStopRequested: boolean = false;
   private agentContinuousTaskId: string = '';
+  private pendingFirstContextItems: Array<AgentBridgeContextItem> = [];
+  private readonly permissionRequestFlowLightController: HdsSceneController = new HdsSceneController();
+  private permissionRequestFlowLightActive: boolean = false;
+  private permissionRequestFlowLightStopping: boolean = false;
 
   aboutToAppear(): void {
     const uiContext = this.getUIContext();
@@ -556,8 +789,12 @@ struct NGFAgentHomePage {
     }
     NGFPageWindowSupport.apply(NGFPageWindowName.AGENT_HOME);
     this.readInsets();
+    this.isPersistentStateLoading = this.workspaces.length === 0 && this.sessions.length === 0 && this.messages.length === 0;
     this.initializeDefaults();
+    this.loadOnboardingRichContentIconDataUrl();
+    this.scheduleOnboardingRichContentRender();
     this.startSessionStatusPulse();
+    this.syncPermissionRequestFlowLight();
     this.client.setHandlers(
       (status: string, detail: string): void => {
         this.handleBridgeStatus(status, detail);
@@ -583,7 +820,12 @@ struct NGFAgentHomePage {
     this.clearConversationAutoScrollTimer();
     this.clearConversationScrollGuardTimer();
     this.clearConversationRenderTimers();
+    this.clearRichContentRenderTimer();
+    this.clearOnboardingRichContentRenderTimer();
+    this.clearOnboardingRichContentProbeTimer();
     this.clearSessionStatusPulse();
+    this.stopPermissionRequestFlowLight();
+    this.finishPersistentStateLoading();
     this.isConversationRenderPending = false;
     this.conversationRenderOverlayOpacity = 0;
     this.conversationRenderSessionId = '';
@@ -593,57 +835,337 @@ struct NGFAgentHomePage {
     this.cancelAgentRequestNotification();
     this.stopAgentContinuousTask();
     this.stopActiveTurnTimer();
-    this.client.disconnect();
+    this.client.clearHandlers();
     uiContextManager.clearUIContext();
   }
 
   build() {
     HdsNavigation(this.pathStack) {
-      Stack() {
-        this.buildMainPager()
-
-        this.buildWorkspaceSheetHost()
-        this.buildSessionSheetHost()
-        this.buildSettingsSheetHost()
-        this.buildModelSheetHost()
-        this.buildRuntimeSheetHost()
-        this.buildAttachmentSheetHost()
-        this.buildPreviewSheetHost()
-        this.buildSessionDetailsSheetHost()
-        this.buildWorkspaceBrowserSheetHost()
-        this.buildToolDetailSheetHost()
-        this.buildRequestDetailSheetHost()
-        this.buildPlanDetailSheetHost()
-        this.buildWorkspaceDiffDetailSheetHost()
-        this.buildWorkspaceContentPreviewSheetHost()
-        this.buildWorkspaceActionsSheetHost()
-        this.buildSessionActionsSheetHost()
-        this.buildRenameWorkspaceSheetHost()
-        this.buildRenameSessionSheetHost()
-      }
-      .width('100%')
-      .height('100%')
-      .backgroundColor($r('app.color.background_primary'))
-      .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP])
-      .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+      this.buildRootNavigationContent()
     }
-    .titleBar(NGFHdsTitleBarOptionsFactory.buildTransparentSurfaceWithMenu(
-      $r('app.string.agent_home_app_title'),
-      this.agentHomeTitleSubtitle(),
-      this.normalizedHdsMaterialLevel(),
-      this.agentHomeTitleBarMenuActions(),
-      3,
-      true,
-      false
-    ))
+    .titleBar(this.shouldUseWorkspaceTitleBarContrast()
+      ? NGFHdsTitleBarOptionsFactory.buildTransparentWhiteSurfaceWithMenu(
+        $r('app.string.agent_home_app_title'),
+        this.agentHomeTitleSubtitle(),
+        this.normalizedHdsMaterialLevel(),
+        this.agentHomeTitleBarMenuActions(),
+        3,
+        true,
+        false
+      )
+      : NGFHdsTitleBarOptionsFactory.buildTransparentSurfaceWithMenu(
+        $r('app.string.agent_home_app_title'),
+        this.agentHomeTitleSubtitle(),
+        this.normalizedHdsMaterialLevel(),
+        this.agentHomeTitleBarMenuActions(),
+        3,
+        true,
+        false
+      ))
     .titleMode(HdsNavigationTitleMode.MINI)
+    .mode(NavigationMode.Auto)
+    .navBarWidth(328)
+    .navBarWidthRange({ minWidth: 296, maxWidth: 380 })
+    .minContentWidth(560)
+    .navDestination(this.buildAgentHomeNavDestination)
+    .onNavigationModeChange((mode: NavigationMode): void => {
+      this.handleNavigationModeChange(mode);
+    })
     .hideBackButton(true)
     .bindToScrollable([this.conversationScroller])
     .width('100%')
     .height('100%')
     .backgroundColor($r('app.color.background_primary'))
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
+  }
+
+  @Builder
+  private buildRootNavigationContent(): void {
+    if (this.isLargeScreenNavigation) {
+      this.buildLargeScreenNavigationPane()
+    } else {
+      this.buildAgentHomeMainSurface()
+    }
+  }
+
+  @Builder
+  private buildAgentHomeNavDestination(name: string, pageInfos: Object): void {
+    if (name === AGENT_HOME_MAIN_DESTINATION_NAME) {
+      NavDestination() {
+        this.buildAgentHomeMainSurface()
+      }
+      .hideTitleBar(true)
+      .onBackPressed((): boolean => {
+        return this.isLargeScreenNavigation;
+      })
+    }
+  }
+
+  @Builder
+  private buildAgentHomeMainSurface(): void {
+    Stack() {
+      this.buildMainPager()
+      this.buildAgentHomeSheetHosts()
+    }
+    .width('100%')
+    .height('100%')
+    .backgroundColor($r('app.color.background_primary'))
+    .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
+  }
+
+  @Builder
+  private buildAgentHomeSheetHosts(): void {
+    this.buildWorkspaceSheetHost()
+    this.buildSessionSheetHost()
+    this.buildSettingsSheetHost()
+    this.buildGlobalSettingsSheetHost()
+    this.buildDeveloperAppsSheetHost()
+    this.buildSupportProjectSheetHost()
+    this.buildModelSheetHost()
+    this.buildRuntimeSheetHost()
+    this.buildAttachmentSheetHost()
+    this.buildPreviewSheetHost()
+    this.buildSessionDetailsSheetHost()
+    this.buildWorkspaceBrowserSheetHost()
+    this.buildToolDetailSheetHost()
+    this.buildRequestDetailSheetHost()
+    this.buildPlanDetailSheetHost()
+    this.buildWorkspaceDiffDetailSheetHost()
+    this.buildWorkspaceContentPreviewSheetHost()
+    this.buildWorkspaceActionsSheetHost()
+    this.buildSessionActionsSheetHost()
+    this.buildRenameWorkspaceSheetHost()
+    this.buildRenameSessionSheetHost()
+  }
+
+  @Builder
+  private buildLargeScreenNavigationPane(): void {
+    Column({ space: 14 }) {
+      Blank()
+        .height(this.agentHomeMainPageTitleBarSpacerHeight())
+        .hitTestBehavior(HitTestMode.None)
+
+      this.buildLargeScreenStatusCard()
+
+      Column({ space: 8 }) {
+        this.buildLargeScreenNavItem(
+          $r('sys.symbol.message'),
+          $r('app.string.agent_home_sessions_title'),
+          this.currentSessionTitle(),
+          AgentHomeMainPageIndex.CHAT
+        )
+        this.buildLargeScreenNavItem(
+          $r('sys.symbol.folder'),
+          $r('app.string.agent_home_workspaces_title'),
+          this.largeScreenWorkspaceSubtitle(),
+          AgentHomeMainPageIndex.WORKSPACES
+        )
+        this.buildLargeScreenNavItem(
+          $r('sys.symbol.doc_plaintext'),
+          $r('app.string.agent_home_workspace_tab_files'),
+          this.largeScreenFilesSubtitle(),
+          AgentHomeMainPageIndex.WORKSPACE_BROWSER
+        )
+      }
+      .width('100%')
+
+      Blank()
+        .layoutWeight(1)
+        .hitTestBehavior(HitTestMode.None)
+
+      Row({ space: 10 }) {
+        this.buildLargeScreenNavIconButton($r('sys.symbol.house'), AgentHomeActionKey.OPEN_HOME)
+        this.buildLargeScreenNavIconButton($r('sys.symbol.plus'), AgentHomeActionKey.NEW_SESSION)
+        this.buildLargeScreenNavIconButton($r('sys.symbol.ellipsis_message'), AgentHomeActionKey.OPEN_SESSIONS)
+        this.buildLargeScreenNavIconButton($r('sys.symbol.control'), AgentHomeActionKey.OPEN_GLOBAL_SETTINGS)
+        this.buildLargeScreenNavIconButton($r('sys.symbol.gearshape'), AgentHomeActionKey.OPEN_SETTINGS)
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Center)
+    }
+    .width('100%')
+    .height('100%')
+    .padding({ left: 14, right: 14, bottom: this.bottomInsetVp + 14 })
+    .backgroundColor($r('app.color.background_primary'))
+    .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP])
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+  }
+
+  @Builder
+  private buildLargeScreenStatusCard(): void {
+    Column({ space: 10 }) {
+      Row({ space: 8 }) {
+        SymbolGlyph(this.resolveConnectionStatusSymbol())
+          .fontSize(19)
+          .fontColor([this.resolveConnectionStatusColor()])
+        Text(this.resolveConnectionStatusPlainText())
+          .layoutWeight(1)
+          .fontSize(14)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.agentHomeReadableTextColor())
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .width('100%')
+
+      Text(this.agentHomeTitleSubtitle())
+        .width('100%')
+        .fontSize(12)
+        .lineHeight(17)
+        .fontColor(this.agentHomeReadableSecondaryColor())
+        .maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+    }
+    .width('100%')
+    .padding({ left: 14, right: 14, top: 13, bottom: 13 })
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(14)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildLargeScreenNavItem(symbol: Resource, title: ResourceStr, subtitle: string, pageIndex: number): void {
+    Button() {
+      Row({ space: 12 }) {
+        SymbolGlyph(symbol)
+          .fontSize(22)
+          .fontColor([this.mainPageIndex === pageIndex ? this.agentHomeControlIconColor(true) : this.agentHomeReadableSecondaryColor()])
+        Column({ space: 4 }) {
+          Text(title)
+            .width('100%')
+            .fontSize(14)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(this.agentHomeReadableTextColor())
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          Text(this.resolveDetailValue(subtitle))
+            .width('100%')
+            .fontSize(11)
+            .fontColor(this.agentHomeReadableSecondaryColor())
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .height(62)
+    .padding({ left: 14, right: 14 })
+    .backgroundColor(this.mainPageIndex === pageIndex ? this.agentHomeSolidControlBackgroundColor() : Color.Transparent)
+    .buttonStyle(ButtonStyleMode.NORMAL)
+    .border({
+      width: this.mainPageIndex === pageIndex ? 1.3 : this.agentHomeSurfaceBorderWidth(),
+      color: this.mainPageIndex === pageIndex ? this.agentHomeSelectedBorderColor(true) : this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(14)
+    .shadow(this.mainPageIndex === pageIndex ? this.agentHomeSurfaceShadowOptions() : {
+      radius: 0,
+      color: '#00000000',
+      offsetX: 0,
+      offsetY: 0
+    })
+    .clip(true)
+    .onClick((): void => {
+      this.showMainPage(pageIndex);
+      this.ensureLargeScreenMainDestination();
+    })
+  }
+
+  @Builder
+  private buildLargeScreenNavIconButton(symbol: Resource, actionKey: string): void {
+    Button() {
+      SymbolGlyph(symbol)
+        .fontSize(22)
+        .fontColor([this.agentHomeReadableSecondaryColor()])
+    }
+    .width(44)
+    .height(44)
+    .borderRadius(22)
+    .backgroundColor(Color.Transparent)
+    .buttonStyle(ButtonStyleMode.NORMAL)
+    .backgroundEffect(this.buildAgentHomeSurfacePreset().backgroundEffect)
+    .border({
+      width: this.buildAgentHomeSurfacePreset().borderWidth,
+      color: this.buildAgentHomeSurfacePreset().borderColor
+    })
+    .shadow(this.buildAgentHomeSurfacePreset().shadowOptions)
+    .visualEffect(this.buildAgentHomeSurfacePreset().buildVisualEffect())
+    .clip(true)
+    .onClick((): void => {
+      this.handleAction(actionKey);
+      this.ensureLargeScreenMainDestination();
+    })
+  }
+
+  private largeScreenWorkspaceSubtitle(): string {
+    const workspaceTitle = this.currentWorkspaceTitle();
+    const changeCount = this.visibleWorkspaceChanges().length;
+    if (this.loadingWorkspaceChanges && changeCount === 0) {
+      return resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_workspace_loading'));
+    }
+    if (workspaceTitle.length > 0 && workspaceTitle !== '-') {
+      if (changeCount > 0) {
+        return workspaceTitle + ' / ' + this.workspaceChangeCountText(changeCount);
+      }
+      return workspaceTitle + ' / ' + this.currentBranchName();
+    }
+    return this.currentWorkspacePathForDisplay();
+  }
+
+  private largeScreenFilesSubtitle(): string {
+    const fileCount = this.visibleWorkspaceFileCount();
+    const changeCount = this.visibleWorkspaceChanges().length;
+    if ((this.loadingWorkspaceFiles || this.isWorkspaceDirLoading('')) && fileCount === 0 && changeCount === 0) {
+      return resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_workspace_loading'));
+    }
+    if (fileCount > 0) {
+      if (changeCount > 0) {
+        return this.workspaceFileCountText(fileCount) + ' / ' + this.workspaceChangeCountText(changeCount);
+      }
+      return this.workspaceFileCountText(fileCount);
+    }
+    if (changeCount > 0) {
+      return this.workspaceChangeCountText(changeCount);
+    }
+    return this.currentWorkspacePathForDisplay();
+  }
+
+  private visibleWorkspaceFileCount(): number {
+    const files = this.visibleWorkspaceFiles();
+    let count = 0;
+    for (let index = 0; index < files.length; index++) {
+      if (files[index].kind === 'file') {
+        count = count + 1;
+      }
+    }
+    return count;
+  }
+
+  private workspaceChangeCountText(count: number): string {
+    const unit = resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_workspace_tab_changes'));
+    return String(count) + ' ' + unit;
+  }
+
+  private workspaceFileCountText(count: number): string {
+    const hostContext = this.getUIContext().getHostContext();
+    let unit = '';
+    if (count === 1) {
+      unit = resolveResourceString(hostContext, $r('app.string.agent_home_workspace_change_file_singular'));
+    } else {
+      unit = resolveResourceString(hostContext, $r('app.string.agent_home_workspace_change_file_plural'));
+    }
+    return String(count) + ' ' + unit;
   }
 
   @Builder
@@ -687,8 +1209,9 @@ struct NGFAgentHomePage {
     }
     .width('100%')
     .height('100%')
+    .backgroundColor($r('app.color.background_primary'))
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP])
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
     .barHeight(0)
     .barMode(BarMode.Fixed)
     .animationDuration(220)
@@ -722,7 +1245,7 @@ struct NGFAgentHomePage {
     .height('100%')
     .backgroundColor($r('app.color.background_primary'))
     .ignoreLayoutSafeArea([LayoutSafeAreaType.SYSTEM], [LayoutSafeAreaEdge.TOP])
-    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP])
   }
 
   @Builder
@@ -797,6 +1320,72 @@ struct NGFAgentHomePage {
       keyboardAvoidMode: SheetKeyboardAvoidMode.RESIZE_ONLY,
       onDisappear: (): void => {
         this.handleSheetDisappear(AgentHomeSheetKey.SETTINGS);
+      }
+    })
+  }
+
+  @Builder
+  private buildGlobalSettingsSheetHost(): void {
+    Column() {
+    }
+    .width(1)
+    .height(1)
+    .opacity(0)
+    .bindSheet($$this.isGlobalSettingsSheetOpen, this.buildGlobalSettingsSheet(), {
+      preferType: SheetType.BOTTOM,
+      detents: [SheetSize.MEDIUM, SheetSize.LARGE],
+      dragBar: true,
+      showClose: false,
+      backgroundColor: '#00000000',
+      maskColor: '#00000000',
+      blurStyle: BlurStyle.NONE,
+      keyboardAvoidMode: SheetKeyboardAvoidMode.RESIZE_ONLY,
+      onDisappear: (): void => {
+        this.handleSheetDisappear(AgentHomeSheetKey.GLOBAL_SETTINGS);
+      }
+    })
+  }
+
+  @Builder
+  private buildDeveloperAppsSheetHost(): void {
+    Column() {
+    }
+    .width(1)
+    .height(1)
+    .opacity(0)
+    .bindSheet($$this.isDeveloperAppsSheetOpen, this.buildDeveloperAppsSheet(), {
+      preferType: SheetType.BOTTOM,
+      detents: [SheetSize.LARGE],
+      dragBar: true,
+      showClose: false,
+      backgroundColor: '#00000000',
+      maskColor: '#00000000',
+      blurStyle: BlurStyle.NONE,
+      keyboardAvoidMode: SheetKeyboardAvoidMode.RESIZE_ONLY,
+      onDisappear: (): void => {
+        this.handleSheetDisappear(AgentHomeSheetKey.DEVELOPER_APPS);
+      }
+    })
+  }
+
+  @Builder
+  private buildSupportProjectSheetHost(): void {
+    Column() {
+    }
+    .width(1)
+    .height(1)
+    .opacity(0)
+    .bindSheet($$this.isSupportProjectSheetOpen, this.buildSupportProjectSheet(), {
+      preferType: SheetType.BOTTOM,
+      detents: [SheetSize.MEDIUM, SheetSize.LARGE],
+      dragBar: true,
+      showClose: false,
+      backgroundColor: '#00000000',
+      maskColor: '#00000000',
+      blurStyle: BlurStyle.NONE,
+      keyboardAvoidMode: SheetKeyboardAvoidMode.RESIZE_ONLY,
+      onDisappear: (): void => {
+        this.handleSheetDisappear(AgentHomeSheetKey.SUPPORT_PROJECT);
       }
     })
   }
@@ -964,7 +1553,7 @@ struct NGFAgentHomePage {
     .opacity(0)
     .bindSheet($$this.isRequestDetailSheetOpen, this.buildRequestDetailSheet(), {
       preferType: SheetType.BOTTOM,
-      detents: [SheetSize.MEDIUM, SheetSize.LARGE],
+      detents: [SheetSize.LARGE],
       dragBar: true,
       showClose: false,
       backgroundColor: '#00000000',
@@ -1135,13 +1724,21 @@ struct NGFAgentHomePage {
   private buildConversationPane(): void {
     Column() {
       Stack({ alignContent: Alignment.BottomEnd }) {
-        if (this.visibleConversationItems().length === 0 && !this.shouldShowConversationInlineStatus()) {
+        if (this.isPersistentStateLoading) {
+          Column() {
+            this.buildStartupStateLoading()
+          }
+          .width('100%')
+          .height('100%')
+          .padding({ top: this.conversationContentTopPadding(), bottom: this.conversationContentBottomPadding() })
+          .justifyContent(FlexAlign.Center)
+        } else if (this.visibleConversationItems().length === 0 && !this.shouldShowConversationInlineStatus()) {
           Column() {
             this.buildEmptyHomeActions()
           }
           .width('100%')
           .height('100%')
-          .padding({ top: this.conversationContentTopPadding(), bottom: this.conversationContentBottomPadding() })
+          .padding({ top: this.conversationContentTopPadding(), bottom: 0 })
           .justifyContent(FlexAlign.Center)
         } else {
           Scroll(this.conversationScroller) {
@@ -1194,10 +1791,10 @@ struct NGFAgentHomePage {
 
   @Builder
   private buildConversationRenderOverlay(): void {
-    Column({ space: 12 }) {
+    Row({ space: 8 }) {
       LoadingProgress()
-        .width(30)
-        .height(30)
+        .width(16)
+        .height(16)
         .color($r('app.color.text_secondary'))
         .enableLoading(this.isConversationRenderPending)
       Text($r('app.string.agent_home_conversation_rendering'))
@@ -1206,16 +1803,41 @@ struct NGFAgentHomePage {
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
     }
-    .width('100%')
-    .height('100%')
-    .padding({ left: 32, right: 32, top: this.conversationContentTopPadding(), bottom: this.conversationContentBottomPadding() })
+    .height(38)
+    .padding({ left: 12, right: 12 })
+    .margin({ right: 18, bottom: this.conversationContentBottomPadding() })
     .justifyContent(FlexAlign.Center)
-    .alignItems(HorizontalAlign.Center)
+    .alignItems(VerticalAlign.Center)
     .backgroundColor(this.conversationRenderOverlayColor())
-    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .backgroundEffect(this.buildAgentHomeSurfacePreset().backgroundEffect)
     .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .borderRadius(19)
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
     .opacity(this.conversationRenderOverlayOpacity)
     .animation({ duration: AGENT_HOME_CONVERSATION_RENDER_FADE_MS, curve: Curve.EaseOut })
+  }
+
+  @Builder
+  private buildStartupStateLoading(): void {
+    Column({ space: 12 }) {
+      LoadingProgress()
+        .width(24)
+        .height(24)
+        .color(this.agentHomeReadableSecondaryColor())
+        .enableLoading(this.isPersistentStateLoading)
+      Text($r('app.string.agent_home_conversation_rendering'))
+        .fontSize(14)
+        .fontColor(this.agentHomeReadableSecondaryColor())
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+    }
+    .width('100%')
+    .padding({ left: 22, right: 22 })
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
   }
 
   @Builder
@@ -1301,39 +1923,456 @@ struct NGFAgentHomePage {
 
   @Builder
   private buildEmptyHomeActions(): void {
-    Column({ space: 26 }) {
-      SymbolGlyph($r('sys.symbol.ellipsis_message'))
-        .fontSize(52)
-        .fontColor([$r('app.color.text_body')])
-
-      Column({ space: 12 }) {
-        this.buildHomeActionCard(
-          $r('sys.symbol.slider_horizontal_2'),
-          $r('app.string.agent_home_quick_setup_providers'),
-          $r('app.string.agent_home_quick_setup_providers_desc'),
-          AgentHomeActionKey.OPEN_SETTINGS,
-          true
+    Scroll() {
+      Column({ space: 14 }) {
+        Blank()
+          .height(this.agentHomeMainPageTitleBarSpacerHeight())
+        this.buildOnboardingHeroCard()
+        this.buildOnboardingCommandCard()
+        this.buildOnboardingStepCard(
+          $r('sys.symbol.desktop'),
+          '1',
+          $r('app.string.agent_home_onboarding_step_bridge_title'),
+          $r('app.string.agent_home_onboarding_step_bridge_desc'),
+          $r('app.string.agent_home_onboarding_step_bridge_action'),
+          AgentHomeActionKey.COPY_DESKTOP_COMMAND,
+          this.isOnboardingBridgeStepComplete(),
+          this.isOnboardingStepActive('bridge')
         )
-        this.buildHomeActionCard(
-          $r('sys.symbol.externaldrive'),
-          $r('app.string.agent_home_quick_import_session'),
-          $r('app.string.agent_home_quick_import_session_desc'),
+        this.buildOnboardingStepCard(
+          $r('sys.symbol.qrcode'),
+          '2',
+          $r('app.string.agent_home_onboarding_step_scan_title'),
+          $r('app.string.agent_home_onboarding_step_scan_desc'),
+          $r('app.string.agent_home_onboarding_step_scan_action'),
+          AgentHomeActionKey.SCAN_BRIDGE_QR,
+          this.isOnboardingConnectionStepComplete(),
+          this.isOnboardingStepActive('connection')
+        )
+        this.buildOnboardingStepCard(
+          $r('sys.symbol.ellipsis_message'),
+          '3',
+          $r('app.string.agent_home_onboarding_step_session_title'),
+          $r('app.string.agent_home_onboarding_step_session_desc'),
+          $r('app.string.agent_home_onboarding_step_session_action'),
           AgentHomeActionKey.REFRESH_REMOTE_SESSIONS,
-          false
+          this.isOnboardingSessionStepComplete(),
+          this.isOnboardingStepActive('session')
         )
-        this.buildHomeActionCard(
-          $r('sys.symbol.doc_text_badge_magnifyingglass'),
-          $r('app.string.agent_home_quick_view_changes'),
-          $r('app.string.agent_home_quick_view_changes_desc'),
-          AgentHomeActionKey.OPEN_WORKSPACE_BROWSER,
-          false
-        )
+        this.buildOnboardingStatusPanel()
+        this.buildOnboardingMarkdownDemoPanel()
+      }
+      .width('100%')
+      .padding({ left: 22, right: 22, top: 0, bottom: this.conversationContentBottomPadding() })
+    }
+    .width('100%')
+    .height('100%')
+    .scrollBar(BarState.Off)
+    .edgeEffect(EdgeEffect.Spring)
+  }
+
+  @Builder
+  private buildOnboardingHeroCard(): void {
+    Column({ space: 10 }) {
+      Row({ space: 12 }) {
+        SymbolGlyph($r('sys.symbol.AI_search'))
+          .fontSize(34)
+          .fontColor([$r('app.color.tag_blue')])
+        Column({ space: 5 }) {
+          Text($r('app.string.agent_home_onboarding_title'))
+            .width('100%')
+            .fontSize(25)
+            .fontWeight(FontWeight.Bold)
+            .fontColor(this.agentHomeReadableTextColor())
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          Text($r('app.string.agent_home_onboarding_subtitle'))
+            .width('100%')
+            .fontSize(13)
+            .lineHeight(19)
+            .fontColor(this.agentHomeReadableSecondaryColor())
+            .maxLines(5)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
       }
       .width('100%')
     }
     .width('100%')
-    .padding({ left: 28, right: 28 })
+    .padding({ left: 18, right: 18, top: 18, bottom: 18 })
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.buildAgentHomeSurfacePreset().backgroundEffect)
+    .border({
+      width: this.buildAgentHomeSurfacePreset().borderWidth,
+      color: this.agentHomeSelectedBorderColor(true)
+    })
+    .borderRadius(18)
+    .shadow(this.buildAgentHomeSurfacePreset().shadowOptions)
+    .visualEffect(this.buildAgentHomeSurfacePreset().buildVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildOnboardingCommandCard(): void {
+    Column({ space: 10 }) {
+      Row() {
+        Text($r('app.string.agent_home_onboarding_command_label'))
+          .fontSize(14)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.agentHomeReadableTextColor())
+          .layoutWeight(1)
+        Button($r('app.string.agent_home_onboarding_copy_command'))
+          .height(32)
+          .padding({ left: 12, right: 12 })
+          .fontSize(12)
+          .fontColor(this.agentHomeControlTextColor(true))
+          .backgroundColor(Color.Transparent)
+          .borderRadius(16)
+          .buttonStyle(ButtonStyleMode.NORMAL)
+          .onClick((): void => {
+            this.copyDesktopSetupCommand();
+          })
+      }
+      .width('100%')
+
+      Text(AGENT_HOME_DESKTOP_SETUP_COMMAND)
+        .width('100%')
+        .fontSize(15)
+        .fontColor(this.agentHomeReadableTextColor())
+        .fontWeight(FontWeight.Medium)
+        .copyOption(CopyOptions.LocalDevice)
+        .padding({ left: 12, right: 12, top: 11, bottom: 11 })
+        .backgroundColor($r('app.color.background_secondary'))
+        .borderRadius(12)
+
+      Text($r('app.string.agent_home_onboarding_command_desc'))
+        .width('100%')
+        .fontSize(12)
+        .lineHeight(18)
+        .fontColor(this.agentHomeReadableSecondaryColor())
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16, top: 15, bottom: 15 })
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(16)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildOnboardingStepCard(
+    symbol: Resource,
+    step: string,
+    title: ResourceStr,
+    subtitle: ResourceStr,
+    actionLabel: ResourceStr,
+    actionKey: string,
+    completed: boolean,
+    active: boolean
+  ): void {
+    Button() {
+      Row({ space: 12 }) {
+        this.buildOnboardingStepMarker(step, completed, active)
+        SymbolGlyph(symbol)
+          .fontSize(22)
+          .fontColor([active ? this.agentHomeControlIconColor(true) : this.agentHomeReadableSecondaryColor()])
+        Column({ space: 5 }) {
+          Text(title)
+            .width('100%')
+            .fontSize(15)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(this.agentHomeReadableTextColor())
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          Text(subtitle)
+            .width('100%')
+            .fontSize(12)
+            .lineHeight(17)
+            .fontColor(this.agentHomeReadableSecondaryColor())
+            .maxLines(3)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          Row({ space: 5 }) {
+            Text(actionLabel)
+              .fontSize(12)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(active ? this.agentHomeControlTextColor(true) : this.agentHomeReadableTextColor())
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            SymbolGlyph($r('sys.symbol.chevron_right'))
+              .fontSize(11)
+              .fontColor([active ? this.agentHomeControlIconColor(true) : this.agentHomeReadableSecondaryColor()])
+          }
+          .width('100%')
+          .justifyContent(FlexAlign.Start)
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .padding({ left: 15, right: 15, top: 13, bottom: 13 })
+    .backgroundColor(Color.Transparent)
+    .buttonStyle(ButtonStyleMode.NORMAL)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: active ? 1.5 : this.agentHomeSurfaceBorderWidth(),
+      color: active ? this.agentHomeSelectedBorderColor(true) : this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(14)
+    .shadow({
+      radius: active ? 18 : 8,
+      color: active ? '#33005DFF' : '#00000000',
+      offsetX: 0,
+      offsetY: active ? 6 : 2
+    })
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+    .onClick((): void => {
+      this.handleHomeAction(actionKey);
+    })
+  }
+
+  @Builder
+  private buildOnboardingStepMarker(step: string, completed: boolean, active: boolean): void {
+    Stack({ alignContent: Alignment.Center }) {
+      if (completed) {
+        SymbolGlyph($r('sys.symbol.checkmark'))
+          .fontSize(14)
+          .fontColor([active ? this.agentHomeControlIconColor(true) : $r('app.color.tag_green')])
+      } else {
+        Text(step)
+          .fontSize(12)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.agentHomeControlTextColor(active))
+          .textAlign(TextAlign.Center)
+      }
+    }
+    .width(25)
+    .height(25)
+    .backgroundColor(active ? this.agentHomeSolidControlBackgroundColor() : Color.Transparent)
+    .border({
+      width: active ? 1.4 : this.agentHomeSurfaceBorderWidth(),
+      color: active ? this.agentHomeSelectedBorderColor(true) : this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(8)
+  }
+
+  @Builder
+  private buildOnboardingStatusPanel(): void {
+    Column({ space: 10 }) {
+      Row({ space: 8 }) {
+        SymbolGlyph($r('sys.symbol.info_circle'))
+          .fontSize(17)
+          .fontColor([this.resolveConnectionStatusColor()])
+        Text($r('app.string.agent_home_onboarding_status_title'))
+          .fontSize(15)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.agentHomeReadableTextColor())
+          .layoutWeight(1)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .width('100%')
+      Text($r('app.string.agent_home_onboarding_status_hint'))
+        .width('100%')
+        .fontSize(12)
+        .lineHeight(17)
+        .fontColor(this.agentHomeReadableSecondaryColor())
+
+      Column({ space: 8 }) {
+        this.buildOnboardingStatusRow($r('app.string.agent_home_detail_connection_status'), this.resolveConnectionStatusPlainText())
+        this.buildOnboardingStatusRow($r('app.string.agent_home_detail_endpoint'), this.resolveDetailValue(this.bridgeEndpoint))
+        this.buildOnboardingStatusRow($r('app.string.agent_home_detail_provider'), this.currentProviderOption().displayName)
+        this.buildOnboardingStatusRow($r('app.string.agent_home_detail_workspace_title'), this.currentWorkspaceTitle())
+        this.buildOnboardingStatusRow($r('app.string.agent_home_detail_model'), this.currentModelDisplayText())
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .padding({ left: 15, right: 15, top: 14, bottom: 14 })
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(14)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildOnboardingMarkdownDemoPanel(): void {
+    Column({ space: 10 }) {
+      Row({ space: 8 }) {
+        SymbolGlyph($r('sys.symbol.info_circle'))
+          .fontSize(17)
+          .fontColor([this.agentHomeReadableSecondaryColor()])
+        Text($r('app.string.agent_home_onboarding_md_demo_label'))
+          .fontSize(15)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.agentHomeReadableTextColor())
+          .layoutWeight(1)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .width('100%')
+
+      if (this.onboardingRichContentReady) {
+        this.buildOnboardingProbeLabel($r('app.string.agent_home_onboarding_md_native_probe'), true)
+
+        if (this.onboardingRichContentProbeStage >= AGENT_HOME_ONBOARDING_PROBE_INLINE_WEB_STAGE) {
+          this.buildOnboardingProbeLabel(
+            $r('app.string.agent_home_onboarding_md_web_probe'),
+            this.onboardingRichContentProbeStage === AGENT_HOME_ONBOARDING_PROBE_INLINE_WEB_STAGE
+          )
+        }
+
+        if (this.onboardingRichContentProbeStage === AGENT_HOME_ONBOARDING_PROBE_INLINE_WEB_STAGE) {
+          this.buildOnboardingWebProbeRenderer(
+            this.onboardingWebProbeHtml($r('app.string.agent_home_onboarding_md_web_probe')),
+            false
+          )
+        }
+
+        if (this.onboardingRichContentProbeStage >= AGENT_HOME_ONBOARDING_PROBE_LOAD_DATA_STAGE) {
+          this.buildOnboardingProbeLabel(
+            $r('app.string.agent_home_onboarding_md_load_data_probe'),
+            this.onboardingRichContentProbeStage === AGENT_HOME_ONBOARDING_PROBE_LOAD_DATA_STAGE
+          )
+        }
+
+        if (this.onboardingRichContentProbeStage === AGENT_HOME_ONBOARDING_PROBE_LOAD_DATA_STAGE) {
+          this.buildOnboardingWebProbeRenderer(
+            this.onboardingWebProbeHtml($r('app.string.agent_home_onboarding_md_load_data_probe')),
+            true
+          )
+        }
+
+        if (this.onboardingRichContentProbeStage >= AGENT_HOME_ONBOARDING_PROBE_MARKDOWN_STAGE) {
+          this.buildOnboardingMarkdownProbeRenderer()
+        }
+      } else {
+        this.buildOnboardingMarkdownDemoLoading()
+      }
+    }
+    .width('100%')
+    .padding({ left: 15, right: 15, top: 14, bottom: 14 })
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(14)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildOnboardingProbeLabel(label: ResourceStr, active: boolean): void {
+    Row({ space: 7 }) {
+      SymbolGlyph(active ? $r('sys.symbol.circle') : $r('sys.symbol.checkmark_circle'))
+        .fontSize(12)
+        .fontColor([active ? this.agentHomeSolidControlBackgroundColor() : this.agentHomeReadableMutedColor()])
+      Text(label)
+        .width('100%')
+        .fontSize(12)
+        .lineHeight(18)
+        .fontColor(active ? this.agentHomeReadableTextColor() : this.agentHomeReadableSecondaryColor())
+        .maxLines(2)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+    }
+    .width('100%')
+    .alignItems(VerticalAlign.Top)
+  }
+
+  @Builder
+  private buildOnboardingWebProbeRenderer(content: string, forceLoadData: boolean): void {
+    NGFRichContentRenderer({
+      content: content,
+      contentKind: NGFRichContentKind.HTML,
+      isDarkMode: this.conversationRichContentDarkMode(),
+      bottomPadding: 0,
+      forceLoadData: forceLoadData,
+      diagnosticSurface: true,
+      onLinkClick: (url: string): boolean => {
+        return this.handleAssistantAnswerLinkClick(url);
+      }
+    })
+      .width('100%')
+      .height(AGENT_HOME_ONBOARDING_WEB_PROBE_HEIGHT)
+      .backgroundColor(this.isDarkMode ? '#101826' : '#FFFFFF')
+      .borderRadius(10)
+      .border({
+        width: 1,
+        color: this.agentHomeSurfaceBorderColor()
+      })
+  }
+
+  @Builder
+  private buildOnboardingMarkdownProbeRenderer(): void {
+    Column({ space: 8 }) {
+      this.buildAssistantNativeRichContent('onboarding_markdown_demo', this.onboardingMarkdownDemoContent())
+    }
+      .width('100%')
+      .padding(10)
+      .backgroundColor(this.codeBlockBackgroundColor())
+      .borderRadius(10)
+      .border({
+        width: 1,
+        color: this.codeBlockBorderColor()
+      })
+  }
+
+  @Builder
+  private buildOnboardingMarkdownDemoLoading(): void {
+    Column({ space: 9 }) {
+      LoadingProgress()
+        .width(22)
+        .height(22)
+        .color(this.agentHomeReadableMutedColor())
+        .enableLoading(true)
+      Text($r('app.string.agent_home_onboarding_md_demo_loading'))
+        .fontSize(12)
+        .fontColor(this.agentHomeReadableSecondaryColor())
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+    }
+    .width('100%')
+    .height(AGENT_HOME_ONBOARDING_RICH_RENDER_HEIGHT)
+    .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
+  }
+
+  @Builder
+  private buildOnboardingStatusRow(label: ResourceStr, value: string): void {
+    Row({ space: 10 }) {
+      Text(label)
+        .fontSize(12)
+        .fontColor(this.agentHomeReadableSecondaryColor())
+        .width(102)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+      Text(value)
+        .fontSize(13)
+        .fontColor(this.agentHomeReadableTextColor())
+        .layoutWeight(1)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        .textAlign(TextAlign.End)
+    }
+    .width('100%')
   }
 
   @Builder
@@ -1458,15 +2497,15 @@ struct NGFAgentHomePage {
       if (item.kind === AgentHomeConversationItemKind.MESSAGE) {
         ForEach(this.conversationMessageItems(item), (message: AgentHomeChatItem) => {
           this.buildMessageItem(message)
-        }, (message: AgentHomeChatItem): string => message.id)
+        }, (message: AgentHomeChatItem): string => this.conversationMessageItemId(message))
       } else if (item.kind === AgentHomeConversationItemKind.TOOL_CALL) {
         ForEach(this.conversationToolCallItems(item), (toolCall: AgentHomeToolCallItem) => {
           this.buildToolCallRow(toolCall)
-        }, (toolCall: AgentHomeToolCallItem): string => toolCall.id)
+        }, (toolCall: AgentHomeToolCallItem): string => this.conversationToolCallItemId(toolCall))
       } else if (item.kind === AgentHomeConversationItemKind.USER_REQUEST) {
         ForEach(this.conversationUserRequestItems(item), (request: AgentHomeUserRequestItem) => {
           this.buildUserRequestRow(request)
-        }, (request: AgentHomeUserRequestItem): string => request.id)
+        }, (request: AgentHomeUserRequestItem): string => request.id + '_' + request.status + '_' + String(request.updatedAt))
       } else if (item.kind === AgentHomeConversationItemKind.PLAN) {
         ForEach(this.conversationPlanItems(item), (plan: AgentHomePlanItem) => {
           this.buildPlanRow(plan)
@@ -1490,72 +2529,125 @@ struct NGFAgentHomePage {
 
   @Builder
   private buildAssistantMessage(item: AgentHomeChatItem): void {
-    Row() {
-      Column({ space: 10 }) {
-        Row({ space: 8 }) {
-          Text(this.providerDisplayNameForId(this.providerIdForSession(item.sessionId)))
-            .fontSize(12)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('app.color.text_secondary'))
-            .layoutWeight(1)
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-          this.buildAgentNameBadge(item.agentName)
-        }
-        .width('100%')
-
-        if (item.reasoningText.length > 0) {
-          this.buildAssistantReasoningBlock(item)
-        }
-
-        if (item.text.length > 0) {
-          this.buildAssistantAnswerBlock(item)
-        }
+    Column({ space: 8 }) {
+      Row({ space: 8 }) {
+        SymbolGlyph($r('sys.symbol.AI_search'))
+          .fontSize(15)
+          .fontColor([this.agentHomeReadableSecondaryColor()])
+        Text(this.providerDisplayNameForId(this.providerIdForSession(item.sessionId)))
+          .fontSize(12)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.agentHomeReadableSecondaryColor())
+          .layoutWeight(1)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        this.buildAgentNameBadge(item.agentName)
       }
-      .width('92%')
-      Blank()
+      .width('100%')
+      .padding({ left: 2, right: 2 })
+
+      if (item.reasoningText.length > 0) {
+        this.buildAssistantReasoningBlock(item)
+      }
+
+      if (item.text.length > 0) {
+        this.buildAssistantAnswerBlock(item)
+      }
     }
     .width('100%')
+    .padding({ left: 2, right: 2, top: 2, bottom: 0 })
   }
 
   @Builder
   private buildAssistantAnswerBlock(item: AgentHomeChatItem): void {
-    Column({ space: 10 }) {
-      NGFRichContentRenderer({
-        content: item.text,
-        contentKind: this.richContentKindForText(item.text),
-        isDarkMode: this.isDarkMode,
-        bottomPadding: 10
-      })
-        .width('100%')
-        .height(this.richContentEstimatedHeight(item.text))
+    Column({ space: 8 }) {
+      if (this.messageAttachmentItems(item.id, item.text).length > 0) {
+        this.buildMessageAttachmentGroup(item.id, this.messageAttachmentItems(item.id, item.text), false)
+      }
+
+      if (this.messageAttachmentBodyText(item.id, item.text).length > 0) {
+        if (this.shouldDeferRichContentRenderForText(item.id, this.messageAttachmentBodyText(item.id, item.text)) && !this.isRichContentReady(item.id)) {
+          this.buildDeferredRichContentLoadingText(item.id, this.messageAttachmentBodyText(item.id, item.text))
+        } else {
+          this.buildAssistantNativeRichContent(item.id, this.messageAttachmentBodyText(item.id, item.text))
+        }
+      }
 
       if (item.durationText.length > 0) {
         Row({ space: 8 }) {
           SymbolGlyph($r('sys.symbol.square_and_pencil'))
             .fontSize(16)
-            .fontColor([$r('app.color.text_secondary')])
+            .fontColor([this.agentHomeReadableSecondaryColor()])
           Text($r('app.string.agent_home_worked_for', item.durationText))
             .fontSize(12)
-            .fontColor($r('app.color.text_secondary'))
+            .fontColor(this.agentHomeReadableSecondaryColor())
         }
         .width('100%')
+        .padding({ left: 2, right: 2 })
       }
 
       this.buildMessageRevertAction(item, false)
     }
     .width('100%')
-    .padding({ left: 14, right: 14, top: 12, bottom: 12 })
+    .padding({ left: 0, right: 0, top: 0, bottom: 2 })
+    .backgroundColor(Color.Transparent)
+  }
+
+  @Builder
+  private buildAssistantNativeRichContent(messageId: string, text: string): void {
+    Column({ space: 8 }) {
+      ForEach(this.richBlocksForText(messageId, text), (block: AgentHomeRichBlock) => {
+        this.buildAssistantRichBlock(block)
+      }, (block: AgentHomeRichBlock): string => block.id)
+    }
+    .width('100%')
+    .padding({ bottom: 8 })
+  }
+
+  @Builder
+  private buildDeferredRichContentLoading(item: AgentHomeChatItem): void {
+    this.buildDeferredRichContentLoadingText(item.id, item.text)
+  }
+
+  @Builder
+  private buildDeferredRichContentLoadingText(messageId: string, text: string): void {
+    Column({ space: 10 }) {
+      Row({ space: 8 }) {
+        LoadingProgress()
+          .width(16)
+          .height(16)
+          .color(this.agentHomeReadableMutedColor())
+          .enableLoading(true)
+        Text($r('app.string.agent_home_conversation_rendering'))
+          .fontSize(12)
+          .fontColor(this.agentHomeReadableSecondaryColor())
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .width('100%')
+
+      Text(this.richContentLoadingPreviewText(text))
+        .width('100%')
+        .fontSize(13)
+        .lineHeight(20)
+        .fontColor(this.agentHomeReadableMutedColor())
+        .maxLines(4)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+    }
+    .width('100%')
+    .padding(12)
     .backgroundColor(Color.Transparent)
     .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .borderRadius(12)
     .border({
       width: this.agentHomeSurfaceBorderWidth(),
       color: this.agentHomeSurfaceBorderColor()
     })
-    .borderRadius(16)
-    .shadow(this.agentHomeSurfaceShadowOptions())
     .visualEffect(this.agentHomeSurfaceVisualEffect())
     .clip(true)
+    .onAppear((): void => {
+      this.scheduleRichContentRender(messageId);
+    })
   }
 
   @Builder
@@ -1587,6 +2679,10 @@ struct NGFAgentHomePage {
         color: this.codeBlockBorderColor()
       })
       .borderRadius(12)
+    } else if (block.kind === AgentHomeRichBlockKind.TABLE) {
+      this.buildAssistantMarkdownTable(block)
+    } else if (block.kind === AgentHomeRichBlockKind.IMAGE) {
+      this.buildAssistantMarkdownImage(block)
     } else if (block.kind === AgentHomeRichBlockKind.BULLET || block.kind === AgentHomeRichBlockKind.ORDERED) {
       Row({ space: 8 }) {
         Text(block.marker)
@@ -1599,6 +2695,7 @@ struct NGFAgentHomePage {
           this.buildRichInlineText(block.text, 16, 24, $r('app.color.text_body'))
         }
         .layoutWeight(1)
+
       }
       .width('100%')
       .alignItems(VerticalAlign.Top)
@@ -1614,12 +2711,74 @@ struct NGFAgentHomePage {
           this.buildRichInlineText(block.text, 16, 25, $r('app.color.text_body'))
         }
         .layoutWeight(1)
+
       }
       .width('100%')
       .alignItems(VerticalAlign.Top)
     } else {
       this.buildRichInlineText(block.text, 17, 26, $r('app.color.text_body'))
     }
+  }
+
+  @Builder
+  private buildAssistantMarkdownImage(block: AgentHomeRichBlock): void {
+    Column({ space: 6 }) {
+      Image(block.meta)
+        .width('100%')
+        .height(112)
+        .objectFit(ImageFit.Contain)
+        .borderRadius(12)
+      if (block.text.length > 0) {
+        Text(block.text)
+          .fontSize(12)
+          .lineHeight(18)
+          .fontColor(this.agentHomeReadableSecondaryColor())
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+    }
+    .width('100%')
+    .padding(10)
+    .backgroundColor(this.codeBlockBackgroundColor())
+    .border({
+      width: 1,
+      color: this.codeBlockBorderColor()
+    })
+    .borderRadius(12)
+  }
+
+  @Builder
+  private buildAssistantMarkdownTable(block: AgentHomeRichBlock): void {
+    Column() {
+      ForEach(this.markdownTableRowsForBlock(block), (row: AgentHomeMarkdownTableRow) => {
+        Row() {
+          ForEach(row.cells, (cell: AgentHomeMarkdownTableCell) => {
+            Text(cell.text)
+              .fontSize(row.isHeader ? 13 : 12)
+              .lineHeight(row.isHeader ? 20 : 19)
+              .fontWeight(row.isHeader ? FontWeight.Medium : FontWeight.Regular)
+              .fontColor(row.isHeader ? this.agentHomeReadableTextColor() : this.agentHomeReadableSecondaryColor())
+              .layoutWeight(1)
+              .padding({ left: 8, right: 8, top: 7, bottom: 7 })
+              .maxLines(3)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }, (cell: AgentHomeMarkdownTableCell): string => cell.id)
+        }
+        .width('100%')
+        .backgroundColor(row.isHeader ? this.codeBlockBackgroundColor() : Color.Transparent)
+        .border({
+          width: { bottom: 1 },
+          color: this.codeBlockBorderColor()
+        })
+      }, (row: AgentHomeMarkdownTableRow): string => row.id)
+    }
+    .width('100%')
+    .clip(true)
+    .border({
+      width: 1,
+      color: this.codeBlockBorderColor()
+    })
+    .borderRadius(12)
   }
 
   private richContentKindForText(text: string): string {
@@ -1650,16 +2809,248 @@ struct NGFAgentHomePage {
     return height;
   }
 
+  private shouldDeferRichContentRender(item: AgentHomeChatItem): boolean {
+    return item.text.length >= AGENT_HOME_DEFERRED_RICH_RENDER_CHARS;
+  }
+
+  private shouldDeferRichContentRenderForText(_messageId: string, text: string): boolean {
+    return text.length >= AGENT_HOME_DEFERRED_RICH_RENDER_CHARS;
+  }
+
+  private isRichContentReady(messageId: string): boolean {
+    for (let index = 0; index < this.richContentReadyMessageIds.length; index++) {
+      if (this.richContentReadyMessageIds[index] === messageId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private isRichContentPending(messageId: string): boolean {
+    for (let index = 0; index < this.richContentPendingMessageIds.length; index++) {
+      if (this.richContentPendingMessageIds[index] === messageId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private scheduleRichContentRender(messageId: string): void {
+    if (messageId.length === 0 || this.isRichContentReady(messageId) || this.isRichContentPending(messageId)) {
+      return;
+    }
+    const pendingIds: Array<string> = [];
+    for (let index = 0; index < this.richContentPendingMessageIds.length; index++) {
+      pendingIds.push(this.richContentPendingMessageIds[index]);
+    }
+    pendingIds.push(messageId);
+    this.richContentPendingMessageIds = pendingIds;
+    this.scheduleNextRichContentRender();
+  }
+
+  private scheduleNextRichContentRender(): void {
+    if (this.richContentRenderTimer >= 0 || this.richContentPendingMessageIds.length === 0) {
+      return;
+    }
+    this.richContentRenderTimer = setTimeout((): void => {
+      this.richContentRenderTimer = -1;
+      this.markNextRichContentReady();
+      this.scheduleNextRichContentRender();
+    }, AGENT_HOME_DEFERRED_RICH_RENDER_DELAY_MS);
+  }
+
+  private markNextRichContentReady(): void {
+    if (this.richContentPendingMessageIds.length === 0) {
+      return;
+    }
+    const messageId = this.richContentPendingMessageIds[0];
+    const nextPending: Array<string> = [];
+    for (let index = 1; index < this.richContentPendingMessageIds.length; index++) {
+      nextPending.push(this.richContentPendingMessageIds[index]);
+    }
+    this.richContentPendingMessageIds = nextPending;
+    if (this.isRichContentReady(messageId)) {
+      return;
+    }
+    const readyIds: Array<string> = [];
+    for (let index = 0; index < this.richContentReadyMessageIds.length; index++) {
+      readyIds.push(this.richContentReadyMessageIds[index]);
+    }
+    readyIds.push(messageId);
+    this.richContentReadyMessageIds = readyIds;
+  }
+
+  private clearRichContentRenderTimer(): void {
+    if (this.richContentRenderTimer >= 0) {
+      clearTimeout(this.richContentRenderTimer);
+      this.richContentRenderTimer = -1;
+    }
+    this.richContentPendingMessageIds = [];
+  }
+
+  private loadOnboardingRichContentIconDataUrl(): void {
+    if (this.onboardingRichContentIconLoadRequested || this.onboardingRichContentImageDataUrl.length > 0) {
+      return;
+    }
+    this.onboardingRichContentIconLoadRequested = true;
+    const hostContext = this.getUIContext().getHostContext();
+    if (hostContext === undefined) {
+      return;
+    }
+    try {
+      const startIconResource: Resource = $r('app.media.startIcon');
+      const base64Text: string = hostContext.resourceManager.getMediaContentBase64Sync(startIconResource.id);
+      this.onboardingRichContentImageDataUrl = this.normalizedOnboardingImageDataUrl(base64Text);
+    } catch (error) {
+      logger.warn(TAG, 'load onboarding rich content icon failed: ' + this.errorToString(error));
+    }
+  }
+
+  private normalizedOnboardingImageDataUrl(base64Text: string): string {
+    const trimmed = base64Text.trim();
+    if (trimmed.length === 0) {
+      return '';
+    }
+    if (trimmed.toLowerCase().startsWith('data:image/')) {
+      return trimmed;
+    }
+    return 'data:image/png;base64,' + trimmed;
+  }
+
+  private scheduleOnboardingRichContentRender(): void {
+    if (this.onboardingRichContentReady || this.onboardingRichContentRenderTimer >= 0) {
+      return;
+    }
+    this.onboardingRichContentRenderTimer = setTimeout((): void => {
+      this.onboardingRichContentRenderTimer = -1;
+      this.onboardingRichContentReady = true;
+      this.onboardingRichContentProbeStage = AGENT_HOME_ONBOARDING_PROBE_NATIVE_STAGE;
+      this.scheduleOnboardingRichContentProbeAdvance();
+    }, AGENT_HOME_ONBOARDING_RICH_RENDER_DELAY_MS);
+  }
+
+  private clearOnboardingRichContentRenderTimer(): void {
+    if (this.onboardingRichContentRenderTimer >= 0) {
+      clearTimeout(this.onboardingRichContentRenderTimer);
+      this.onboardingRichContentRenderTimer = -1;
+    }
+  }
+
+  private scheduleOnboardingRichContentProbeAdvance(): void {
+    if (!this.onboardingRichContentReady || this.onboardingRichContentProbeTimer >= 0) {
+      return;
+    }
+    if (this.onboardingRichContentProbeStage >= AGENT_HOME_ONBOARDING_PROBE_MARKDOWN_STAGE) {
+      return;
+    }
+    this.onboardingRichContentProbeTimer = setTimeout((): void => {
+      this.onboardingRichContentProbeTimer = -1;
+      if (!this.onboardingRichContentReady) {
+        return;
+      }
+      if (this.onboardingRichContentProbeStage < AGENT_HOME_ONBOARDING_PROBE_MARKDOWN_STAGE) {
+        this.onboardingRichContentProbeStage = this.onboardingRichContentProbeStage + 1;
+        this.scheduleOnboardingRichContentProbeAdvance();
+      }
+    }, AGENT_HOME_ONBOARDING_PROBE_ADVANCE_DELAY_MS);
+  }
+
+  private clearOnboardingRichContentProbeTimer(): void {
+    if (this.onboardingRichContentProbeTimer >= 0) {
+      clearTimeout(this.onboardingRichContentProbeTimer);
+      this.onboardingRichContentProbeTimer = -1;
+    }
+  }
+
+  private onboardingWebProbeHtml(label: ResourceStr): string {
+    const text = resolveResourceString(
+      this.getUIContext().getHostContext(),
+      label
+    );
+    return '<p><strong>WebView OK</strong><br>' + text + '</p>';
+  }
+
+  private onboardingMarkdownDemoContent(): string {
+    const template = resolveResourceString(
+      this.getUIContext().getHostContext(),
+      $r('app.string.agent_home_onboarding_md_demo_content')
+    );
+    return template.split('{{startIcon}}').join(this.onboardingRichContentImageDataUrl);
+  }
+
+  private richContentLoadingPreviewText(text: string): string {
+    const normalized = text.trim();
+    if (normalized.length <= 360) {
+      return normalized;
+    }
+    return normalized.substring(0, 360) + '...';
+  }
+
   @Builder
   private buildRichInlineText(text: string, fontSize: number, lineHeight: number, fontColor: ResourceColor): void {
-    Text() {
-      ForEach(this.richInlineRunsForText(text), (run: AgentHomeRichInlineRun) => {
-        this.buildRichInlineRun(run, fontSize, lineHeight, fontColor)
-      }, (run: AgentHomeRichInlineRun): string => run.id)
+    if (this.hasClickableRichInlineRun(text)) {
+      Flex({ wrap: FlexWrap.Wrap }) {
+        ForEach(this.richInlineRunsForText(text), (run: AgentHomeRichInlineRun) => {
+          this.buildRichInlineRunText(run, fontSize, lineHeight, fontColor)
+        }, (run: AgentHomeRichInlineRun): string => run.id)
+      }
+      .width('100%')
+    } else {
+      Text() {
+        ForEach(this.richInlineRunsForText(text), (run: AgentHomeRichInlineRun) => {
+          this.buildRichInlineRun(run, fontSize, lineHeight, fontColor)
+        }, (run: AgentHomeRichInlineRun): string => run.id)
+      }
+      .width('100%')
+      .textSelectable(TextSelectableMode.SELECTABLE_UNFOCUSABLE)
+      .copyOption(CopyOptions.LocalDevice)
     }
-    .width('100%')
-    .textSelectable(TextSelectableMode.SELECTABLE_UNFOCUSABLE)
-    .copyOption(CopyOptions.LocalDevice)
+  }
+
+  @Builder
+  private buildRichInlineRunText(
+    run: AgentHomeRichInlineRun,
+    fontSize: number,
+    lineHeight: number,
+    fontColor: ResourceColor
+  ): void {
+    if (run.kind === AgentHomeRichInlineKind.LINK) {
+      Text(run.text)
+        .fontSize(fontSize)
+        .lineHeight(lineHeight)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('app.color.tag_blue'))
+        .decoration({ type: TextDecorationType.Underline, color: $r('app.color.tag_blue') })
+        .onClick((): void => {
+          this.handleAssistantAnswerLinkClick(run.target);
+        })
+    } else if (run.kind === AgentHomeRichInlineKind.CODE) {
+      Text(run.text)
+        .fontSize(fontSize - 1)
+        .lineHeight(lineHeight)
+        .fontFamily('monospace')
+        .fontColor(this.inlineCodeTextColor())
+        .backgroundColor(this.inlineCodeTextBackgroundColor())
+        .borderRadius(6)
+        .padding({ left: 3, right: 3 })
+    } else if (run.kind === AgentHomeRichInlineKind.STRONG) {
+      Text(run.text)
+        .fontSize(fontSize)
+        .lineHeight(lineHeight)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(fontColor)
+    } else if (run.kind === AgentHomeRichInlineKind.EMPHASIS) {
+      Text(run.text)
+        .fontSize(fontSize)
+        .lineHeight(lineHeight)
+        .fontStyle(FontStyle.Italic)
+        .fontColor(fontColor)
+    } else {
+      Text(run.text)
+        .fontSize(fontSize)
+        .lineHeight(lineHeight)
+        .fontColor(fontColor)
+    }
   }
 
   @Builder
@@ -1688,6 +3079,13 @@ struct NGFAgentHomePage {
         .lineHeight(lineHeight)
         .fontStyle(FontStyle.Italic)
         .fontColor(fontColor)
+    } else if (run.kind === AgentHomeRichInlineKind.LINK) {
+      Span(run.text)
+        .fontSize(fontSize)
+        .lineHeight(lineHeight)
+        .fontWeight(FontWeight.Medium)
+        .fontColor($r('app.color.tag_blue'))
+        .decoration({ type: TextDecorationType.Underline, color: $r('app.color.tag_blue') })
     } else {
       Span(run.text)
         .fontSize(fontSize)
@@ -1703,12 +3101,12 @@ struct NGFAgentHomePage {
         Text($r('app.string.agent_home_thinking_label'))
           .fontSize(11)
           .fontWeight(FontWeight.Medium)
-          .fontColor($r('app.color.text_secondary'))
+          .fontColor(this.agentHomeReadableSecondaryColor())
           .maxLines(1)
         Blank()
         Text(this.isReasoningExpanded(item.id) ? $r('app.string.agent_home_thinking_collapse') : $r('app.string.agent_home_thinking_expand'))
           .fontSize(11)
-          .fontColor($r('app.color.text_secondary'))
+          .fontColor(this.agentHomeReadableSecondaryColor())
           .maxLines(1)
       }
       .width('100%')
@@ -1718,7 +3116,7 @@ struct NGFAgentHomePage {
         .width('100%')
         .fontSize(12)
         .lineHeight(18)
-        .fontColor($r('app.color.text_secondary'))
+        .fontColor(this.agentHomeReadableSecondaryColor())
         .maxLines(this.reasoningMaxLines(item.id))
         .textOverflow({ overflow: TextOverflow.Ellipsis })
         .textSelectable(TextSelectableMode.SELECTABLE_UNFOCUSABLE)
@@ -1735,14 +3133,19 @@ struct NGFAgentHomePage {
   private buildUserMessage(item: AgentHomeChatItem): void {
     Row() {
       Blank()
-      Column() {
-        Text(item.text)
-          .fontSize(17)
-          .lineHeight(26)
-          .fontColor($r('app.color.text_white'))
-          .width('100%')
-          .textSelectable(TextSelectableMode.SELECTABLE_UNFOCUSABLE)
-          .copyOption(CopyOptions.LocalDevice)
+      Column({ space: 10 }) {
+        if (this.messageAttachmentItems(item.id, item.text).length > 0) {
+          this.buildMessageAttachmentGroup(item.id, this.messageAttachmentItems(item.id, item.text), true)
+        }
+        if (this.messageAttachmentBodyText(item.id, item.text).length > 0) {
+          Text(this.messageAttachmentBodyText(item.id, item.text))
+            .fontSize(17)
+            .lineHeight(26)
+            .fontColor($r('app.color.text_white'))
+            .width('100%')
+            .textSelectable(TextSelectableMode.SELECTABLE_UNFOCUSABLE)
+            .copyOption(CopyOptions.LocalDevice)
+        }
         this.buildMessageRevertAction(item, true)
       }
       .width('86%')
@@ -1781,10 +3184,10 @@ struct NGFAgentHomePage {
     Row({ space: 8 }) {
       SymbolGlyph(item.role === AgentHomeMessageRole.TOOL ? $r('sys.symbol.slider_horizontal_2') : $r('sys.symbol.info_circle'))
         .fontSize(17)
-        .fontColor([$r('app.color.text_secondary')])
+        .fontColor([this.agentHomeReadableSecondaryColor()])
       Text(item.text)
         .fontSize(14)
-        .fontColor($r('app.color.text_secondary'))
+        .fontColor(this.agentHomeReadableSecondaryColor())
         .layoutWeight(1)
         .maxLines(3)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -1826,53 +3229,187 @@ struct NGFAgentHomePage {
 
   @Builder
   private buildUserRequestRow(item: AgentHomeUserRequestItem): void {
-    Row({ space: 10 }) {
-      SymbolGlyph(this.symbolForInteractionStatus(item.status))
-        .fontSize(18)
-        .fontColor([this.colorForInteractionStatus(item.status)])
-      Column({ space: 5 }) {
-        Row({ space: 8 }) {
-          Text(this.userRequestTitle(item))
-            .fontSize(15)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('app.color.text_body'))
-            .layoutWeight(1)
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-          this.buildAgentNameBadge(item.agentName)
-          Text(this.displayInteractionStatus(item.status))
-            .fontSize(11)
-            .fontColor(this.colorForInteractionStatus(item.status))
-            .maxLines(1)
-        }
-        .width('100%')
-
-        Text(item.prompt.length > 0 ? item.prompt : item.rawJson)
+    if (this.isPermissionRequest(item)) {
+      this.buildPermissionRequestRow(item)
+    } else {
+      Row({ space: 10 }) {
+        SymbolGlyph(this.symbolForInteractionStatus(item.status))
+          .fontSize(18)
+          .fontColor([this.colorForInteractionStatus(item.status)])
+        Column({ space: 5 }) {
+          Row({ space: 8 }) {
+            Text(this.userRequestTitle(item))
+              .fontSize(15)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(this.agentHomeReadableTextColor())
+              .layoutWeight(1)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            this.buildAgentNameBadge(item.agentName)
+            Text(this.displayInteractionStatus(item.status))
+              .fontSize(11)
+              .fontColor(this.colorForInteractionStatus(item.status))
+              .maxLines(1)
+          }
           .width('100%')
-          .fontSize(12)
-          .fontColor($r('app.color.text_secondary'))
-          .maxLines(2)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+          Text(item.prompt.length > 0 ? item.prompt : item.rawJson)
+            .width('100%')
+            .fontSize(12)
+            .fontColor(this.agentHomeReadableSecondaryColor())
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+
+        if (item.status === AgentHomeInteractionStatus.PENDING) {
+          Button($r('app.string.agent_home_request_submit'))
+            .height(32)
+            .padding({ left: 12, right: 12 })
+            .fontSize(12)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('app.color.text_white'))
+            .backgroundColor(this.agentHomeSolidControlBackgroundColor())
+            .borderRadius(16)
+            .buttonStyle(ButtonStyleMode.NORMAL)
+            .onClick((): void => {
+              this.openUserRequestSheet(item);
+            })
+        }
       }
-      .layoutWeight(1)
+      .width('100%')
+      .alignItems(VerticalAlign.Top)
+      .padding({ left: 2, right: 2, top: 4, bottom: 4 })
+      .backgroundColor(Color.Transparent)
+      .onClick((): void => {
+        this.openUserRequestSheet(item);
+      })
+    }
+  }
+
+  @Builder
+  private buildPermissionRequestRow(item: AgentHomeUserRequestItem): void {
+    this.buildPermissionRequestRowContent(
+      item,
+      NGFHdsEffectPresetFactory.buildFlowLightSurfacePreset(this.isPendingPermissionRequest(item)),
+      NGFHdsEffectPresetFactory.buildFlowLightScenePreset(this.isPendingPermissionRequest(item))
+    )
+  }
+
+  @Builder
+  private buildPermissionRequestRowContent(
+    item: AgentHomeUserRequestItem,
+    surfacePreset: NGFHdsInteractiveEffectPreset,
+    scenePreset: NGFHdsSceneFlowPreset
+  ): void {
+    Stack({ alignContent: Alignment.Center }) {
+      if (this.isPendingPermissionRequest(item)) {
+        HdsVisualComponent()
+          .width('100%')
+          .height('100%')
+          .borderRadius(18)
+          .opacity(scenePreset.visualOpacity)
+          .hitTestBehavior(HitTestMode.None)
+          .scene(
+            HdsSceneType.DUAL_EDGE_FLOW_LIGHT_WITH_BACKGROUND_MASK,
+            this.permissionRequestFlowLightController,
+            (): void => {
+              this.handlePermissionRequestFlowLightFinished();
+            },
+            scenePreset.frameRateRange
+          )
+      }
+
+      Row({ space: 10 }) {
+        Stack({ alignContent: Alignment.Center }) {
+          SymbolGlyph($r('sys.symbol.security_shield'))
+            .fontSize(21)
+            .fontColor([this.permissionRequestAccentColor(item)])
+        }
+        .width(38)
+        .height(38)
+        .borderRadius(19)
+        .backgroundColor(this.permissionRequestIconBackgroundColor(item))
+
+        Column({ space: 5 }) {
+          Row({ space: 8 }) {
+            Text(this.userRequestTitle(item))
+              .fontSize(15)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(this.agentHomeReadableTextColor())
+              .layoutWeight(1)
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+            this.buildAgentNameBadge(item.agentName)
+            Text(this.displayInteractionStatus(item.status))
+              .fontSize(11)
+              .fontColor(this.permissionRequestAccentColor(item))
+              .maxLines(1)
+          }
+          .width('100%')
+
+          Text(item.prompt.length > 0 ? item.prompt : this.permissionRawDisplayText(item.rawJson))
+            .width('100%')
+            .fontSize(12)
+            .fontColor(this.agentHomeReadableSecondaryColor())
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+
+        if (this.isPendingPermissionRequest(item)) {
+          Button($r('app.string.agent_home_permission_allow_once'))
+            .height(34)
+            .padding({ left: 12, right: 12 })
+            .fontSize(12)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('app.color.text_white'))
+            .backgroundColor(this.permissionAllowButtonBackgroundColor(item))
+            .borderRadius(17)
+            .buttonStyle(ButtonStyleMode.NORMAL)
+            .onClick((): void => {
+              this.allowPermissionOnceFromRow(item);
+            })
+        } else {
+          Row({ space: 5 }) {
+            SymbolGlyph(this.symbolForInteractionStatus(item.status))
+              .fontSize(13)
+              .fontColor([this.permissionRequestAccentColor(item)])
+            Text(this.displayInteractionStatus(item.status))
+              .fontSize(11)
+              .fontWeight(FontWeight.Medium)
+              .fontColor(this.permissionRequestAccentColor(item))
+              .maxLines(1)
+          }
+          .height(30)
+          .padding({ left: 9, right: 9 })
+          .borderRadius(15)
+          .backgroundColor(this.permissionRequestIconBackgroundColor(item))
+          .border({ width: 1, color: this.permissionRequestAccentColor(item) })
+        }
+      }
+      .width('100%')
+      .alignItems(VerticalAlign.Center)
+      .padding({ left: 12, right: 12, top: 10, bottom: 10 })
+      .backgroundColor(Color.Transparent)
+      .backgroundEffect(surfacePreset.backgroundEffect)
+      .border({
+        width: surfacePreset.borderWidth,
+        color: this.permissionRequestBorderColor(item, surfacePreset)
+      })
+      .borderRadius(18)
+      .shadow(surfacePreset.shadowOptions)
+      .visualEffect(surfacePreset.buildVisualEffect())
+      .scale(surfacePreset.scaleOptions)
+      .translate(surfacePreset.translateOptions)
+      .opacity(surfacePreset.contentOpacity)
     }
     .width('100%')
-    .padding({ left: 10, right: 10, top: 10, bottom: 10 })
-    .backgroundColor(Color.Transparent)
-    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
-    .border({
-      width: this.agentHomeSurfaceBorderWidth(),
-      color: this.agentHomeSurfaceBorderColor()
-    })
-    .borderRadius(12)
-    .shadow(this.agentHomeSurfaceShadowOptions())
-    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .height(86)
+    .padding({ left: 2, right: 2, top: 4, bottom: 4 })
     .clip(true)
     .onClick((): void => {
-      this.activeRequestId = item.id;
-      this.selectedRequestOptionId = item.selectedOptionId;
-      this.requestAnswerDraft = item.answer;
-      this.openSheet(AgentHomeSheetKey.REQUEST_DETAIL);
+      this.openUserRequestSheet(item);
     })
   }
 
@@ -1888,7 +3425,7 @@ struct NGFAgentHomePage {
             Text(this.planTitle(item))
               .fontSize(15)
               .fontWeight(FontWeight.Medium)
-              .fontColor($r('app.color.text_body'))
+              .fontColor(this.agentHomeReadableTextColor())
               .layoutWeight(1)
               .maxLines(1)
               .textOverflow({ overflow: TextOverflow.Ellipsis })
@@ -1900,6 +3437,7 @@ struct NGFAgentHomePage {
             .fontColor(this.colorForInteractionStatus(item.status))
         }
         .layoutWeight(1)
+
       }
       .width('100%')
 
@@ -1916,7 +3454,7 @@ struct NGFAgentHomePage {
           .width('100%')
           .fontSize(12)
           .lineHeight(18)
-          .fontColor($r('app.color.text_secondary'))
+          .fontColor(this.agentHomeReadableSecondaryColor())
           .maxLines(6)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
       }
@@ -1953,17 +3491,8 @@ struct NGFAgentHomePage {
       }
     }
     .width('100%')
-    .padding({ left: 10, right: 10, top: 10, bottom: 10 })
+    .padding({ left: 2, right: 2, top: 4, bottom: 4 })
     .backgroundColor(Color.Transparent)
-    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
-    .border({
-      width: this.agentHomeSurfaceBorderWidth(),
-      color: this.agentHomeSurfaceBorderColor()
-    })
-    .borderRadius(12)
-    .shadow(this.agentHomeSurfaceShadowOptions())
-    .visualEffect(this.agentHomeSurfaceVisualEffect())
-    .clip(true)
     .onClick((): void => {
       this.activePlanId = item.id;
       this.openSheet(AgentHomeSheetKey.PLAN_DETAIL);
@@ -2235,8 +3764,11 @@ struct NGFAgentHomePage {
         }
 
         Row({ space: 10 }) {
-          this.buildComposerMaterialIconButton($r('sys.symbol.ellipsis_message'), AgentHomeActionKey.OPEN_MODELS, false)
+          this.buildComposerModelButton()
           this.buildComposerMaterialIconButton($r('sys.symbol.slider_horizontal_2'), AgentHomeActionKey.OPEN_RUNTIME, false)
+          if (this.shouldShowPermissionModeButton()) {
+            this.buildComposerPermissionModeButton()
+          }
           Blank()
           if (this.isReplyInProgress()) {
             this.buildStopReplyButton()
@@ -2313,36 +3845,47 @@ struct NGFAgentHomePage {
 
   @Builder
   private buildDisconnectedComposerSurface(): void {
-    Row({ space: 10 }) {
-      SymbolGlyph($r('sys.symbol.exclamationmark_triangle'))
-        .fontSize(20)
-        .fontColor([$r('app.color.tag_amber')])
+    Stack({ alignContent: Alignment.Center }) {
+      Row({ space: 8 }) {
+        Stack({ alignContent: Alignment.Center }) {
+          SymbolGlyph($r('sys.symbol.exclamationmark_triangle'))
+            .fontSize(22)
+            .fontColor([$r('app.color.tag_amber')])
+        }
+        .width(42)
+        .height(42)
+        .borderRadius(21)
 
-      Text(this.disconnectedComposerReasonText())
-        .layoutWeight(1)
-        .fontSize(14)
-        .fontColor(this.agentHomeReadableTextColor())
-        .maxLines(2)
-        .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(this.disconnectedComposerReasonText())
+          .layoutWeight(1)
+          .height(46)
+          .fontSize(17)
+          .fontColor(this.agentHomeReadableTextColor())
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
 
-      Button($r('app.string.agent_home_bridge_reconnect'))
-        .height(34)
-        .padding({ left: 12, right: 12 })
-        .fontSize(13)
-        .fontWeight(FontWeight.Medium)
-        .fontColor(this.canReconnectBridgeFromComposer() ? this.agentHomeControlTextColor(true) : this.agentHomeReadableMutedColor())
+        Button() {
+          SymbolGlyph($r('sys.symbol.arrow_clockwise'))
+            .fontSize(22)
+            .fontColor([this.canReconnectBridgeFromComposer() ? this.agentHomeControlIconColor(true) : this.agentHomeReadableMutedColor()])
+        }
+        .width(42)
+        .height(42)
+        .borderRadius(21)
         .backgroundColor(Color.Transparent)
-        .borderRadius(17)
         .buttonStyle(ButtonStyleMode.NORMAL)
         .enabled(this.canReconnectBridgeFromComposer())
         .onClick((): void => {
           this.handleComposerReconnect();
         })
+      }
+      .width('100%')
+      .height('100%')
+      .padding({ left: 8, right: 8 })
+      .alignItems(VerticalAlign.Center)
     }
     .width('100%')
     .height(this.composerCompactPanelHeight())
-    .padding({ left: 14, right: 10 })
-    .alignItems(VerticalAlign.Center)
     .backgroundColor(Color.Transparent)
     .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
     .border({
@@ -2400,9 +3943,33 @@ struct NGFAgentHomePage {
   private composerExpandedPanelHeight(): number {
     let height = AGENT_HOME_BASE_COMPOSER_HEIGHT;
     if (this.shouldShowRunModeControls()) {
-      height = height + 42;
+      height = height + this.runModeControlsReservedHeight();
     }
     return height;
+  }
+
+  private runModeControlsReservedHeight(): number {
+    const controlsHeight = this.runModeControlsHeight();
+    if (controlsHeight <= 0) {
+      return 0;
+    }
+    return controlsHeight + 10;
+  }
+
+  private runModeControlsHeight(): number {
+    const rowCount = this.interactionModeControlRowCount();
+    if (rowCount <= 0) {
+      return 0;
+    }
+    return rowCount * 32 + (rowCount - 1) * 6;
+  }
+
+  private interactionModeControlRowCount(): number {
+    let count = 0;
+    if (this.hasInteractionModesInCategory('run')) {
+      count = count + 1;
+    }
+    return count;
   }
 
   private composerInteractivePanelHeight(): number {
@@ -2554,8 +4121,11 @@ struct NGFAgentHomePage {
         }
 
         Row({ space: 10 }) {
-          this.buildComposerMaterialIconButton($r('sys.symbol.ellipsis_message'), AgentHomeActionKey.OPEN_MODELS, false)
+          this.buildComposerModelButton()
           this.buildComposerMaterialIconButton($r('sys.symbol.slider_horizontal_2'), AgentHomeActionKey.OPEN_RUNTIME, false)
+          if (this.shouldShowPermissionModeButton()) {
+            this.buildComposerPermissionModeButton()
+          }
           Blank()
           if (this.isReplyInProgress()) {
             this.buildStopReplyButton()
@@ -2668,14 +4238,30 @@ struct NGFAgentHomePage {
 
   @Builder
   private buildRunModeControls(): void {
-    Row({ space: 6 }) {
-      ForEach(this.currentProviderInteractionModes(), (item: AgentBridgeInteractionModeOption) => {
-        this.buildRunModePill(item)
-      }, (item: AgentBridgeInteractionModeOption): string => item.id)
-      Blank()
+    Column({ space: 6 }) {
+      if (this.hasInteractionModesInCategory('run')) {
+        this.buildInteractionModeControlRow('run')
+      }
+    }
+    .width('100%')
+  }
+
+  @Builder
+  private buildInteractionModeControlRow(category: string): void {
+    Scroll() {
+      Row({ space: 6 }) {
+        ForEach(this.currentProviderInteractionModesForCategory(category), (item: AgentBridgeInteractionModeOption) => {
+          this.buildRunModePill(item)
+        }, (item: AgentBridgeInteractionModeOption): string => item.id)
+        Blank()
+      }
+      .height(32)
+      .padding({ right: 2 })
     }
     .width('100%')
     .height(32)
+    .scrollable(ScrollDirection.Horizontal)
+    .scrollBar(BarState.Off)
   }
 
   @Builder
@@ -2686,16 +4272,17 @@ struct NGFAgentHomePage {
         .fontColor([this.agentHomeControlIconColor(this.isInteractionModeSelected(mode.id))])
       Text(mode.displayName)
         .fontSize(12)
+        .fontWeight(this.isInteractionModeSelected(mode.id) ? FontWeight.Medium : FontWeight.Regular)
         .fontColor(this.agentHomeControlTextColor(this.isInteractionModeSelected(mode.id)))
         .maxLines(1)
     }
     .height(28)
     .padding({ left: 10, right: 10 })
-    .backgroundColor(Color.Transparent)
+    .backgroundColor(this.runModePillBackgroundColor(this.isInteractionModeSelected(mode.id)))
     .backgroundEffect(this.buildAgentHomeSurfacePreset().backgroundEffect)
     .border({
-      width: this.buildAgentHomeSurfacePreset().borderWidth,
-      color: this.buildAgentHomeSurfacePreset().borderColor
+      width: this.runModePillBorderWidth(this.isInteractionModeSelected(mode.id)),
+      color: this.runModePillBorderColor(this.isInteractionModeSelected(mode.id))
     })
     .borderRadius(14)
     .shadow(this.buildAgentHomeSurfacePreset().shadowOptions)
@@ -2930,15 +4517,22 @@ struct NGFAgentHomePage {
   }
 
   @Builder
+  private buildWorkspaceTitleBarUnderlaySpacer(): void {
+    Column() {
+    }
+    .width('100%')
+    .height(this.agentHomeMainPageTitleBarSpacerHeight())
+    .backgroundColor(this.workspaceTitleBarUnderlayColor())
+    .hitTestBehavior(HitTestMode.None)
+  }
+
+  @Builder
   private buildWorkspacePage(avoidTitleBar: boolean): void {
     Column({ space: 0 }) {
       if (avoidTitleBar) {
-        Blank()
-          .width('100%')
-          .height(this.agentHomeMainPageTitleBarSpacerHeight())
-          .hitTestBehavior(HitTestMode.None)
+        this.buildWorkspaceTitleBarUnderlaySpacer()
         this.buildMainWorkspaceArea()
-        this.buildWorkspaceStatusFooter()
+        this.buildWorkspaceStatusFooter(false)
       } else {
         Column({ space: 0 }) {
           Row({ space: 12 }) {
@@ -2994,7 +4588,7 @@ struct NGFAgentHomePage {
         .padding({ left: 18, right: 18, top: 4 })
         .scrollBar(BarState.Off)
 
-        this.buildWorkspaceStatusFooter()
+        this.buildWorkspaceStatusFooter(true)
       }
     }
     .width('100%')
@@ -3022,13 +4616,13 @@ struct NGFAgentHomePage {
     }
     .width('100%')
     .layoutWeight(1)
-    .padding({ left: 18, right: 18, top: 8, bottom: this.bottomInsetVp + 18 })
+    .padding({ left: 18, right: 18, top: 8, bottom: 8 })
     .scrollBar(BarState.Off)
     .edgeEffect(EdgeEffect.None)
   }
 
   @Builder
-  private buildWorkspaceStatusFooter(): void {
+  private buildWorkspaceStatusFooter(useBottomInset: boolean): void {
     Column({ space: 0 }) {
       Divider()
         .width('100%')
@@ -3053,59 +4647,45 @@ struct NGFAgentHomePage {
 
         this.buildWorkspaceFooterActionButton(
           $r('sys.symbol.qrcode'),
-          $r('app.string.agent_home_scan_action'),
+          AgentHomeActionKey.SCAN_BRIDGE_QR,
           true
         )
         this.buildWorkspaceFooterActionButton(
-          $r('sys.symbol.house'),
-          $r('app.string.agent_home_home_action'),
+          $r('sys.symbol.control'),
+          AgentHomeActionKey.OPEN_GLOBAL_SETTINGS,
           false
         )
       }
       .width('100%')
-      .height(this.bottomInsetVp + 69)
-      .padding({ left: 22, right: 18, bottom: this.bottomInsetVp })
+      .height((useBottomInset ? this.bottomInsetVp : 0) + 69)
+      .padding({ left: 22, right: 18, bottom: useBottomInset ? this.bottomInsetVp : 0 })
     }
     .width('100%')
-    .height(this.bottomInsetVp + 70)
+    .height((useBottomInset ? this.bottomInsetVp : 0) + 70)
   }
 
   @Builder
-  private buildWorkspaceFooterActionButton(symbol: Resource, title: ResourceStr, scanAction: boolean): void {
+  private buildWorkspaceFooterActionButton(symbol: Resource, actionKey: string, emphasized: boolean): void {
     Button() {
-      Row({ space: 5 }) {
-        SymbolGlyph(symbol)
-          .fontSize(16)
-          .fontColor([this.agentHomeControlIconColor(scanAction)])
-        Text(title)
-          .fontSize(13)
-          .fontWeight(FontWeight.Medium)
-          .fontColor(this.agentHomeControlTextColor(scanAction))
-          .maxLines(1)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
-      }
-      .justifyContent(FlexAlign.Center)
-      .width('100%')
+      SymbolGlyph(symbol)
+        .fontSize(17)
+        .fontColor([this.agentHomeControlIconColor(emphasized)])
     }
-    .width(scanAction ? 86 : 72)
-    .height(36)
-    .borderRadius(18)
+    .width(38)
+    .height(38)
+    .borderRadius(19)
     .backgroundColor(Color.Transparent)
     .buttonStyle(ButtonStyleMode.NORMAL)
     .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
     .border({
       width: this.agentHomeSurfaceBorderWidth(),
-      color: scanAction ? this.agentHomeSelectedBorderColor(true) : this.agentHomeSurfaceBorderColor()
+      color: emphasized ? this.agentHomeSelectedBorderColor(true) : this.agentHomeSurfaceBorderColor()
     })
     .shadow(this.agentHomeSurfaceShadowOptions())
     .visualEffect(this.agentHomeSurfaceVisualEffect())
     .clip(true)
     .onClick((): void => {
-      if (scanAction) {
-        this.scanBridgeConnectionQr();
-      } else {
-        this.handleAction(AgentHomeActionKey.OPEN_HOME);
-      }
+      this.handleAction(actionKey);
     })
   }
 
@@ -3661,6 +5241,7 @@ struct NGFAgentHomePage {
             .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
         .layoutWeight(1)
+
       }
       .width('100%')
       .height(56)
@@ -3706,6 +5287,7 @@ struct NGFAgentHomePage {
           .onChange((value: string): void => {
             this.sessionSheetSearchText = value;
           })
+        this.buildRemoteWorkspaceFilterButton()
         Button($r('app.string.agent_home_refresh_remote_sessions'))
           .height(34)
           .padding({ left: 12, right: 12 })
@@ -3720,7 +5302,7 @@ struct NGFAgentHomePage {
           })
           .visualEffect(this.agentHomeSurfaceVisualEffect())
           .clip(true)
-          .enabled(this.connectionStatus === AgentBridgeConnectionStatus.CONNECTED)
+          .enabled(this.connectionStatus === AgentBridgeConnectionStatus.CONNECTED && !this.loadingRemoteSessions)
           .onClick((): void => {
             this.requestRemoteSessions();
           })
@@ -3747,30 +5329,37 @@ struct NGFAgentHomePage {
             .fontSize(13)
             .fontColor($r('app.color.text_secondary'))
 
-          if (this.filteredRemoteSessionsForSheet().length === 0) {
-            Text(this.sessionSheetSearchText.trim().length > 0 ?
-              $r('app.string.agent_home_remote_sessions_search_empty') :
-              $r('app.string.agent_home_remote_sessions_empty'))
-              .width('100%')
-              .height(70)
-              .fontSize(13)
-              .fontColor($r('app.color.text_secondary'))
-              .textAlign(TextAlign.Center)
-              .backgroundColor(Color.Transparent)
-              .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
-              .borderRadius(12)
-              .border({
-                width: this.agentHomeSurfaceBorderWidth(),
-                color: this.agentHomeSurfaceBorderColor()
-              })
-              .shadow(this.agentHomeSurfaceShadowOptions())
-              .visualEffect(this.agentHomeSurfaceVisualEffect())
-              .clip(true)
+          if (this.remoteSessionSectionsForSheet().length === 0) {
+            if (this.loadingRemoteSessions) {
+              this.buildRemoteSessionsLoading()
+            } else {
+              Text(this.sessionSheetSearchText.trim().length > 0 ?
+                $r('app.string.agent_home_remote_sessions_search_empty') :
+                $r('app.string.agent_home_remote_sessions_empty'))
+                .width('100%')
+                .height(70)
+                .fontSize(13)
+                .fontColor($r('app.color.text_secondary'))
+                .textAlign(TextAlign.Center)
+                .backgroundColor(Color.Transparent)
+                .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+                .borderRadius(12)
+                .border({
+                  width: this.agentHomeSurfaceBorderWidth(),
+                  color: this.agentHomeSurfaceBorderColor()
+                })
+                .shadow(this.agentHomeSurfaceShadowOptions())
+                .visualEffect(this.agentHomeSurfaceVisualEffect())
+                .clip(true)
+            }
           } else {
-            Column({ space: 8 }) {
-              ForEach(this.filteredRemoteSessionsForSheet(), (item: AgentBridgeRemoteSession) => {
-                this.buildRemoteSessionRow(item)
-              }, (item: AgentBridgeRemoteSession): string => item.sessionId)
+            Column({ space: 12 }) {
+              if (this.loadingRemoteSessions) {
+                this.buildRemoteSessionsLoading()
+              }
+              ForEach(this.remoteSessionSectionsForSheet(), (section: AgentHomeRemoteSessionSection) => {
+                this.buildRemoteSessionSection(section)
+              }, (section: AgentHomeRemoteSessionSection): string => section.id)
             }
             .width('100%')
           }
@@ -3794,6 +5383,179 @@ struct NGFAgentHomePage {
     .visualEffect(this.agentHomeSurfaceVisualEffect())
     .clip(true)
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+  }
+
+  @Builder
+  private buildRemoteSessionsLoading(): void {
+    Row({ space: 10 }) {
+      LoadingProgress()
+        .width(22)
+        .height(22)
+        .color($r('app.color.tag_blue'))
+        .enableLoading(true)
+      Text($r('app.string.agent_home_remote_sessions_loading'))
+        .fontSize(13)
+        .fontColor($r('app.color.text_secondary'))
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+    }
+    .width('100%')
+    .height(70)
+    .justifyContent(FlexAlign.Center)
+    .alignItems(VerticalAlign.Center)
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .borderRadius(12)
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildRemoteWorkspaceFilterButton(): void {
+    Button() {
+      SymbolGlyph($r('sys.symbol.slider_horizontal_2'))
+        .fontSize(17)
+        .fontColor([this.effectiveRemoteWorkspaceFilterId() === AgentHomeRemoteWorkspaceFilter.ALL ?
+          this.agentHomeReadableSecondaryColor() : $r('app.color.tag_blue')])
+    }
+    .width(40)
+    .height(34)
+    .padding({ left: 0, right: 0 })
+    .borderRadius(10)
+    .buttonStyle(ButtonStyleMode.NORMAL)
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+    .bindPopup(this.isRemoteWorkspaceFilterPopupOpen, {
+      builder: (): void => {
+        this.buildRemoteWorkspaceFilterPopup()
+      },
+      placement: Placement.Bottom,
+      popupColor: Color.Transparent,
+      enableArrow: true,
+      autoCancel: true,
+      mask: false,
+      targetSpace: 8,
+      onStateChange: (event: PopupStateChangeParam): void => {
+        this.isRemoteWorkspaceFilterPopupOpen = event.isVisible;
+      }
+    })
+    .onClick((): void => {
+      this.isRemoteWorkspaceFilterPopupOpen = !this.isRemoteWorkspaceFilterPopupOpen;
+    })
+  }
+
+  @Builder
+  private buildRemoteWorkspaceFilterPopup(): void {
+    Column({ space: 6 }) {
+      Text($r('app.string.agent_home_remote_workspace_filter_title'))
+        .width('100%')
+        .fontSize(12)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.agentHomeReadableSecondaryColor())
+        .padding({ left: 10, right: 10, top: 4, bottom: 2 })
+      ForEach(this.remoteWorkspaceFilterOptions(), (item: AgentHomeRemoteWorkspaceFilterOption) => {
+        this.buildRemoteWorkspaceFilterPopupRow(item)
+      }, (item: AgentHomeRemoteWorkspaceFilterOption): string => item.id)
+    }
+    .width(286)
+    .padding({ left: 8, right: 8, top: 8, bottom: 8 })
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(18)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildRemoteWorkspaceFilterPopupRow(item: AgentHomeRemoteWorkspaceFilterOption): void {
+    Row({ space: 9 }) {
+      SymbolGlyph(this.isRemoteWorkspaceFilterSelected(item.id) ? $r('sys.symbol.checkmark_circle') : $r('sys.symbol.folder'))
+        .fontSize(17)
+        .fontColor([this.isRemoteWorkspaceFilterSelected(item.id) ? $r('app.color.text_white') : this.agentHomeReadableSecondaryColor()])
+      Column({ space: 2 }) {
+        Text(item.title)
+          .width('100%')
+          .fontSize(13)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.isRemoteWorkspaceFilterSelected(item.id) ? $r('app.color.text_white') : this.agentHomeReadableTextColor())
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(item.path.length > 0 ? item.path : String(item.count))
+          .width('100%')
+          .fontSize(10)
+          .fontColor(this.isRemoteWorkspaceFilterSelected(item.id) ? $r('app.color.text_white') : this.agentHomeReadableSecondaryColor())
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .layoutWeight(1)
+      Text(String(item.count))
+        .fontSize(11)
+        .fontColor(this.isRemoteWorkspaceFilterSelected(item.id) ? $r('app.color.text_white') : this.agentHomeReadableMutedColor())
+    }
+    .width('100%')
+    .height(50)
+    .padding({ left: 10, right: 10 })
+    .borderRadius(12)
+    .backgroundColor(this.isRemoteWorkspaceFilterSelected(item.id) ? this.agentHomeSolidControlBackgroundColor() : Color.Transparent)
+    .onClick((): void => {
+      this.remoteWorkspaceFilterId = item.id;
+      this.isRemoteWorkspaceFilterPopupOpen = false;
+    })
+  }
+
+  @Builder
+  private buildRemoteSessionSection(section: AgentHomeRemoteSessionSection): void {
+    Column({ space: 8 }) {
+      Row({ space: 8 }) {
+        SymbolGlyph($r('sys.symbol.folder'))
+          .fontSize(14)
+          .fontColor([this.agentHomeReadableSecondaryColor()])
+        Column({ space: 1 }) {
+          Text(section.title)
+            .width('100%')
+            .fontSize(13)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('app.color.text_secondary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          if (section.path.length > 0) {
+            Text(section.path)
+              .width('100%')
+              .fontSize(10)
+              .fontColor($r('app.color.text_secondary'))
+              .maxLines(1)
+              .textOverflow({ overflow: TextOverflow.Ellipsis })
+          }
+        }
+        .layoutWeight(1)
+        Text(String(section.count))
+          .fontSize(11)
+          .fontColor($r('app.color.text_secondary'))
+      }
+      .width('100%')
+      .padding({ left: 4, right: 4 })
+
+      ForEach(section.sessions, (item: AgentBridgeRemoteSession) => {
+        this.buildRemoteSessionRow(item)
+      }, (item: AgentBridgeRemoteSession): string => item.sessionId)
+    }
+    .width('100%')
   }
 
   @Builder
@@ -4045,6 +5807,653 @@ struct NGFAgentHomePage {
   }
 
   @Builder
+  private buildGlobalSettingsSheet(): void {
+    Column({ space: 12 }) {
+      Row({ space: 10 }) {
+        Column({ space: 2 }) {
+          Text($r('app.string.agent_home_global_settings_title'))
+            .fontSize(24)
+            .fontWeight(FontWeight.Medium)
+            .fontColor($r('app.color.text_body'))
+            .maxLines(1)
+          Text($r('app.string.agent_home_global_settings_hint'))
+            .fontSize(12)
+            .fontColor($r('app.color.text_secondary'))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+      }
+      .width('100%')
+      .height(56)
+      .padding({ top: 8 })
+
+      Scroll() {
+        Column({ space: 12 }) {
+          this.buildGlobalThemeSection()
+          this.buildGlobalLanguageSection()
+          this.buildGlobalReplayGuideSection()
+          this.buildGlobalDeveloperSection()
+        }
+        .width('100%')
+        .padding({ bottom: this.bottomInsetVp + 20 })
+      }
+      .width('100%')
+      .layoutWeight(1)
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
+    }
+    .width('100%')
+    .height('100%')
+    .padding({ left: 20, right: 20 })
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+  }
+
+  @Builder
+  private buildGlobalThemeSection(): void {
+    Column({ space: 12 }) {
+      this.buildGlobalSettingsSectionHeader($r('app.string.settings_appearance_theme_title'), $r('sys.symbol.gearshape'))
+      Row({ space: 8 }) {
+        this.buildGlobalSettingOptionButton(
+          $r('app.string.settings_theme_light'),
+          AgentHomeGlobalSettingGroup.THEME,
+          NGFThemeMode.LIGHT
+        )
+        this.buildGlobalSettingOptionButton(
+          $r('app.string.settings_theme_dark'),
+          AgentHomeGlobalSettingGroup.THEME,
+          NGFThemeMode.DARK
+        )
+        this.buildGlobalSettingOptionButton(
+          $r('app.string.settings_follow_system'),
+          AgentHomeGlobalSettingGroup.THEME,
+          NGFThemeMode.AUTO
+        )
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .padding(14)
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(16)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildGlobalLanguageSection(): void {
+    Column({ space: 12 }) {
+      this.buildGlobalSettingsSectionHeader($r('app.string.settings_language_title'), $r('sys.symbol.character_upper_plus'))
+      Row({ space: 8 }) {
+        this.buildGlobalSettingOptionButton(
+          $r('app.string.settings_lang_zh'),
+          AgentHomeGlobalSettingGroup.LANGUAGE,
+          'zh-Hans'
+        )
+        this.buildGlobalSettingOptionButton(
+          $r('app.string.settings_lang_en'),
+          AgentHomeGlobalSettingGroup.LANGUAGE,
+          'en'
+        )
+        this.buildGlobalSettingOptionButton(
+          $r('app.string.settings_follow_system'),
+          AgentHomeGlobalSettingGroup.LANGUAGE,
+          ''
+        )
+      }
+      .width('100%')
+    }
+    .width('100%')
+    .padding(14)
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(16)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildGlobalReplayGuideSection(): void {
+    Column({ space: 10 }) {
+      this.buildGlobalSettingsSectionHeader($r('app.string.agent_home_global_settings_replay_title'), $r('sys.symbol.play_circle'))
+      Text($r('app.string.agent_home_global_settings_replay_desc'))
+        .width('100%')
+        .fontSize(12)
+        .lineHeight(18)
+        .fontColor(this.agentHomeReadableSecondaryColor())
+      Button() {
+        Row({ space: 8 }) {
+          SymbolGlyph($r('sys.symbol.play_circle'))
+            .fontSize(16)
+            .fontColor([this.agentHomeControlIconColor(true)])
+          Text($r('app.string.agent_home_global_settings_replay_button'))
+            .fontSize(13)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(this.agentHomeControlTextColor(true))
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .justifyContent(FlexAlign.Center)
+        .width('100%')
+      }
+      .width('100%')
+      .height(40)
+      .borderRadius(20)
+      .backgroundColor(Color.Transparent)
+      .buttonStyle(ButtonStyleMode.NORMAL)
+      .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+      .border({
+        width: this.agentHomeSurfaceBorderWidth(),
+        color: this.agentHomeSelectedBorderColor(true)
+      })
+      .shadow(this.agentHomeSurfaceShadowOptions())
+      .visualEffect(this.agentHomeSurfaceVisualEffect())
+      .clip(true)
+      .onClick((): void => {
+        this.replayStartupGuide();
+      })
+    }
+    .width('100%')
+    .padding(14)
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(16)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildGlobalDeveloperSection(): void {
+    Column({ space: 10 }) {
+      this.buildGlobalSettingsSectionHeader($r('app.string.agent_home_developer_section_title'), $r('sys.symbol.figure_mixed_cardio'))
+      this.buildGlobalDeveloperEntryRow(
+        $r('app.string.agent_home_developer_apps_title'),
+        $r('app.string.agent_home_developer_apps_desc'),
+        $r('sys.symbol.more'),
+        AgentHomeSheetKey.DEVELOPER_APPS
+      )
+      this.buildGlobalDeveloperEntryRow(
+        $r('app.string.agent_home_support_project_title'),
+        $r('app.string.agent_home_support_project_desc'),
+        $r('sys.symbol.qrcode'),
+        AgentHomeSheetKey.SUPPORT_PROJECT
+      )
+    }
+    .width('100%')
+    .padding(14)
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(16)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildGlobalDeveloperEntryRow(title: ResourceStr, description: ResourceStr, symbol: Resource, sheetKey: string): void {
+    Row({ space: 12 }) {
+      Column() {
+        SymbolGlyph(symbol)
+          .fontSize(18)
+          .fontColor([this.agentHomeControlIconColor(true)])
+      }
+      .width(38)
+      .height(38)
+      .borderRadius(19)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+      .backgroundColor(this.agentHomeSolidControlBackgroundColor())
+      .border({
+        width: 1,
+        color: this.agentHomeSelectedBorderColor(true)
+      })
+
+      Column({ space: 3 }) {
+        Text(title)
+          .fontSize(15)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.agentHomeReadableTextColor())
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(description)
+          .fontSize(12)
+          .lineHeight(17)
+          .fontColor(this.agentHomeReadableSecondaryColor())
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .layoutWeight(1)
+      .alignItems(HorizontalAlign.Start)
+
+      SymbolGlyph($r('sys.symbol.chevron_right'))
+        .fontSize(16)
+        .fontColor([this.agentHomeReadableMutedColor()])
+    }
+    .width('100%')
+    .padding({ left: 10, right: 10, top: 10, bottom: 10 })
+    .borderRadius(14)
+    .backgroundColor($r('app.color.background_secondary'))
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .onClick((): void => {
+      this.openSheet(sheetKey);
+    })
+  }
+
+  @Builder
+  private buildDeveloperAppsSheet(): void {
+    Column({ space: 12 }) {
+      this.buildSheetTitleBlock(
+        $r('app.string.agent_home_developer_apps_title'),
+        $r('app.string.agent_home_developer_apps_sheet_hint')
+      )
+
+      Scroll() {
+        Column({ space: 12 }) {
+          ForEach(this.developerAppItems, (item: AgentHomeDeveloperAppItem): void => {
+            this.buildDeveloperAppCard(item)
+          }, (item: AgentHomeDeveloperAppItem): string => item.id)
+
+          Text($r('app.string.agent_home_developer_apps_footer'))
+            .width('100%')
+            .padding({ top: 12, bottom: 24 })
+            .fontSize(12)
+            .fontColor(this.agentHomeReadableMutedColor())
+            .textAlign(TextAlign.Center)
+        }
+        .width('100%')
+        .padding({ bottom: this.bottomInsetVp + 20 })
+      }
+      .width('100%')
+      .layoutWeight(1)
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
+    }
+    .width('100%')
+    .height('100%')
+    .padding({ left: 20, right: 20 })
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+  }
+
+  @Builder
+  private buildDeveloperAppCard(item: AgentHomeDeveloperAppItem): void {
+    Column({ space: 0 }) {
+      Row({ space: 14 }) {
+        if (item.isAvailable) {
+          Image(item.icon)
+            .width(56)
+            .height(56)
+            .borderRadius(14)
+            .objectFit(ImageFit.Cover)
+        } else {
+          Column() {
+            SymbolGlyph($r('sys.symbol.code'))
+              .fontSize(24)
+              .fontColor([this.agentHomeReadableSecondaryColor()])
+          }
+          .width(56)
+          .height(56)
+          .borderRadius(14)
+          .justifyContent(FlexAlign.Center)
+          .alignItems(HorizontalAlign.Center)
+          .backgroundColor($r('app.color.background_secondary'))
+          .border({
+            width: this.agentHomeSurfaceBorderWidth(),
+            color: this.agentHomeSurfaceBorderColor()
+          })
+        }
+
+        Column({ space: 5 }) {
+          Text(item.title)
+            .fontSize(17)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(this.agentHomeReadableTextColor())
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          Text(item.description)
+            .fontSize(12)
+            .lineHeight(18)
+            .fontColor(this.agentHomeReadableSecondaryColor())
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+      }
+      .width('100%')
+      .padding({ left: 14, right: 14, top: 16, bottom: 14 })
+
+      Divider()
+        .strokeWidth(1)
+        .color(this.agentHomeSurfaceBorderColor())
+        .margin({ left: 14, right: 14 })
+
+      if (item.isAvailable) {
+        Row() {
+          Text($r('app.string.agent_home_developer_app_open_market'))
+            .fontSize(14)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(this.agentHomeReadableTextColor())
+            .layoutWeight(1)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          SymbolGlyph($r('sys.symbol.chevron_right'))
+            .fontSize(16)
+            .fontColor([this.agentHomeReadableMutedColor()])
+        }
+        .width('100%')
+        .height(48)
+        .padding({ left: 14, right: 14 })
+        .onClick((): void => {
+          this.openDeveloperApp(item);
+        })
+      } else {
+        Row() {
+          Text($r('app.string.agent_home_developer_app_coming_soon'))
+            .fontSize(14)
+            .fontColor(this.agentHomeReadableMutedColor())
+            .layoutWeight(1)
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .width('100%')
+        .height(48)
+        .padding({ left: 14, right: 14 })
+      }
+    }
+    .width('100%')
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(16)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildSupportProjectSheet(): void {
+    Column({ space: 12 }) {
+      this.buildSheetTitleBlock(
+        $r('app.string.agent_home_support_project_title'),
+        $r('app.string.agent_home_support_project_sheet_hint')
+      )
+
+      Scroll() {
+        Column({ space: 12 }) {
+          this.buildSupportQrcodeCard()
+          this.buildSupportLinkCard()
+          Text($r('app.string.agent_home_support_footer'))
+            .width('100%')
+            .padding({ top: 12, bottom: 24 })
+            .fontSize(12)
+            .fontColor(this.agentHomeReadableMutedColor())
+            .textAlign(TextAlign.Center)
+        }
+        .width('100%')
+        .padding({ bottom: this.bottomInsetVp + 20 })
+      }
+      .width('100%')
+      .layoutWeight(1)
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
+    }
+    .width('100%')
+    .height('100%')
+    .padding({ left: 20, right: 20 })
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+    .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+  }
+
+  @Builder
+  private buildSupportQrcodeCard(): void {
+    Column({ space: 16 }) {
+      Text($r('app.string.agent_home_support_scan_title'))
+        .fontSize(17)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.agentHomeReadableTextColor())
+        .width('100%')
+        .textAlign(TextAlign.Center)
+
+      Column() {
+        Image($r('app.media.developer_support_reward_qrcode'))
+          .width(220)
+          .height(220)
+          .borderRadius(12)
+          .objectFit(ImageFit.Contain)
+          .clip(true)
+      }
+      .width(236)
+      .height(236)
+      .padding(8)
+      .borderRadius(18)
+      .backgroundColor(Color.White)
+      .clip(true)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
+    }
+    .width('100%')
+    .padding({ left: 16, right: 16, top: 24, bottom: 24 })
+    .justifyContent(FlexAlign.Center)
+    .alignItems(HorizontalAlign.Center)
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(16)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildSupportLinkCard(): void {
+    Column({ space: 0 }) {
+      Text($r('app.string.agent_home_support_link_title'))
+        .fontSize(17)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.agentHomeReadableTextColor())
+        .width('100%')
+        .padding({ left: 14, right: 14, top: 16, bottom: 8 })
+
+      Text($r('app.string.agent_home_support_link_desc'))
+        .fontSize(12)
+        .lineHeight(18)
+        .fontColor(this.agentHomeReadableSecondaryColor())
+        .width('100%')
+        .padding({ left: 14, right: 14, bottom: 12 })
+
+      Row({ space: 8 }) {
+        Text(AGENT_HOME_AFDIAN_URL)
+          .fontSize(13)
+          .fontColor($r('app.color.tag_blue'))
+          .layoutWeight(1)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        SymbolGlyph($r('sys.symbol.doc_plaintext'))
+          .fontSize(16)
+          .fontColor([this.agentHomeReadableMutedColor()])
+      }
+      .width('100%')
+      .padding({ left: 14, right: 14, top: 8, bottom: 12 })
+      .onClick((): void => {
+        this.copySupportLink();
+      })
+
+      Divider()
+        .strokeWidth(1)
+        .color(this.agentHomeSurfaceBorderColor())
+        .margin({ left: 14, right: 14 })
+
+      Row() {
+        Text($r('app.string.agent_home_support_open_afdian'))
+          .fontSize(14)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.agentHomeReadableTextColor())
+          .layoutWeight(1)
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        SymbolGlyph($r('sys.symbol.chevron_right'))
+          .fontSize(16)
+          .fontColor([this.agentHomeReadableMutedColor()])
+      }
+      .width('100%')
+      .height(48)
+      .padding({ left: 14, right: 14 })
+      .onClick((): void => {
+        this.openSupportPage();
+      })
+    }
+    .width('100%')
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .borderRadius(16)
+    .shadow(this.agentHomeSurfaceShadowOptions())
+    .visualEffect(this.agentHomeSurfaceVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildSheetTitleBlock(title: ResourceStr, hint: ResourceStr): void {
+    Row({ space: 10 }) {
+      Column({ space: 2 }) {
+        Text(title)
+          .fontSize(24)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('app.color.text_body'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(hint)
+          .fontSize(12)
+          .fontColor($r('app.color.text_secondary'))
+          .maxLines(2)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .layoutWeight(1)
+    }
+    .width('100%')
+    .height(62)
+    .padding({ top: 8 })
+  }
+
+  @Builder
+  private buildGlobalSettingsSectionHeader(title: ResourceStr, symbol: Resource): void {
+    Row({ space: 8 }) {
+      SymbolGlyph(symbol)
+        .fontSize(17)
+        .fontColor([this.agentHomeReadableSecondaryColor()])
+      Text(title)
+        .fontSize(16)
+        .fontWeight(FontWeight.Medium)
+        .fontColor(this.agentHomeReadableTextColor())
+        .layoutWeight(1)
+        .maxLines(1)
+        .textOverflow({ overflow: TextOverflow.Ellipsis })
+    }
+    .width('100%')
+  }
+
+  @Builder
+  private buildGlobalSettingOptionButton(title: ResourceStr, group: string, value: string): void {
+    Button() {
+      Row({ space: 5 }) {
+        if (this.isGlobalSettingOptionSelected(group, value)) {
+          SymbolGlyph($r('sys.symbol.checkmark'))
+            .fontSize(12)
+            .fontColor([this.agentHomeControlIconColor(true)])
+        } else {
+          Blank()
+            .width(12)
+            .height(12)
+        }
+        Text(title)
+          .fontSize(12)
+          .fontWeight(this.isGlobalSettingOptionSelected(group, value) ? FontWeight.Medium : FontWeight.Regular)
+          .fontColor(this.isGlobalSettingOptionSelected(group, value) ? this.agentHomeControlTextColor(true) : this.agentHomeReadableSecondaryColor())
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .width('100%')
+      .justifyContent(FlexAlign.Center)
+    }
+    .layoutWeight(1)
+    .height(36)
+    .borderRadius(18)
+    .backgroundColor(this.isGlobalSettingOptionSelected(group, value) ? this.globalSettingSelectedBackgroundColor() : $r('app.color.background_secondary'))
+    .border({
+      width: this.isGlobalSettingOptionSelected(group, value) ? 1.6 : this.agentHomeSurfaceBorderWidth(),
+      color: this.isGlobalSettingOptionSelected(group, value) ? this.agentHomeSelectedBorderColor(true) : this.agentHomeSurfaceBorderColor()
+    })
+    .shadow({
+      radius: this.isGlobalSettingOptionSelected(group, value) ? 12 : 0,
+      color: this.isGlobalSettingOptionSelected(group, value) ? '#22005DFF' : '#00000000',
+      offsetX: 0,
+      offsetY: this.isGlobalSettingOptionSelected(group, value) ? 4 : 0
+    })
+    .buttonStyle(ButtonStyleMode.NORMAL)
+    .onClick((): void => {
+      this.handleGlobalSettingOption(group, value);
+    })
+  }
+
+  @Builder
   private buildSettingsSheet(): void {
     Column({ space: 12 }) {
       Row({ space: 10 }) {
@@ -4061,6 +6470,7 @@ struct NGFAgentHomePage {
             .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
         .layoutWeight(1)
+
       }
       .width('100%')
       .height(56)
@@ -4374,22 +6784,6 @@ struct NGFAgentHomePage {
         .onClick((): void => {
           this.confirmResetAgentData();
         })
-
-      this.buildSettingsStageHeader(
-        '3',
-        $r('app.string.agent_home_settings_stage_framework_title'),
-        $r('app.string.agent_home_settings_stage_framework_desc')
-      )
-      Button($r('app.string.agent_home_open_framework'))
-        .width('100%')
-        .height(38)
-        .fontSize(13)
-        .borderRadius(10)
-        .fontColor($r('app.color.text_body'))
-        .backgroundColor($r('app.color.background_secondary'))
-        .onClick((): void => {
-          this.openFrameworkConsole();
-        })
     }
     .width('100%')
   }
@@ -4551,21 +6945,41 @@ struct NGFAgentHomePage {
           .columnsGap(8)
           .rowsGap(8)
 
-          this.buildModelSheetSectionHeader(
-            $r('app.string.agent_home_settings_stage_mode_title'),
-            $r('sys.symbol.route_plan')
-          )
-          Grid() {
-            ForEach(this.currentProviderInteractionModes(), (item: AgentBridgeInteractionModeOption) => {
-              GridItem() {
-                this.buildInteractionModeOptionRow(item)
-              }
-            }, (item: AgentBridgeInteractionModeOption): string => item.id)
+          if (this.hasInteractionModesInCategory('run')) {
+            this.buildModelSheetSectionHeader(
+              $r('app.string.agent_home_settings_stage_run_mode_title'),
+              $r('sys.symbol.route_plan')
+            )
+            Grid() {
+              ForEach(this.currentProviderInteractionModesForCategory('run'), (item: AgentBridgeInteractionModeOption) => {
+                GridItem() {
+                  this.buildInteractionModeOptionRow(item)
+                }
+              }, (item: AgentBridgeInteractionModeOption): string => item.id)
+            }
+            .width('100%')
+            .columnsTemplate('1fr 1fr')
+            .columnsGap(8)
+            .rowsGap(8)
           }
-          .width('100%')
-          .columnsTemplate('1fr 1fr')
-          .columnsGap(8)
-          .rowsGap(8)
+
+          if (this.hasInteractionModesInCategory('approval')) {
+            this.buildModelSheetSectionHeader(
+              $r('app.string.agent_home_settings_stage_permission_mode_title'),
+              $r('sys.symbol.security_shield')
+            )
+            Grid() {
+              ForEach(this.currentProviderInteractionModesForCategory('approval'), (item: AgentBridgeInteractionModeOption) => {
+                GridItem() {
+                  this.buildInteractionModeOptionRow(item)
+                }
+              }, (item: AgentBridgeInteractionModeOption): string => item.id)
+            }
+            .width('100%')
+            .columnsTemplate('1fr 1fr')
+            .columnsGap(8)
+            .rowsGap(8)
+          }
         }
         .width('100%')
         .padding({ bottom: this.bottomInsetVp + 18 })
@@ -4799,13 +7213,15 @@ struct NGFAgentHomePage {
 
   @Builder
   private buildWorkspaceBrowserPage(avoidTitleBar: boolean): void {
-    Column({ space: 12 }) {
+    Column({ space: avoidTitleBar ? 0 : 12 }) {
       if (avoidTitleBar) {
-        Blank()
-          .width('100%')
-          .height(this.agentHomeMainPageTitleBarSpacerHeight())
-          .hitTestBehavior(HitTestMode.None)
-        this.buildMainFileArea()
+        this.buildWorkspaceTitleBarUnderlaySpacer()
+        Column() {
+          this.buildMainFileArea()
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .padding({ left: 20, right: 20, top: 10, bottom: 16 })
       } else {
         Row({ space: 10 }) {
           Column({ space: 2 }) {
@@ -4867,7 +7283,12 @@ struct NGFAgentHomePage {
     }
     .width('100%')
     .height('100%')
-    .padding({ left: 20, right: 20, top: 10, bottom: this.bottomInsetVp + 16 })
+    .padding({
+      left: avoidTitleBar ? 0 : 20,
+      right: avoidTitleBar ? 0 : 20,
+      top: avoidTitleBar ? 0 : 10,
+      bottom: avoidTitleBar ? 0 : this.bottomInsetVp + 16
+    })
     .backgroundColor(Color.Transparent)
     .backgroundEffect(this.agentHomeSurfaceBackgroundEffect())
     .border({
@@ -4948,13 +7369,11 @@ struct NGFAgentHomePage {
       this.buildMainFileTabItem(
         $r('app.string.agent_home_workspace_tab_changes'),
         $r('sys.symbol.list_checkmark'),
-        this.visibleWorkspaceChanges().length,
         AgentHomeWorkspacePanelTab.CHANGES
       )
       this.buildMainFileTabItem(
         $r('app.string.agent_home_workspace_tab_files'),
         $r('sys.symbol.folder'),
-        this.visibleWorkspaceFiles().length,
         AgentHomeWorkspacePanelTab.FILES
       )
       this.buildMainFileRefreshButton()
@@ -4975,7 +7394,7 @@ struct NGFAgentHomePage {
   }
 
   @Builder
-  private buildMainFileTabItem(title: ResourceStr, symbol: Resource, count: number, index: number): void {
+  private buildMainFileTabItem(title: ResourceStr, symbol: Resource, index: number): void {
     Button() {
       Row({ space: 6 }) {
         SymbolGlyph(symbol)
@@ -4987,10 +7406,6 @@ struct NGFAgentHomePage {
           .fontColor(this.mainFileTabTextColor(index))
           .maxLines(1)
           .textOverflow({ overflow: TextOverflow.Ellipsis })
-        Text(String(count))
-          .fontSize(11)
-          .fontColor(this.mainFileTabCounterColor(index))
-          .maxLines(1)
       }
       .justifyContent(FlexAlign.Center)
       .width('100%')
@@ -5035,10 +7450,6 @@ struct NGFAgentHomePage {
           .fontColor(this.agentHomeReadableSecondaryColor())
         .layoutWeight(1)
         .maxLines(1)
-        Text(String(this.visibleWorkspaceChanges().length))
-          .fontSize(11)
-          .fontColor(this.agentHomeReadableMutedColor())
-          .maxLines(1)
       }
       .width('100%')
       .height(22)
@@ -5094,10 +7505,7 @@ struct NGFAgentHomePage {
         .layoutWeight(1)
         .maxLines(1)
         .textOverflow({ overflow: TextOverflow.Ellipsis })
-      Text(this.workspaceChangeCompactStatusText(item))
-        .fontSize(11)
-        .fontColor(this.workspaceChangeStatusColor(item))
-        .maxLines(1)
+      this.buildWorkspaceChangeCompactStatusLabel(item)
     }
     .width('100%')
     .height(30)
@@ -5636,11 +8044,7 @@ struct NGFAgentHomePage {
             .fontColor(this.agentHomeReadableTextColor())
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
-          Text(this.activeWorkspaceChangeSummaryText())
-            .fontSize(12)
-            .fontColor(this.agentHomeReadableSecondaryColor())
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          this.buildActiveWorkspaceChangeSummaryLabel()
         }
         .layoutWeight(1)
         Button($r('app.string.agent_home_workspace_preview_full'))
@@ -5688,6 +8092,30 @@ struct NGFAgentHomePage {
   }
 
   @Builder
+  private buildActiveWorkspaceChangeSummaryLabel(): void {
+    Text() {
+      Span(this.activeWorkspaceChangeSummaryPathText())
+        .fontSize(12)
+        .fontColor(this.agentHomeReadableSecondaryColor())
+      if (this.activeWorkspaceChangeIsDirectory()) {
+        Span('  ' + this.activeWorkspaceChangeFileCountText())
+          .fontSize(12)
+          .fontColor(this.agentHomeReadableSecondaryColor())
+      }
+      if (this.hasActiveWorkspaceChange()) {
+        Span('  +' + String(this.activeWorkspaceChangeAdditions()))
+          .fontSize(12)
+          .fontColor($r('app.color.tag_green'))
+        Span('  -' + String(this.activeWorkspaceChangeDeletions()))
+          .fontSize(12)
+          .fontColor($r('app.color.tag_red'))
+      }
+    }
+    .maxLines(1)
+    .textOverflow({ overflow: TextOverflow.Ellipsis })
+  }
+
+  @Builder
   private buildWorkspaceContentPreviewSheet(): void {
     Column({ space: 12 }) {
       Row() {
@@ -5705,6 +8133,7 @@ struct NGFAgentHomePage {
             .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
         .layoutWeight(1)
+
       }
       .width('100%')
       .height(60)
@@ -5725,6 +8154,8 @@ struct NGFAgentHomePage {
         this.buildWorkspaceEmpty($r('app.string.agent_home_workspace_content_preview_empty'), $r('sys.symbol.doc_plaintext'))
       } else if (this.activeWorkspacePreviewContentKind() === NGFRichContentKind.IMAGE) {
         this.buildWorkspaceRasterPreviewStage(this.activeWorkspacePreviewContent(), this.bottomInsetVp + 18)
+      } else if (this.activeWorkspacePreviewContentKind() === NGFRichContentKind.MARKDOWN) {
+        this.buildWorkspaceMarkdownPreview(this.activeWorkspacePreviewContent(), this.bottomInsetVp + 18)
       } else if (this.isActiveWorkspacePreviewCodeContent()) {
         Column() {
           this.buildWorkspaceCodePreviewTable(this.activeWorkspacePreviewContent(), this.bottomInsetVp + 18)
@@ -5757,6 +8188,28 @@ struct NGFAgentHomePage {
     .visualEffect(this.agentHomeSurfaceVisualEffect())
     .clip(true)
     .expandSafeArea([SafeAreaType.SYSTEM], [SafeAreaEdge.TOP, SafeAreaEdge.BOTTOM])
+  }
+
+  @Builder
+  private buildWorkspaceMarkdownPreview(content: string, bottomPadding: number): void {
+    Scroll() {
+      Column() {
+        this.buildAssistantNativeRichContent('workspace_markdown_preview_' + this.activeWorkspacePreviewPath, content)
+      }
+      .width('100%')
+      .padding({ left: 14, right: 14, top: 12, bottom: bottomPadding })
+    }
+    .width('100%')
+    .layoutWeight(1)
+    .scrollBar(BarState.Auto)
+    .edgeEffect(EdgeEffect.Spring)
+    .backgroundColor(this.codeBlockBackgroundColor())
+    .borderRadius(12)
+    .border({
+      width: this.agentHomeSurfaceBorderWidth(),
+      color: this.agentHomeSurfaceBorderColor()
+    })
+    .clip(true)
   }
 
   @Builder
@@ -5978,25 +8431,21 @@ struct NGFAgentHomePage {
   @Builder
   private buildRequestDetailSheet(): void {
     Column({ space: 12 }) {
-      Row({ space: 10 }) {
-        SymbolGlyph($r('sys.symbol.questionmark_circle'))
+      Column({ space: 2 }) {
+        Text(this.activeRequestTitle())
           .fontSize(24)
-          .fontColor([this.colorForInteractionStatus(this.activeRequestStatus())])
-        Column({ space: 2 }) {
-          Text(this.activeRequestTitle())
-            .fontSize(24)
-            .fontWeight(FontWeight.Medium)
-            .fontColor($r('app.color.text_body'))
-            .maxLines(1)
-            .textOverflow({ overflow: TextOverflow.Ellipsis })
-          Text(this.displayInteractionStatus(this.activeRequestStatus()))
-            .fontSize(12)
-            .fontColor(this.colorForInteractionStatus(this.activeRequestStatus()))
-        }
-        .layoutWeight(1)
+          .fontWeight(FontWeight.Medium)
+          .fontColor($r('app.color.text_body'))
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(this.displayInteractionStatus(this.activeRequestStatus()))
+          .fontSize(12)
+          .fontColor(this.activeRequestHeaderIconColor())
       }
       .width('100%')
       .height(56)
+      .justifyContent(FlexAlign.Center)
+      .alignItems(HorizontalAlign.Center)
 
       Text(this.activeRequestPrompt())
         .width('100%')
@@ -6044,9 +8493,10 @@ struct NGFAgentHomePage {
             .height(40)
             .fontSize(13)
             .borderRadius(10)
-            .fontColor($r('app.color.text_body'))
-            .backgroundColor($r('app.color.background_secondary'))
+            .fontColor($r('app.color.text_white'))
+            .backgroundColor(this.permissionDenyButtonBackgroundColor())
             .enabled(this.canRespondActivePermission())
+            .opacity(this.canRespondActivePermission() ? 1 : 0.55)
             .onClick((): void => {
               this.respondToActivePermission(AgentHomePermissionReply.REJECT);
             })
@@ -6056,8 +8506,9 @@ struct NGFAgentHomePage {
             .fontSize(13)
             .borderRadius(10)
             .fontColor($r('app.color.text_white'))
-            .backgroundColor(this.agentHomeSolidControlBackgroundColor())
+            .backgroundColor(this.permissionAllowButtonBackgroundColor())
             .enabled(this.canRespondActivePermission())
+            .opacity(this.canRespondActivePermission() ? 1 : 0.55)
             .onClick((): void => {
               this.respondToActivePermission(AgentHomePermissionReply.ONCE);
             })
@@ -6090,7 +8541,7 @@ struct NGFAgentHomePage {
         .width('100%')
       }
 
-      this.buildToolDetailBlock($r('app.string.agent_home_tool_detail_raw'), this.activeRequestRawText())
+      this.buildToolDetailBlock($r('app.string.agent_home_tool_detail_raw'), this.activeRequestRawDisplayText())
     }
     .width('100%')
     .height('100%')
@@ -6162,6 +8613,7 @@ struct NGFAgentHomePage {
             .fontColor(this.colorForInteractionStatus(this.activePlanStatus()))
         }
         .layoutWeight(1)
+
       }
       .width('100%')
       .height(56)
@@ -6301,6 +8753,7 @@ struct NGFAgentHomePage {
             .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
         .layoutWeight(1)
+
       }
       .width('100%')
       .height(56)
@@ -6385,6 +8838,7 @@ struct NGFAgentHomePage {
             .textOverflow({ overflow: TextOverflow.Ellipsis })
         }
         .layoutWeight(1)
+
       }
       .width('100%')
       .height(56)
@@ -6440,6 +8894,7 @@ struct NGFAgentHomePage {
             this.buildSessionDetailRow($r('app.string.agent_home_detail_model'), this.currentModelDisplayText())
             this.buildSessionDetailRow($r('app.string.agent_home_detail_speed'), this.selectedSpeedMode)
             this.buildSessionDetailRow($r('app.string.agent_home_detail_reasoning'), this.selectedReasoningMode)
+            this.buildSessionDetailRow($r('app.string.agent_home_detail_permission_mode'), this.resolveDetailValue(this.currentPermissionModeDisplayText()))
             this.buildSessionDetailRow($r('app.string.agent_home_detail_bridge_session'), this.currentBridgeSessionId())
             this.buildSessionDetailRow($r('app.string.agent_home_detail_remote_source'), this.currentRemoteSourceText())
             this.buildSessionDetailRow($r('app.string.agent_home_detail_remote_messages'), this.currentRemoteMessageCountText())
@@ -6895,6 +9350,13 @@ struct NGFAgentHomePage {
     return $r('app.color.component_control_bg');
   }
 
+  private globalSettingSelectedBackgroundColor(): ResourceColor {
+    if (this.isDarkMode) {
+      return '#264A7DFF';
+    }
+    return '#EAF2FF';
+  }
+
   private agentHomeReadableTextColor(): ResourceColor {
     if (this.isDarkMode) {
       return $r('app.color.text_white_high');
@@ -6914,6 +9376,20 @@ struct NGFAgentHomePage {
       return $r('app.color.text_white_low');
     }
     return $r('app.color.text_muted');
+  }
+
+  private conversationRichContentDarkMode(): boolean {
+    if (this.currentTheme === NGFThemeMode.DARK) {
+      return true;
+    }
+    if (this.currentTheme === NGFThemeMode.LIGHT) {
+      return false;
+    }
+    return this.isDarkMode;
+  }
+
+  private conversationRichContentThemeKey(): string {
+    return this.conversationRichContentDarkMode() ? 'dark' : 'light';
   }
 
   private workspacePreviewMediaStageBackgroundColor(): ResourceColor {
@@ -6947,6 +9423,33 @@ struct NGFAgentHomePage {
       return $r('app.color.tag_blue');
     }
     return $r('app.color.text_body');
+  }
+
+  private runModePillBackgroundColor(selected: boolean): ResourceColor {
+    if (!selected) {
+      return Color.Transparent;
+    }
+    if (this.isDarkMode) {
+      return '#1D4ED8';
+    }
+    return '#EAF2FF';
+  }
+
+  private runModePillBorderColor(selected: boolean): ResourceColor {
+    if (!selected) {
+      return this.agentHomeSurfaceBorderColor();
+    }
+    if (this.isDarkMode) {
+      return '#93C5FD';
+    }
+    return $r('app.color.tag_blue');
+  }
+
+  private runModePillBorderWidth(selected: boolean): number {
+    if (selected) {
+      return 1.5;
+    }
+    return this.agentHomeSurfaceBorderWidth();
   }
 
   private agentHomeSelectedBorderColor(selected: boolean): ResourceColor {
@@ -7081,6 +9584,133 @@ struct NGFAgentHomePage {
   }
 
   @Builder
+  private buildComposerModelButton(): void {
+    Button() {
+      Image(this.currentModelIcon())
+        .width(22)
+        .height(22)
+        .objectFit(ImageFit.Contain)
+    }
+    .width(40)
+    .height(40)
+    .borderRadius(20)
+    .backgroundColor(Color.Transparent)
+    .buttonStyle(ButtonStyleMode.NORMAL)
+    .backgroundEffect(this.buildAgentHomeSurfacePreset().backgroundEffect)
+    .border({
+      width: this.buildAgentHomeSurfacePreset().borderWidth,
+      color: this.buildAgentHomeSurfacePreset().borderColor
+    })
+    .shadow(this.buildAgentHomeSurfacePreset().shadowOptions)
+    .visualEffect(this.buildAgentHomeSurfacePreset().buildVisualEffect())
+    .scale(this.buildAgentHomeSurfacePreset().scaleOptions)
+    .translate(this.buildAgentHomeSurfacePreset().translateOptions)
+    .clip(true)
+    .onClick((): void => {
+      this.handleAction(AgentHomeActionKey.OPEN_MODELS);
+    })
+  }
+
+  @Builder
+  private buildComposerPermissionModeButton(): void {
+    Button() {
+      SymbolGlyph(this.symbolForCurrentPermissionMode())
+        .fontSize(22)
+        .fontColor([this.agentHomeControlIconColor(this.isPermissionModeNonDefault())])
+    }
+    .width(40)
+    .height(40)
+    .borderRadius(20)
+    .backgroundColor(Color.Transparent)
+    .buttonStyle(ButtonStyleMode.NORMAL)
+    .backgroundEffect(this.buildAgentHomeSurfacePreset().backgroundEffect)
+    .border({
+      width: this.buildAgentHomeSurfacePreset().borderWidth,
+      color: this.buildAgentHomeSurfacePreset().borderColor
+    })
+    .shadow(this.buildAgentHomeSurfacePreset().shadowOptions)
+    .visualEffect(this.buildAgentHomeSurfacePreset().buildVisualEffect())
+    .scale(this.buildAgentHomeSurfacePreset().scaleOptions)
+    .translate(this.buildAgentHomeSurfacePreset().translateOptions)
+    .clip(true)
+    .bindPopup(this.isPermissionModePopupOpen, {
+      builder: (): void => {
+        this.buildPermissionModePopup()
+      },
+      placement: Placement.Top,
+      popupColor: Color.Transparent,
+      enableArrow: true,
+      autoCancel: true,
+      mask: false,
+      targetSpace: 8,
+      onStateChange: (event: PopupStateChangeParam): void => {
+        this.isPermissionModePopupOpen = event.isVisible;
+      }
+    })
+    .onClick((): void => {
+      this.isPermissionModePopupOpen = !this.isPermissionModePopupOpen;
+    })
+  }
+
+  @Builder
+  private buildPermissionModePopup(): void {
+    Column({ space: 6 }) {
+      ForEach(this.currentProviderInteractionModesForCategory('approval'), (mode: AgentBridgeInteractionModeOption) => {
+        this.buildPermissionModePopupRow(mode)
+      }, (mode: AgentBridgeInteractionModeOption): string => mode.id)
+    }
+    .width(238)
+    .padding({ left: 8, right: 8, top: 8, bottom: 8 })
+    .backgroundColor(Color.Transparent)
+    .backgroundEffect(this.buildAgentHomeSurfacePreset().backgroundEffect)
+    .border({
+      width: this.buildAgentHomeSurfacePreset().borderWidth,
+      color: this.buildAgentHomeSurfacePreset().borderColor
+    })
+    .borderRadius(18)
+    .shadow(this.buildAgentHomeSurfacePreset().shadowOptions)
+    .visualEffect(this.buildAgentHomeSurfacePreset().buildVisualEffect())
+    .clip(true)
+  }
+
+  @Builder
+  private buildPermissionModePopupRow(mode: AgentBridgeInteractionModeOption): void {
+    Row({ space: 9 }) {
+      SymbolGlyph(this.symbolForInteractionMode(mode.id))
+        .fontSize(18)
+        .fontColor([this.isCurrentPermissionMode(mode.id) ? $r('app.color.text_white') : this.agentHomeReadableSecondaryColor()])
+      Column({ space: 2 }) {
+        Text(mode.displayName)
+          .width('100%')
+          .fontSize(13)
+          .fontWeight(FontWeight.Medium)
+          .fontColor(this.isCurrentPermissionMode(mode.id) ? $r('app.color.text_white') : this.agentHomeReadableTextColor())
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+        Text(mode.description)
+          .width('100%')
+          .fontSize(10)
+          .fontColor(this.isCurrentPermissionMode(mode.id) ? $r('app.color.text_white') : this.agentHomeReadableSecondaryColor())
+          .maxLines(1)
+          .textOverflow({ overflow: TextOverflow.Ellipsis })
+      }
+      .layoutWeight(1)
+      SymbolGlyph(this.isCurrentPermissionMode(mode.id) ? $r('sys.symbol.checkmark_circle') : $r('sys.symbol.circle'))
+        .fontSize(15)
+        .fontColor([this.isCurrentPermissionMode(mode.id) ? $r('app.color.text_white') : this.agentHomeReadableMutedColor()])
+    }
+    .width('100%')
+    .height(48)
+    .padding({ left: 10, right: 10 })
+    .borderRadius(12)
+    .backgroundColor(this.isCurrentPermissionMode(mode.id) ? this.agentHomeSolidControlBackgroundColor() : Color.Transparent)
+    .onClick((): void => {
+      this.selectInteractionModeInCategory(mode.id);
+      this.isPermissionModePopupOpen = false;
+    })
+  }
+
+  @Builder
   private buildStopReplyButton(): void {
     Button() {
       SymbolGlyph($r('sys.symbol.stop_circle_fill'))
@@ -7116,6 +9746,28 @@ struct NGFAgentHomePage {
     return 18;
   }
 
+  private isOnboardingBridgeStepComplete(): boolean {
+    return this.bridgeEndpoint.trim().length > 0 && this.bridgeToken.trim().length > 0;
+  }
+
+  private isOnboardingConnectionStepComplete(): boolean {
+    return this.connectionStatus === AgentBridgeConnectionStatus.CONNECTED;
+  }
+
+  private isOnboardingSessionStepComplete(): boolean {
+    return this.activeSessionId.length > 0;
+  }
+
+  private isOnboardingStepActive(step: string): boolean {
+    if (this.isOnboardingConnectionStepComplete()) {
+      return step === 'session' && !this.isOnboardingSessionStepComplete();
+    }
+    if (!this.isOnboardingBridgeStepComplete()) {
+      return step === 'bridge' || step === 'connection';
+    }
+    return step === 'connection';
+  }
+
   private shouldShowConversationInlineStatus(): boolean {
     return this.activeSessionId.length > 0 && (this.activeTurnTimerVisible || this.isContextCompacting);
   }
@@ -7132,6 +9784,19 @@ struct NGFAgentHomePage {
     return this.statusInsetVp + 68;
   }
 
+  private workspaceTitleBarUnderlayColor(): ResourceColor {
+    if (this.isDarkMode) {
+      return '#F20A1020';
+    }
+    return '#EAF3F7FB';
+  }
+
+  private shouldUseWorkspaceTitleBarContrast(): boolean {
+    return this.isDarkMode &&
+      (this.mainPageIndex === AgentHomeMainPageIndex.WORKSPACES ||
+        this.mainPageIndex === AgentHomeMainPageIndex.WORKSPACE_BROWSER);
+  }
+
   private agentHomeTitleSubtitle(): string {
     const workspaceTitle = this.currentWorkspaceTitle();
     const sessionCount = this.sessionsForActiveWorkspace().length;
@@ -7142,6 +9807,16 @@ struct NGFAgentHomePage {
 
   private agentHomeTitleBarMenuActions(): Array<NGFHdsTitleBarMenuAction> {
     const actions: Array<NGFHdsTitleBarMenuAction> = [];
+    if (this.isLargeScreenNavigation) {
+      return actions;
+    }
+    actions.push(new NGFHdsTitleBarMenuAction(
+      $r('sys.symbol.plus'),
+      $r('app.string.agent_home_new_session'),
+      (): void => {
+        this.handleAction(AgentHomeActionKey.NEW_SESSION);
+      }
+    ));
     actions.push(new NGFHdsTitleBarMenuAction(
       $r('sys.symbol.ellipsis_message'),
       $r('app.string.agent_home_sessions_title'),
@@ -7160,6 +9835,13 @@ struct NGFAgentHomePage {
   }
 
   private conversationContentBottomPadding(): number {
+    if (this.shouldShowDisconnectedComposerState()) {
+      let disconnectedPadding = this.bottomInsetVp + 18;
+      if (this.shouldShowAgentFilterBar()) {
+        disconnectedPadding = disconnectedPadding + AGENT_HOME_AGENT_FILTER_BAR_HEIGHT;
+      }
+      return disconnectedPadding;
+    }
     const progress = this.clampComposerProgress(this.composerExpansionProgress);
     const composerHeight = AGENT_HOME_COMPACT_COMPOSER_HEIGHT +
       (AGENT_HOME_BASE_COMPOSER_HEIGHT - AGENT_HOME_COMPACT_COMPOSER_HEIGHT) * progress;
@@ -7174,7 +9856,7 @@ struct NGFAgentHomePage {
       bottomPadding = bottomPadding + 54;
     }
     if (this.shouldShowRunModeControls()) {
-      bottomPadding = bottomPadding + 42 * progress;
+      bottomPadding = bottomPadding + this.runModeControlsReservedHeight() * progress;
     }
     if (this.shouldShowSlashCommandMenu()) {
       bottomPadding = bottomPadding + this.slashCommandMenuHeight() + 20;
@@ -7246,6 +9928,7 @@ struct NGFAgentHomePage {
     this.workspaceFiles = [];
     this.gitCommits = [];
     this.userRequests = [];
+    this.syncPermissionRequestFlowLight();
     this.plans = [];
     this.syncWorkspaceDrafts();
   }
@@ -7256,8 +9939,8 @@ struct NGFAgentHomePage {
     const profile = new AgentHomeProfile(
       '',
       '',
-      AgentBridgeProviderId.MOCK,
-      'mock-fast',
+      AgentBridgeProviderId.CODEX,
+      'configured',
       'auto',
       'auto',
       '',
@@ -7275,18 +9958,119 @@ struct NGFAgentHomePage {
       this.remoteSessions = await this.persistence.loadRemoteSessions();
       this.ensureSessionImportProvider();
       logger.info(TAG, 'agent home state loaded from database');
+      const shouldWaitHistory = this.shouldWaitForStartupHistorySync();
+      if (shouldWaitHistory) {
+        this.schedulePersistentStateLoadingTimeout();
+      } else {
+        this.finishPersistentStateLoading();
+      }
       this.restoreLastBridgeConnection();
+      if (shouldWaitHistory && this.connectionStatus === AgentBridgeConnectionStatus.CONNECTED) {
+        const requestedHistory = this.refreshActiveSessionHistory();
+        if (!requestedHistory) {
+          this.finishPersistentStateLoading();
+        }
+      }
     } catch (e) {
       logger.error(TAG, 'load agent home state failed: ' + e);
+      this.finishPersistentStateLoading();
+    }
+  }
+
+  @Builder
+  private buildWorkspaceChangeCompactStatusLabel(item: AgentHomeWorkspaceChangeItem): void {
+    Text() {
+      Span(this.workspaceChangeActionText(item))
+        .fontSize(11)
+        .fontColor(this.workspaceChangeStatusColor(item))
+      if (this.isWorkspaceDirectoryChange(item)) {
+        Span(' ' + this.workspaceChangeFileCountText(item))
+          .fontSize(11)
+          .fontColor(this.workspaceChangeStatusColor(item))
+      }
+      if (item.additions > 0) {
+        Span(' +' + String(item.additions))
+          .fontSize(11)
+          .fontColor($r('app.color.tag_green'))
+      }
+      if (item.deletions > 0) {
+        Span(' -' + String(item.deletions))
+          .fontSize(11)
+          .fontColor($r('app.color.tag_red'))
+      }
+      if (!this.isWorkspaceDirectoryChange(item) && item.additions === 0 && item.deletions === 0) {
+        Span(' 0')
+          .fontSize(11)
+          .fontColor(this.workspaceChangeStatusColor(item))
+      }
+    }
+    .maxLines(1)
+    .textOverflow({ overflow: TextOverflow.Ellipsis })
+  }
+
+  private shouldWaitForStartupHistorySync(): boolean {
+    if (!this.isPersistentStateLoading) {
+      return false;
+    }
+    if (this.bridgeEndpoint.trim().length === 0 || this.bridgeToken.trim().length === 0) {
+      return false;
+    }
+    const session = this.currentSession();
+    if (!session || session.bridgeSessionId.length === 0) {
+      return false;
+    }
+    if (session.providerId !== AgentBridgeProviderId.CODEX && session.providerId !== AgentBridgeProviderId.CLAUDE) {
+      return false;
+    }
+    const provider = this.providerOptionForId(session.providerId);
+    if (!provider || !provider.supportsHistory) {
+      return false;
+    }
+    return true;
+  }
+
+  private beginStartupHistorySyncWait(localSessionId: string): void {
+    if (!this.isPersistentStateLoading || localSessionId.length === 0) {
+      return;
+    }
+    this.startupHistoryImportSessionId = localSessionId;
+    this.schedulePersistentStateLoadingTimeout();
+  }
+
+  private finishStartupHistorySyncIfNeeded(localSessionId: string): void {
+    if (this.startupHistoryImportSessionId.length === 0 || this.startupHistoryImportSessionId === localSessionId) {
+      this.finishPersistentStateLoading();
+    }
+  }
+
+  private schedulePersistentStateLoadingTimeout(): void {
+    this.clearPersistentStateLoadingTimeout();
+    this.persistentStateLoadingTimeoutTimer = setTimeout((): void => {
+      logger.warn(TAG, 'startup history sync wait timed out');
+      this.finishPersistentStateLoading();
+    }, AGENT_HOME_STARTUP_HISTORY_SYNC_TIMEOUT_MS);
+  }
+
+  private finishPersistentStateLoading(): void {
+    this.clearPersistentStateLoadingTimeout();
+    this.isPersistentStateLoading = false;
+    this.startupHistoryImportSessionId = '';
+  }
+
+  private clearPersistentStateLoadingTimeout(): void {
+    if (this.persistentStateLoadingTimeoutTimer >= 0) {
+      clearTimeout(this.persistentStateLoadingTimeoutTimer);
+      this.persistentStateLoadingTimeoutTimer = -1;
     }
   }
 
   private applySnapshot(snapshot: AgentHomeStateSnapshot): void {
     this.bridgeEndpoint = snapshot.profile.endpoint;
     this.bridgeToken = snapshot.profile.token;
-    this.selectedProviderId = snapshot.profile.providerId;
-    this.sessionImportProviderId = snapshot.profile.providerId;
-    this.newSessionProviderId = snapshot.profile.providerId;
+    const profileProviderId = this.normalizeSelectableProviderId(snapshot.profile.providerId);
+    this.selectedProviderId = profileProviderId;
+    this.sessionImportProviderId = profileProviderId;
+    this.newSessionProviderId = profileProviderId;
     this.selectedModelId = snapshot.profile.modelId;
     this.newSessionModelId = snapshot.profile.modelId;
     this.selectedSpeedMode = snapshot.profile.speedMode;
@@ -7305,6 +10089,7 @@ struct NGFAgentHomePage {
     this.workspaceFiles = snapshot.files;
     this.gitCommits = snapshot.commits;
     this.userRequests = snapshot.userRequests;
+    this.syncPermissionRequestFlowLight();
     this.plans = snapshot.plans;
     this.syncPlansFromToolCalls(this.toolCalls);
     this.bridgeConnectionReasonText = this.buildBridgeConnectionReasonText(this.connectionStatus, '');
@@ -7606,6 +10391,10 @@ struct NGFAgentHomePage {
       this.openSheet(AgentHomeSheetKey.SETTINGS);
       return;
     }
+    if (actionKey === AgentHomeActionKey.OPEN_GLOBAL_SETTINGS) {
+      this.openSheet(AgentHomeSheetKey.GLOBAL_SETTINGS);
+      return;
+    }
     if (actionKey === AgentHomeActionKey.OPEN_MODELS) {
       this.openSheet(AgentHomeSheetKey.MODELS);
       return;
@@ -7675,12 +10464,17 @@ struct NGFAgentHomePage {
       this.confirmCommitWorkspaceChanges();
       return;
     }
-    if (actionKey === AgentHomeActionKey.OPEN_FRAMEWORK) {
-      this.openFrameworkConsole();
-      return;
-    }
     if (actionKey === AgentHomeActionKey.OPEN_HOME) {
       this.showEmptyHomeGuide();
+      return;
+    }
+    if (actionKey === AgentHomeActionKey.SCAN_BRIDGE_QR) {
+      this.scanBridgeConnectionQr();
+      return;
+    }
+    if (actionKey === AgentHomeActionKey.COPY_DESKTOP_COMMAND) {
+      this.copyDesktopSetupCommand();
+      return;
     }
   }
 
@@ -7695,11 +10489,566 @@ struct NGFAgentHomePage {
     this.animateMainPageIndex(index);
     this.mainTabsController.changeIndex(index);
     this.closeSheet();
+    this.ensureLargeScreenMainDestination();
     if (index === AgentHomeMainPageIndex.WORKSPACE_BROWSER) {
       this.refreshWorkspaceBrowserRoot();
     } else if (index === AgentHomeMainPageIndex.WORKSPACES && this.connectionStatus === AgentBridgeConnectionStatus.CONNECTED) {
       this.requestRemoteSessions();
     }
+  }
+
+  @Builder
+  private buildMessageAttachmentGroup(
+    messageId: string,
+    attachments: Array<AgentHomeMessageAttachmentItem>,
+    onDark: boolean
+  ): void {
+    Column({ space: 8 }) {
+      ForEach(attachments, (item: AgentHomeMessageAttachmentItem) => {
+        this.buildMessageAttachmentCard(messageId, item, onDark)
+      }, (item: AgentHomeMessageAttachmentItem): string => item.id)
+    }
+    .width('100%')
+  }
+
+  @Builder
+  private buildMessageAttachmentCard(messageId: string, item: AgentHomeMessageAttachmentItem, onDark: boolean): void {
+    if (item.kind === AgentHomeAttachmentKind.IMAGE) {
+      Row({ space: 10 }) {
+        Stack() {
+          if (this.messageAttachmentImageSource(item).length > 0) {
+            Image(this.messageAttachmentImageSource(item))
+              .width('100%')
+              .height('100%')
+              .objectFit(ImageFit.Cover)
+          } else {
+            SymbolGlyph($r('sys.symbol.doc_plaintext'))
+              .fontSize(24)
+              .fontColor([onDark ? '#CCFFFFFF' : this.agentHomeReadableSecondaryColor()])
+          }
+        }
+        .width(74)
+        .height(56)
+        .backgroundColor(onDark ? '#22FFFFFF' : this.codeBlockBackgroundColor())
+        .borderRadius(12)
+        .clip(true)
+        .onAppear((): void => {
+          this.requestMessageAttachmentImagePreview(messageId, item);
+        })
+
+        Column({ space: 3 }) {
+          Text(item.displayName)
+            .fontSize(13)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(onDark ? $r('app.color.text_white') : this.agentHomeReadableTextColor())
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          Text(item.path)
+            .fontSize(11)
+            .lineHeight(16)
+            .fontColor(onDark ? '#B8FFFFFF' : this.agentHomeReadableSecondaryColor())
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+      }
+      .width('100%')
+      .padding(8)
+      .backgroundColor(onDark ? '#1AFFFFFF' : this.codeBlockBackgroundColor())
+      .border({
+        width: 1,
+        color: onDark ? '#24FFFFFF' : this.codeBlockBorderColor()
+      })
+      .borderRadius(14)
+    } else {
+      Row({ space: 10 }) {
+        SymbolGlyph($r('sys.symbol.doc_plaintext'))
+          .fontSize(22)
+          .fontColor([onDark ? '#D8FFFFFF' : this.agentHomeReadableSecondaryColor()])
+        Column({ space: 3 }) {
+          Text(item.displayName)
+            .fontSize(13)
+            .fontWeight(FontWeight.Medium)
+            .fontColor(onDark ? $r('app.color.text_white') : this.agentHomeReadableTextColor())
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+          Text(item.path)
+            .fontSize(11)
+            .lineHeight(16)
+            .fontColor(onDark ? '#B8FFFFFF' : this.agentHomeReadableSecondaryColor())
+            .maxLines(2)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .layoutWeight(1)
+        .alignItems(HorizontalAlign.Start)
+      }
+      .width('100%')
+      .padding(9)
+      .backgroundColor(onDark ? '#1AFFFFFF' : this.codeBlockBackgroundColor())
+      .border({
+        width: 1,
+        color: onDark ? '#24FFFFFF' : this.codeBlockBorderColor()
+      })
+      .borderRadius(14)
+    }
+  }
+
+  private parseMessageAttachmentContent(messageId: string, text: string): AgentHomeMessageAttachmentParseResult {
+    const normalized = text.split('\r\n').join('\n').split('\r').join('\n');
+    const lines = normalized.split('\n');
+    const filesHeaderIndex = this.findMessageFilesHeaderIndex(lines);
+    const requestHeaderIndex = this.findMessageRequestHeaderIndex(lines);
+    const attachments: Array<AgentHomeMessageAttachmentItem> = [];
+    let bodyText = normalized.trim();
+    if (filesHeaderIndex >= 0) {
+      const attachmentEnd = requestHeaderIndex > filesHeaderIndex ? requestHeaderIndex : lines.length;
+      const parsedAttachments = this.parseMessageAttachmentLines(messageId, lines, filesHeaderIndex + 1, attachmentEnd);
+      for (let index = 0; index < parsedAttachments.length; index++) {
+        this.appendMessageAttachmentIfAbsent(attachments, parsedAttachments[index]);
+      }
+      if (requestHeaderIndex > filesHeaderIndex) {
+        bodyText = this.joinLines(lines, requestHeaderIndex + 1, lines.length).trim();
+      } else {
+        bodyText = this.joinLines(lines, 0, filesHeaderIndex).trim();
+      }
+    } else if (requestHeaderIndex >= 0) {
+      bodyText = this.joinLines(lines, requestHeaderIndex + 1, lines.length).trim();
+    }
+    const inlineResult = this.extractInlineMessageAttachmentTags(messageId, bodyText, attachments.length);
+    for (let index = 0; index < inlineResult.attachments.length; index++) {
+      this.appendMessageAttachmentIfAbsent(attachments, inlineResult.attachments[index]);
+    }
+    return new AgentHomeMessageAttachmentParseResult(inlineResult.bodyText, attachments);
+  }
+
+  private messageAttachmentBodyText(messageId: string, text: string): string {
+    return this.parseMessageAttachmentContent(messageId, text).bodyText;
+  }
+
+  private messageAttachmentItems(messageId: string, text: string): Array<AgentHomeMessageAttachmentItem> {
+    return this.parseMessageAttachmentContent(messageId, text).attachments;
+  }
+
+  private findMessageFilesHeaderIndex(lines: Array<string>): number {
+    for (let index = 0; index < lines.length; index++) {
+      const heading = this.normalizedMessageHeading(lines[index]);
+      if (heading === 'files mentioned by the user:') {
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  private findMessageRequestHeaderIndex(lines: Array<string>): number {
+    for (let index = 0; index < lines.length; index++) {
+      const heading = this.normalizedMessageHeading(lines[index]);
+      if (heading === 'my request for codex:') {
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  private normalizedMessageHeading(line: string): string {
+    let value = line.trim();
+    while (value.startsWith('#')) {
+      value = value.substring(1).trim();
+    }
+    return value.toLowerCase();
+  }
+
+  private parseMessageAttachmentLines(
+    messageId: string,
+    lines: Array<string>,
+    startIndex: number,
+    endIndex: number
+  ): Array<AgentHomeMessageAttachmentItem> {
+    const items: Array<AgentHomeMessageAttachmentItem> = [];
+    for (let index = startIndex; index < endIndex; index++) {
+      const tagItem = this.parseMessageAttachmentTag(messageId, lines[index], items.length);
+      if (tagItem !== null) {
+        this.appendMessageAttachmentIfAbsent(items, tagItem);
+        continue;
+      }
+      const item = this.parseMessageAttachmentLine(messageId, lines[index], items.length);
+      if (item !== null) {
+        this.appendMessageAttachmentIfAbsent(items, item);
+      }
+    }
+    return items;
+  }
+
+  private extractInlineMessageAttachmentTags(messageId: string, text: string, ordinalStart: number): AgentHomeMessageAttachmentParseResult {
+    const attachments: Array<AgentHomeMessageAttachmentItem> = [];
+    let bodyText = '';
+    let cursor = 0;
+    const lowerText = text.toLowerCase();
+    while (cursor < text.length) {
+      const imageIndex = lowerText.indexOf('<image', cursor);
+      const fileIndex = lowerText.indexOf('<file', cursor);
+      const tagStart = this.nextInlineAttachmentTagStart(imageIndex, fileIndex);
+      if (tagStart < 0) {
+        bodyText = bodyText + text.substring(cursor);
+        break;
+      }
+      const tagOpenEnd = text.indexOf('>', tagStart);
+      if (tagOpenEnd < 0) {
+        bodyText = bodyText + text.substring(cursor);
+        break;
+      }
+      bodyText = bodyText + text.substring(cursor, tagStart);
+      const tagText = text.substring(tagStart, tagOpenEnd + 1);
+      const item = this.parseMessageAttachmentTag(messageId, tagText, ordinalStart + attachments.length);
+      if (item !== null) {
+        this.appendMessageAttachmentIfAbsent(attachments, item);
+        cursor = this.inlineAttachmentTagEnd(lowerText, tagStart, tagOpenEnd + 1);
+      } else {
+        bodyText = bodyText + tagText;
+        cursor = tagOpenEnd + 1;
+      }
+    }
+    return new AgentHomeMessageAttachmentParseResult(this.compactMessageAttachmentBodyText(bodyText), attachments);
+  }
+
+  private nextInlineAttachmentTagStart(imageIndex: number, fileIndex: number): number {
+    if (imageIndex < 0) {
+      return fileIndex;
+    }
+    if (fileIndex < 0) {
+      return imageIndex;
+    }
+    return imageIndex < fileIndex ? imageIndex : fileIndex;
+  }
+
+  private inlineAttachmentTagEnd(lowerText: string, tagStart: number, fallbackEnd: number): number {
+    if (lowerText.startsWith('<image', tagStart)) {
+      const closeIndex = lowerText.indexOf('</image>', fallbackEnd);
+      if (closeIndex >= 0) {
+        return closeIndex + '</image>'.length;
+      }
+    }
+    if (lowerText.startsWith('<file', tagStart)) {
+      const closeIndex = lowerText.indexOf('</file>', fallbackEnd);
+      if (closeIndex >= 0) {
+        return closeIndex + '</file>'.length;
+      }
+    }
+    return fallbackEnd;
+  }
+
+  private parseMessageAttachmentTag(messageId: string, tagText: string, ordinal: number): AgentHomeMessageAttachmentItem | null {
+    const entry = tagText.trim();
+    const lowerEntry = entry.toLowerCase();
+    const isImageTag = lowerEntry.startsWith('<image');
+    const isFileTag = lowerEntry.startsWith('<file');
+    if (!isImageTag && !isFileTag) {
+      return null;
+    }
+    let path = this.messageAttachmentTagAttribute(entry, 'path');
+    if (path.length === 0) {
+      path = this.messageAttachmentTagAttribute(entry, 'src');
+    }
+    if (path.length === 0) {
+      path = this.messageAttachmentTagAttribute(entry, 'href');
+    }
+    path = this.cleanMessageAttachmentPath(path);
+    if (path.length === 0) {
+      return null;
+    }
+    let label = this.messageAttachmentTagAttribute(entry, 'name');
+    if (label.length === 0) {
+      label = this.messageAttachmentTagAttribute(entry, 'title');
+    }
+    label = this.cleanMessageAttachmentLabel(label);
+    const kind = isImageTag || this.isMessageAttachmentImage(label, path) ? AgentHomeAttachmentKind.IMAGE : AgentHomeAttachmentKind.DOCUMENT;
+    const displayName = this.messageAttachmentDisplayName(label, path, kind);
+    const id = 'message_attachment_' + this.safeIdPart(messageId) + '_' + String(ordinal) + '_' + this.safeIdPart(displayName);
+    return new AgentHomeMessageAttachmentItem(id, kind, displayName, path);
+  }
+
+  private messageAttachmentTagAttribute(tagText: string, attributeName: string): string {
+    const lowerText = tagText.toLowerCase();
+    const marker = attributeName.toLowerCase() + '=';
+    const markerIndex = lowerText.indexOf(marker);
+    if (markerIndex < 0) {
+      return '';
+    }
+    let valueStart = markerIndex + marker.length;
+    while (valueStart < tagText.length && tagText.charAt(valueStart) === ' ') {
+      valueStart++;
+    }
+    if (valueStart >= tagText.length) {
+      return '';
+    }
+    const firstChar = tagText.charAt(valueStart);
+    if (firstChar === '"' || firstChar === '\'') {
+      const quoteEnd = tagText.indexOf(firstChar, valueStart + 1);
+      if (quoteEnd > valueStart) {
+        return tagText.substring(valueStart + 1, quoteEnd).trim();
+      }
+      return tagText.substring(valueStart + 1).trim();
+    }
+    if (firstChar === '[') {
+      const bracketEnd = tagText.indexOf(']', valueStart + 1);
+      if (bracketEnd > valueStart) {
+        return tagText.substring(valueStart, bracketEnd + 1).trim();
+      }
+    }
+    const valueEnd = this.messageAttachmentTagAttributeEnd(lowerText, valueStart);
+    return tagText.substring(valueStart, valueEnd).trim();
+  }
+
+  private messageAttachmentTagAttributeEnd(lowerText: string, valueStart: number): number {
+    let valueEnd = lowerText.indexOf('>', valueStart);
+    if (valueEnd < 0) {
+      valueEnd = lowerText.length;
+    }
+    const attributeMarkers: Array<string> = [' name=', ' path=', ' src=', ' title=', ' href=', ' file='];
+    for (let index = 0; index < attributeMarkers.length; index++) {
+      const markerIndex = lowerText.indexOf(attributeMarkers[index], valueStart);
+      if (markerIndex >= 0 && markerIndex < valueEnd) {
+        valueEnd = markerIndex;
+      }
+    }
+    return valueEnd;
+  }
+
+  private cleanMessageAttachmentLabel(labelValue: string): string {
+    let value = labelValue.trim();
+    if (value.startsWith('[') && value.endsWith(']') && value.length > 2) {
+      value = value.substring(1, value.length - 1).trim();
+    }
+    return value;
+  }
+
+  private compactMessageAttachmentBodyText(text: string): string {
+    const lines = text.split('\n');
+    const keptLines: Array<string> = [];
+    let blankCount = 0;
+    for (let index = 0; index < lines.length; index++) {
+      const line = lines[index];
+      if (line.trim().length === 0) {
+        blankCount++;
+        if (blankCount <= 1) {
+          keptLines.push('');
+        }
+      } else {
+        blankCount = 0;
+        keptLines.push(line);
+      }
+    }
+    return this.joinLines(keptLines, 0, keptLines.length).trim();
+  }
+
+  private appendMessageAttachmentIfAbsent(
+    items: Array<AgentHomeMessageAttachmentItem>,
+    item: AgentHomeMessageAttachmentItem
+  ): void {
+    const normalizedPath = this.normalizedMessageAttachmentPath(item.path);
+    for (let index = 0; index < items.length; index++) {
+      if (this.normalizedMessageAttachmentPath(items[index].path) === normalizedPath) {
+        return;
+      }
+    }
+    items.push(item);
+  }
+
+  private parseMessageAttachmentLine(messageId: string, line: string, ordinal: number): AgentHomeMessageAttachmentItem | null {
+    let entry = line.trim();
+    if (entry.length === 0) {
+      return null;
+    }
+    while (entry.startsWith('#')) {
+      entry = entry.substring(1).trim();
+    }
+    if (entry.length === 0 || this.normalizedMessageHeading(entry) === 'my request for codex:') {
+      return null;
+    }
+    const delimiterIndex = entry.indexOf(': ');
+    let label = '';
+    let path = '';
+    if (delimiterIndex >= 0) {
+      label = entry.substring(0, delimiterIndex).trim();
+      path = entry.substring(delimiterIndex + 2).trim();
+    } else {
+      label = entry;
+      path = entry;
+    }
+    path = this.cleanMessageAttachmentPath(path);
+    if (path.length === 0) {
+      return null;
+    }
+    const kind = this.isMessageAttachmentImage(label, path) ? AgentHomeAttachmentKind.IMAGE : AgentHomeAttachmentKind.DOCUMENT;
+    const displayName = this.messageAttachmentDisplayName(label, path, kind);
+    const id = 'message_attachment_' + this.safeIdPart(messageId) + '_' + String(ordinal) + '_' + this.safeIdPart(displayName);
+    return new AgentHomeMessageAttachmentItem(id, kind, displayName, path);
+  }
+
+  private cleanMessageAttachmentPath(pathValue: string): string {
+    let value = pathValue.trim();
+    if (value.startsWith('<') && value.endsWith('>') && value.length > 2) {
+      value = value.substring(1, value.length - 1).trim();
+    }
+    if (value.startsWith('"') && value.endsWith('"') && value.length > 2) {
+      value = value.substring(1, value.length - 1).trim();
+    }
+    if (value.startsWith('`') && value.endsWith('`') && value.length > 2) {
+      value = value.substring(1, value.length - 1).trim();
+    }
+    return value;
+  }
+
+  private messageAttachmentDisplayName(label: string, pathValue: string, kind: string): string {
+    const cleanLabel = label.trim();
+    if (cleanLabel.length > 0 && this.messageAttachmentExtension(cleanLabel).length > 0) {
+      return cleanLabel;
+    }
+    return this.extractAttachmentDisplayName(pathValue, kind);
+  }
+
+  private isMessageAttachmentImage(label: string, pathValue: string): boolean {
+    const extension = this.messageAttachmentExtension(pathValue).toLowerCase();
+    if (this.isImageExtension(extension)) {
+      return true;
+    }
+    return this.isImageExtension(this.messageAttachmentExtension(label).toLowerCase());
+  }
+
+  private isImageExtension(extension: string): boolean {
+    return extension === 'png' || extension === 'jpg' || extension === 'jpeg' ||
+      extension === 'webp' || extension === 'gif' || extension === 'bmp' ||
+      extension === 'ico' || extension === 'avif' || extension === 'apng' ||
+      extension === 'heic' || extension === 'heif' || extension === 'tif' ||
+      extension === 'tiff';
+  }
+
+  private messageAttachmentExtension(pathValue: string): string {
+    let value = pathValue;
+    const queryIndex = value.indexOf('?');
+    if (queryIndex >= 0) {
+      value = value.substring(0, queryIndex);
+    }
+    const hashIndex = value.indexOf('#');
+    if (hashIndex >= 0) {
+      value = value.substring(0, hashIndex);
+    }
+    const dotIndex = value.lastIndexOf('.');
+    if (dotIndex >= 0 && dotIndex + 1 < value.length) {
+      return value.substring(dotIndex + 1);
+    }
+    return '';
+  }
+
+  private joinLines(lines: Array<string>, startIndex: number, endIndex: number): string {
+    let result = '';
+    for (let index = startIndex; index < endIndex; index++) {
+      if (index > startIndex) {
+        result = result + '\n';
+      }
+      result = result + lines[index];
+    }
+    return result;
+  }
+
+  private messageAttachmentImageSource(item: AgentHomeMessageAttachmentItem): string {
+    const cached = this.cachedMessageAttachmentImageContent(item.path);
+    if (cached.length > 0) {
+      return this.workspacePreviewImageSource(cached);
+    }
+    if (item.path.startsWith('file://') || item.path.startsWith('/') || item.path.startsWith('data:image/')) {
+      return item.path;
+    }
+    return '';
+  }
+
+  private cachedMessageAttachmentImageContent(pathValue: string): string {
+    const normalizedPath = this.normalizedMessageAttachmentPath(pathValue);
+    for (let index = 0; index < this.messageAttachmentImageCache.length; index++) {
+      const item = this.messageAttachmentImageCache[index];
+      if (this.normalizedMessageAttachmentPath(item.path) === normalizedPath) {
+        return item.content;
+      }
+    }
+    return '';
+  }
+
+  private requestMessageAttachmentImagePreview(messageId: string, item: AgentHomeMessageAttachmentItem): void {
+    if (item.kind !== AgentHomeAttachmentKind.IMAGE || item.path.length === 0 ||
+      this.cachedMessageAttachmentImageContent(item.path).length > 0 ||
+      this.isMessageAttachmentImagePending(item.path) ||
+      this.connectionStatus !== AgentBridgeConnectionStatus.CONNECTED) {
+      return;
+    }
+    const bridgeSessionId = this.currentBridgeSessionId();
+    if (bridgeSessionId.length === 0) {
+      return;
+    }
+    const nextPaths: Array<string> = [];
+    for (let index = 0; index < this.pendingMessageAttachmentImagePaths.length; index++) {
+      nextPaths.push(this.pendingMessageAttachmentImagePaths[index]);
+    }
+    nextPaths.push(item.path);
+    this.pendingMessageAttachmentImagePaths = nextPaths;
+    logger.info(TAG, 'request message attachment image preview: messageId=' + messageId + ', path=' + item.path);
+    this.client.requestAttachmentFileDownload(bridgeSessionId, item.path, AGENT_HOME_ATTACHMENT_PREVIEW_DOWNLOAD_KIND);
+  }
+
+  private isMessageAttachmentImagePending(pathValue: string): boolean {
+    const normalizedPath = this.normalizedMessageAttachmentPath(pathValue);
+    for (let index = 0; index < this.pendingMessageAttachmentImagePaths.length; index++) {
+      if (this.normalizedMessageAttachmentPath(this.pendingMessageAttachmentImagePaths[index]) === normalizedPath) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private removePendingMessageAttachmentImagePath(pathValue: string): void {
+    const normalizedPath = this.normalizedMessageAttachmentPath(pathValue);
+    const nextPaths: Array<string> = [];
+    for (let index = 0; index < this.pendingMessageAttachmentImagePaths.length; index++) {
+      const itemPath = this.pendingMessageAttachmentImagePaths[index];
+      if (this.normalizedMessageAttachmentPath(itemPath) !== normalizedPath) {
+        nextPaths.push(itemPath);
+      }
+    }
+    this.pendingMessageAttachmentImagePaths = nextPaths;
+  }
+
+  private normalizedMessageAttachmentPath(pathValue: string): string {
+    return pathValue.trim().split('\\').join('/').toLowerCase();
+  }
+
+  private handleNavigationModeChange(mode: NavigationMode): void {
+    const isSplit = mode === NavigationMode.Split;
+    if (this.isLargeScreenNavigation !== isSplit) {
+      this.isLargeScreenNavigation = isSplit;
+    }
+    if (isSplit) {
+      this.ensureLargeScreenMainDestination();
+    } else {
+      this.clearLargeScreenMainDestination();
+    }
+  }
+
+  private ensureLargeScreenMainDestination(): void {
+    if (!this.isLargeScreenNavigation) {
+      return;
+    }
+    const pathNames = this.pathStack.getAllPathName();
+    if (pathNames.length === 1 && pathNames[0] === AGENT_HOME_MAIN_DESTINATION_NAME) {
+      return;
+    }
+    this.pathStack.clear(false);
+    this.pathStack.pushPath(new NavPathInfo(AGENT_HOME_MAIN_DESTINATION_NAME, new AgentHomeNavPayload()), false);
+  }
+
+  private clearLargeScreenMainDestination(): void {
+    if (this.pathStack.size() === 0) {
+      return;
+    }
+    this.pathStack.clear(false);
   }
 
   private animateMainPageIndex(index: number): void {
@@ -7727,6 +11076,14 @@ struct NGFAgentHomePage {
   }
 
   private handleHomeAction(actionKey: string): void {
+    if (actionKey === AgentHomeActionKey.SCAN_BRIDGE_QR) {
+      this.scanBridgeConnectionQr(true);
+      return;
+    }
+    if (actionKey === AgentHomeActionKey.COPY_DESKTOP_COMMAND) {
+      this.copyDesktopSetupCommand();
+      return;
+    }
     if (actionKey === AgentHomeActionKey.REFRESH_REMOTE_SESSIONS) {
       if (this.connectionStatus === AgentBridgeConnectionStatus.CONNECTED) {
         this.requestRemoteSessions();
@@ -7742,6 +11099,147 @@ struct NGFAgentHomePage {
     this.handleAction(actionKey);
   }
 
+  private handleGlobalSettingOption(group: string, value: string): void {
+    if (group === AgentHomeGlobalSettingGroup.THEME) {
+      this.globalSettingsThemeSelection = value;
+      if (this.applyGlobalTheme(value)) {
+        this.globalSettingsThemeSelection = ngfThemeManagerFacade.getCurrentTheme();
+      } else {
+        this.syncGlobalSettingsSelections();
+      }
+      return;
+    }
+    if (group === AgentHomeGlobalSettingGroup.LANGUAGE) {
+      this.globalSettingsLocaleSelection = value;
+      if (this.applyGlobalLanguage(value)) {
+        this.globalSettingsLocaleSelection = this.currentGlobalLocaleOverride();
+      } else {
+        this.syncGlobalSettingsSelections();
+      }
+    }
+  }
+
+  private applyGlobalTheme(mode: string): boolean {
+    try {
+      const context = uiContextManager.getFullAbilityContext();
+      if (mode === NGFThemeMode.DARK) {
+        ngfThemeManagerFacade.setThemeOverride(NGFThemeMode.DARK);
+        if (context) {
+          context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_DARK);
+        }
+        return true;
+      }
+      if (mode === NGFThemeMode.LIGHT) {
+        ngfThemeManagerFacade.setThemeOverride(NGFThemeMode.LIGHT);
+        if (context) {
+          context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_LIGHT);
+        }
+        return true;
+      }
+      ngfThemeManagerFacade.setThemeOverride(NGFThemeMode.AUTO);
+      if (context) {
+        context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
+      }
+      return true;
+    } catch (error) {
+      logger.warn(TAG, 'apply global theme failed: ' + this.errorToString(error));
+      return false;
+    }
+  }
+
+  private applyGlobalLanguage(locale: string): boolean {
+    try {
+      if (locale.length > 0) {
+        ngfI18nManagerFacade.setLocaleOverride(locale);
+      } else {
+        ngfI18nManagerFacade.clearLocaleOverride();
+      }
+      return true;
+    } catch (error) {
+      logger.warn(TAG, 'apply global language failed: ' + this.errorToString(error));
+      return false;
+    }
+  }
+
+  private syncGlobalSettingsSelections(): void {
+    this.globalSettingsThemeSelection = ngfThemeManagerFacade.getCurrentTheme();
+    this.globalSettingsLocaleSelection = this.currentGlobalLocaleOverride();
+  }
+
+  private isGlobalSettingOptionSelected(group: string, value: string): boolean {
+    if (group === AgentHomeGlobalSettingGroup.THEME) {
+      return this.globalSettingsThemeSelection === value;
+    }
+    if (group === AgentHomeGlobalSettingGroup.LANGUAGE) {
+      return this.globalSettingsLocaleSelection === value;
+    }
+    return false;
+  }
+
+  private currentGlobalLocaleOverride(): string {
+    const locale = AppStorage.get<string>('ngf_current_locale');
+    if (locale === undefined || locale === null) {
+      return '';
+    }
+    return locale;
+  }
+
+  private replayStartupGuide(): void {
+    this.showTransientStatus(
+      resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_global_settings_replay_opened'))
+    );
+    this.showEmptyHomeGuide();
+  }
+
+  private openDeveloperApp(item: AgentHomeDeveloperAppItem): void {
+    if (!item.isAvailable || item.appGalleryUrl.length === 0) {
+      return;
+    }
+    this.openExternalLink(item.appGalleryUrl, $r('app.string.agent_home_developer_app_open_failed'));
+  }
+
+  private openSupportPage(): void {
+    this.openExternalLink(AGENT_HOME_AFDIAN_URL, $r('app.string.agent_home_support_open_failed'));
+  }
+
+  private openExternalLink(url: string, failureMessage: ResourceStr): void {
+    try {
+      const hostContext = this.getUIContext().getHostContext();
+      if (!hostContext) {
+        this.showAgentHomeToast(failureMessage);
+        return;
+      }
+      const abilityContext = hostContext as common.UIAbilityContext;
+      abilityContext.openLink(url, { appLinkingOnly: false }).catch((error: Error): void => {
+        logger.error(TAG, 'open external link failed: ' + this.errorToString(error));
+        this.showAgentHomeToast(failureMessage);
+      });
+    } catch (error) {
+      logger.error(TAG, 'open external link task failed: ' + this.errorToString(error));
+      this.showAgentHomeToast(failureMessage);
+    }
+  }
+
+  private copySupportLink(): void {
+    pasteboard.getSystemPasteboard().setData(
+      pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, AGENT_HOME_AFDIAN_URL)
+    ).then((): void => {
+      this.showAgentHomeToast($r('app.string.agent_home_support_link_copied'));
+    }).catch((error: Error): void => {
+      logger.error(TAG, 'copy support link failed: ' + this.errorToString(error));
+    });
+  }
+
+  private showAgentHomeToast(message: ResourceStr): void {
+    try {
+      this.getUIContext().getPromptAction().showToast({
+        message: resolveResourceString(this.getUIContext().getHostContext(), message)
+      });
+    } catch (error) {
+      logger.warn(TAG, 'show agent home toast failed: ' + this.errorToString(error));
+    }
+  }
+
   private openSheet(sheetKey: string): void {
     if (this.isSheetOpen(sheetKey)) {
       logger.info(TAG, 'agent sheet already open: ' + sheetKey);
@@ -7749,6 +11247,9 @@ struct NGFAgentHomePage {
     }
     if (sheetKey === AgentHomeSheetKey.SETTINGS) {
       this.syncWorkspaceDrafts();
+    }
+    if (sheetKey === AgentHomeSheetKey.GLOBAL_SETTINGS) {
+      this.syncGlobalSettingsSelections();
     }
     if (sheetKey === AgentHomeSheetKey.SESSIONS) {
       this.ensureNewSessionProvider();
@@ -7765,6 +11266,9 @@ struct NGFAgentHomePage {
     this.isWorkspaceSheetOpen = sheetKey === AgentHomeSheetKey.WORKSPACES;
     this.isSessionSheetOpen = sheetKey === AgentHomeSheetKey.SESSIONS;
     this.isSettingsSheetOpen = sheetKey === AgentHomeSheetKey.SETTINGS;
+    this.isGlobalSettingsSheetOpen = sheetKey === AgentHomeSheetKey.GLOBAL_SETTINGS;
+    this.isDeveloperAppsSheetOpen = sheetKey === AgentHomeSheetKey.DEVELOPER_APPS;
+    this.isSupportProjectSheetOpen = sheetKey === AgentHomeSheetKey.SUPPORT_PROJECT;
     this.isModelSheetOpen = sheetKey === AgentHomeSheetKey.MODELS;
     this.isRuntimeSheetOpen = sheetKey === AgentHomeSheetKey.RUNTIME;
     this.isAttachmentSheetOpen = sheetKey === AgentHomeSheetKey.ATTACHMENTS;
@@ -7791,6 +11295,9 @@ struct NGFAgentHomePage {
     this.isWorkspaceSheetOpen = false;
     this.isSessionSheetOpen = false;
     this.isSettingsSheetOpen = false;
+    this.isGlobalSettingsSheetOpen = false;
+    this.isDeveloperAppsSheetOpen = false;
+    this.isSupportProjectSheetOpen = false;
     this.isModelSheetOpen = false;
     this.isRuntimeSheetOpen = false;
     this.isAttachmentSheetOpen = false;
@@ -7819,6 +11326,12 @@ struct NGFAgentHomePage {
       this.isSessionSheetOpen = false;
     } else if (sheetKey === AgentHomeSheetKey.SETTINGS) {
       this.isSettingsSheetOpen = false;
+    } else if (sheetKey === AgentHomeSheetKey.GLOBAL_SETTINGS) {
+      this.isGlobalSettingsSheetOpen = false;
+    } else if (sheetKey === AgentHomeSheetKey.DEVELOPER_APPS) {
+      this.isDeveloperAppsSheetOpen = false;
+    } else if (sheetKey === AgentHomeSheetKey.SUPPORT_PROJECT) {
+      this.isSupportProjectSheetOpen = false;
     } else if (sheetKey === AgentHomeSheetKey.MODELS) {
       this.isModelSheetOpen = false;
     } else if (sheetKey === AgentHomeSheetKey.RUNTIME) {
@@ -7867,6 +11380,15 @@ struct NGFAgentHomePage {
     }
     if (sheetKey === AgentHomeSheetKey.SETTINGS) {
       return this.isSettingsSheetOpen;
+    }
+    if (sheetKey === AgentHomeSheetKey.GLOBAL_SETTINGS) {
+      return this.isGlobalSettingsSheetOpen;
+    }
+    if (sheetKey === AgentHomeSheetKey.DEVELOPER_APPS) {
+      return this.isDeveloperAppsSheetOpen;
+    }
+    if (sheetKey === AgentHomeSheetKey.SUPPORT_PROJECT) {
+      return this.isSupportProjectSheetOpen;
     }
     if (sheetKey === AgentHomeSheetKey.MODELS) {
       return this.isModelSheetOpen;
@@ -7920,6 +11442,9 @@ struct NGFAgentHomePage {
     return this.isWorkspaceSheetOpen ||
       this.isSessionSheetOpen ||
       this.isSettingsSheetOpen ||
+      this.isGlobalSettingsSheetOpen ||
+      this.isDeveloperAppsSheetOpen ||
+      this.isSupportProjectSheetOpen ||
       this.isModelSheetOpen ||
       this.isRuntimeSheetOpen ||
       this.isAttachmentSheetOpen ||
@@ -8147,6 +11672,7 @@ struct NGFAgentHomePage {
     this.conversationAutoScrollTimer = setTimeout((): void => {
       this.conversationAutoScrollTimer = -1;
       this.scrollConversationToBottom(animated);
+      this.scheduleConversationScrollToBottomAfterContentSettle();
     }, 60);
   }
 
@@ -8159,6 +11685,18 @@ struct NGFAgentHomePage {
   private finishBridgeReplyUiUpdate(): void {
     this.resetConversationBottomButtonState();
     this.scheduleConversationScrollToBottom(true);
+  }
+
+  private scheduleConversationScrollToBottomAfterContentSettle(): void {
+    if (this.showConversationBottomButton) {
+      return;
+    }
+    this.conversationAutoScrollTimer = setTimeout((): void => {
+      this.conversationAutoScrollTimer = -1;
+      if (!this.showConversationBottomButton) {
+        this.scrollConversationToBottom(false);
+      }
+    }, 260);
   }
 
   private scrollConversationToBottom(animated: boolean): void {
@@ -8841,7 +12379,7 @@ struct NGFAgentHomePage {
     this.restoreLastBridgeConnection();
   }
 
-  private scanBridgeConnectionQr(): void {
+  private scanBridgeConnectionQr(openSessionsAfterConnect: boolean = false): void {
     const options: scanBarcode.ScanOptions = {
       scanTypes: [scanCore.ScanType.QR_CODE],
       enableAlbum: true,
@@ -8856,7 +12394,7 @@ struct NGFAgentHomePage {
             this.handleScanBridgeQrError(error);
             return;
           }
-          this.applyBridgeQrPayload(result.originalValue);
+          this.applyBridgeQrPayload(result.originalValue, openSessionsAfterConnect);
         }
       );
     } catch (error) {
@@ -8876,7 +12414,7 @@ struct NGFAgentHomePage {
     );
   }
 
-  private applyBridgeQrPayload(source: string): void {
+  private applyBridgeQrPayload(source: string, openSessionsAfterConnect: boolean = false): void {
     const payload = this.parseBridgeQrPayload(source);
     if (payload.endpoint.trim().length === 0 || payload.token.trim().length === 0) {
       this.addBridgeLogMessage(
@@ -8896,9 +12434,15 @@ struct NGFAgentHomePage {
     this.addBridgeLogMessage(
       resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_scan_bridge_qr_applied'))
     );
-    this.getUIContext().getPromptAction().showToast({
-      message: resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_scan_bridge_qr_applied'))
-    });
+    try {
+      this.getUIContext().getPromptAction().showToast({
+        message: resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_scan_bridge_qr_applied'))
+      });
+    } catch (error) {
+      logger.warn(TAG, 'show bridge qr applied toast failed: ' + this.errorToString(error));
+    }
+    this.handleConnect();
+    this.pendingOpenSessionsSheetAfterBridgeQrConnect = openSessionsAfterConnect;
   }
 
   private parseBridgeQrPayload(source: string): AgentBridgeQrPayload {
@@ -9041,6 +12585,7 @@ struct NGFAgentHomePage {
     if (text.length === 0 && this.attachments.length === 0) {
       return;
     }
+    const outgoingContextItems = this.buildOutgoingContextItems(text);
     const outgoingText = this.buildOutgoingMessageText(text);
     this.draftText = '';
     this.attachments = [];
@@ -9069,12 +12614,14 @@ struct NGFAgentHomePage {
         this.selectedReasoningMode,
         this.currentAgentRunMode(),
         this.currentSelectedInteractionModes(),
-        this.currentOpenCodeAgent()
+        this.currentOpenCodeAgent(),
+        outgoingContextItems
       );
       return;
     }
 
     this.pendingFirstMessage = outgoingText;
+    this.pendingFirstContextItems = outgoingContextItems;
     this.showTransientStatus(
       resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_bridge_session_creating'))
     );
@@ -9095,6 +12642,7 @@ struct NGFAgentHomePage {
 
   private handleStopReply(): void {
     this.pendingFirstMessage = '';
+    this.pendingFirstContextItems = [];
     const bridgeSessionId = this.currentBridgeSessionId();
     if (bridgeSessionId.length > 0) {
       this.stoppedBridgeSessionId = bridgeSessionId;
@@ -9103,16 +12651,13 @@ struct NGFAgentHomePage {
       this.finishLocalStopReply();
       return;
     }
-    if (this.isOpenCodeCompatibleProvider()) {
-      this.client.abortOpenCodeSession(this.currentSessionProviderId(), this.remoteSessionIdForAbort(bridgeSessionId));
-      this.showTransientStatus(
-        resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_stop_reply_requested'))
-      );
-      this.finishLocalStopReply();
-      return;
-    }
+    this.client.abortSession(
+      this.currentSessionProviderId(),
+      bridgeSessionId,
+      this.remoteSessionIdForAbort(bridgeSessionId)
+    );
     this.showTransientStatus(
-      resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_stop_reply_local_only'))
+      resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_stop_reply_requested'))
     );
     this.finishLocalStopReply();
   }
@@ -9244,6 +12789,160 @@ struct NGFAgentHomePage {
     return $r('sys.symbol.doc_plaintext');
   }
 
+  private buildOutgoingContextItems(text: string): Array<AgentBridgeContextItem> {
+    const items: Array<AgentBridgeContextItem> = [];
+    const workspacePath = this.currentWorkspacePath();
+    if (workspacePath.length > 0) {
+      this.appendContextItemIfMissing(
+        items,
+        new AgentBridgeContextItem(
+          'workspace',
+          workspacePath,
+          '',
+          this.currentWorkspaceTitle(),
+          '',
+          'text/plain'
+        )
+      );
+    }
+    this.appendMentionContextItems(items, text);
+    this.appendAttachmentContextItems(items);
+    return items;
+  }
+
+  private appendMentionContextItems(items: Array<AgentBridgeContextItem>, text: string): void {
+    const tokens = this.extractContextMentionTokens(text);
+    for (let index = 0; index < tokens.length; index++) {
+      const pathValue = tokens[index];
+      this.appendContextItemIfMissing(
+        items,
+        new AgentBridgeContextItem(
+          'file',
+          pathValue,
+          '',
+          this.contextTitleForPath(pathValue),
+          '',
+          'text/plain'
+        )
+      );
+    }
+  }
+
+  private appendAttachmentContextItems(items: Array<AgentBridgeContextItem>): void {
+    for (let index = 0; index < this.attachments.length; index++) {
+      const item = this.attachments[index];
+      const kind = item.kind === AgentHomeAttachmentKind.IMAGE ? 'image' : 'file';
+      this.appendContextItemIfMissing(
+        items,
+        new AgentBridgeContextItem(
+          kind,
+          this.pathFromAttachmentUri(item.uri),
+          item.uri,
+          item.displayName,
+          '',
+          this.mediaTypeForAttachment(item)
+        )
+      );
+    }
+  }
+
+  private appendContextItemIfMissing(items: Array<AgentBridgeContextItem>, item: AgentBridgeContextItem): void {
+    if (item.path.length === 0 && item.uri.length === 0 && item.content.length === 0) {
+      return;
+    }
+    for (let index = 0; index < items.length; index++) {
+      const existing = items[index];
+      if (existing.kind === item.kind && existing.path === item.path && existing.uri === item.uri) {
+        return;
+      }
+      if (item.path.length > 0 && existing.path === item.path) {
+        return;
+      }
+    }
+    items.push(item);
+  }
+
+  private extractContextMentionTokens(text: string): Array<string> {
+    const items: Array<string> = [];
+    let token = '';
+    for (let index = 0; index < text.length; index++) {
+      const ch = text.charAt(index);
+      if (this.isContextTokenSeparator(ch)) {
+        this.appendCleanContextMentionToken(items, token);
+        token = '';
+      } else {
+        token = token + ch;
+      }
+    }
+    this.appendCleanContextMentionToken(items, token);
+    return items;
+  }
+
+  private appendCleanContextMentionToken(items: Array<string>, token: string): void {
+    const cleanToken = this.cleanContextMentionToken(token);
+    if (cleanToken.length === 0) {
+      return;
+    }
+    for (let index = 0; index < items.length; index++) {
+      if (items[index] === cleanToken) {
+        return;
+      }
+    }
+    items.push(cleanToken);
+  }
+
+  private cleanContextMentionToken(token: string): string {
+    let value = token.trim();
+    if (value.length <= 1 || value.charAt(0) !== '@') {
+      return '';
+    }
+    value = value.substring(1);
+    while (value.length > 0 && this.isContextTokenTrailingPunctuation(value.charAt(value.length - 1))) {
+      value = value.substring(0, value.length - 1);
+    }
+    if (value.length === 0 || value.charAt(0) === '/') {
+      return '';
+    }
+    return value;
+  }
+
+  private isContextTokenSeparator(value: string): boolean {
+    return value === ' ' || value === '\n' || value === '\r' || value === '\t';
+  }
+
+  private isContextTokenTrailingPunctuation(value: string): boolean {
+    return value === ',' || value === '.' || value === ';' || value === ':' ||
+      value === ')' || value === ']' || value === '}';
+  }
+
+  private contextTitleForPath(pathValue: string): string {
+    const slashIndex = pathValue.lastIndexOf('/');
+    const backslashIndex = pathValue.lastIndexOf('\\');
+    const index = slashIndex > backslashIndex ? slashIndex : backslashIndex;
+    if (index >= 0 && index + 1 < pathValue.length) {
+      return pathValue.substring(index + 1);
+    }
+    return pathValue;
+  }
+
+  private pathFromAttachmentUri(uri: string): string {
+    if (uri.startsWith('file://')) {
+      return uri.substring(7);
+    }
+    return uri;
+  }
+
+  private mediaTypeForAttachment(item: AgentHomeAttachmentItem): string {
+    const extension = item.extensionName.toLowerCase();
+    if (item.kind === AgentHomeAttachmentKind.IMAGE) {
+      return 'image/' + (extension.length > 0 ? extension : 'png');
+    }
+    if (extension.length > 0) {
+      return 'text/' + extension;
+    }
+    return 'text/plain';
+  }
+
   private buildOutgoingMessageText(text: string): string {
     let content = text;
     if (this.attachments.length === 0) {
@@ -9340,6 +13039,9 @@ struct NGFAgentHomePage {
       this.activeToolName = '';
       this.activeSubagentName = '';
       this.pendingRemoteSessionsRequestPairs = [];
+      this.loadingRemoteSessions = false;
+      this.pendingOpenSessionsSheetAfterBridgeQrConnect = false;
+      this.finishPersistentStateLoading();
       this.stopActiveTurnTimer();
       this.stopContextCompactionStatus();
     }
@@ -9351,8 +13053,16 @@ struct NGFAgentHomePage {
       this.addBridgeLogMessage(this.buildConnectionStatusLogText(detail));
     }
     if (status === AgentBridgeConnectionStatus.CONNECTED) {
-      this.requestRemoteSessions();
-      this.refreshActiveSessionHistory();
+      if (this.pendingOpenSessionsSheetAfterBridgeQrConnect) {
+        this.pendingOpenSessionsSheetAfterBridgeQrConnect = false;
+        this.openSheet(AgentHomeSheetKey.SESSIONS);
+      } else {
+        this.requestRemoteSessions();
+      }
+      const requestedHistory = this.refreshActiveSessionHistory();
+      if (!requestedHistory) {
+        this.finishPersistentStateLoading();
+      }
     }
   }
 
@@ -9363,6 +13073,9 @@ struct NGFAgentHomePage {
     this.activeToolName = '';
     this.activeSubagentName = '';
     this.pendingRemoteSessionsRequestPairs = [];
+    this.loadingRemoteSessions = false;
+    this.pendingOpenSessionsSheetAfterBridgeQrConnect = false;
+    this.finishPersistentStateLoading();
     this.publishAgentTaskErrorNotification(this.bridgeConnectionReasonText);
     this.stopActiveTurnTimer();
     this.stopContextCompactionStatus();
@@ -9378,12 +13091,15 @@ struct NGFAgentHomePage {
     const parsed = AgentBridgeIncomingParser.parse(text);
     const isCurrentEvent = this.isCurrentBridgeEvent(parsed);
     const isStoppedReplyEvent = this.shouldIgnoreStoppedReplyEvent(parsed);
+    const isMessageImportPayload = text.indexOf('"messages":[') >= 0;
     if (isCurrentEvent && !isStoppedReplyEvent) {
       if (this.shouldCountAsActiveTurnActivity(parsed)) {
         this.markActiveTurnActivity();
       }
       this.updateActivityFromBridgeText(text);
-      this.updateContextCompactionFromBridgeText(text);
+      if (!isMessageImportPayload) {
+        this.updateContextCompactionFromBridgeText(text);
+      }
     }
     if (text.indexOf('"providers":[') >= 0) {
       this.applyProviderOptions(AgentBridgeIncomingParser.parseProviders(text));
@@ -9392,7 +13108,7 @@ struct NGFAgentHomePage {
       const remoteSessions = AgentBridgeIncomingParser.parseRemoteSessions(text);
       this.replaceRemoteSessions(this.resolveRemoteSessionProviderIdFromResponse(text, remoteSessions, parsed), remoteSessions);
     }
-    if (text.indexOf('"messages":[') >= 0) {
+    if (isMessageImportPayload) {
       const targetSessionId = this.resolveMessageImportTargetSessionId(text);
       if (targetSessionId.length > 0) {
         this.applyImportedMessages(
@@ -9424,6 +13140,9 @@ struct NGFAgentHomePage {
     if (!parsed.isOk) {
       const errorText = this.resolveBridgeErrorText(parsed, compactText);
       this.applyWorkspacePreviewErrorIfNeeded(errorText);
+      if (this.isPersistentStateLoading) {
+        this.finishPersistentStateLoading();
+      }
       this.showTransientStatus(errorText);
       this.publishAgentTaskErrorNotification(errorText);
       this.replyState = AgentHomeReplyState.IDLE;
@@ -9505,7 +13224,9 @@ struct NGFAgentHomePage {
       return;
     }
     if (parsed.eventType === AgentBridgeEventType.TOOL_COMPLETED) {
-      this.replyState = AgentHomeReplyState.RESPONDING;
+      if (this.isReplyInProgress()) {
+        this.replyState = AgentHomeReplyState.RESPONDING;
+      }
       this.upsertToolCallFromBridge(parsed, this.normalizeToolCallStatus(parsed.toolStatus));
       this.activeToolName = '';
       this.showTransientStatus(
@@ -10472,12 +14193,24 @@ struct NGFAgentHomePage {
     if (sessionId.length === 0) {
       return;
     }
-    const fallbackId = AgentBridgeIncomingParser.extractStringProperty(source, 'permissionId');
-    let requestId = parsed.requestId.length > 0 ? parsed.requestId : fallbackId;
+    const payloadObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'payload');
+    const payloadRequestId = this.extractRawPayloadField(payloadObject, source, 'requestId');
+    const payloadPermissionId = this.extractRawPayloadField(payloadObject, source, 'permissionId');
+    let requestId = payloadRequestId.length > 0 ? payloadRequestId : parsed.requestId;
+    if (requestId.length === 0) {
+      requestId = payloadPermissionId;
+    }
     if (requestId.length === 0) {
       requestId = 'permission_' + String(Date.now());
     }
-    const existingIndex = this.findUserRequestIndex(sessionId, requestId);
+    const permissionId = payloadPermissionId.length > 0 ? payloadPermissionId : requestId;
+    const requestStatus = this.extractRawPayloadField(payloadObject, source, 'status');
+    const requestAnswer = this.extractRawPayloadField(payloadObject, source, 'answer');
+    const requestOptionId = this.extractRawPayloadField(payloadObject, source, 'optionId');
+    const requestReply = this.extractRawPayloadField(payloadObject, source, 'reply');
+    const nextStatus = requestStatus.length > 0 ? requestStatus : parsed.requestStatus;
+    const nextOptionId = requestOptionId.length > 0 ? requestOptionId : requestReply;
+    const existingIndex = this.findPermissionUserRequestIndex(sessionId, requestId, permissionId);
     const now = Date.now();
     const title = this.permissionRequestTitleFromSource(source);
     const prompt = this.permissionRequestPromptFromSource(source);
@@ -10494,9 +14227,9 @@ struct NGFAgentHomePage {
         prompt.length > 0 ? prompt : existing.prompt,
         existing.optionsJson,
         true,
-        parsed.requestStatus.length > 0 ? parsed.requestStatus : existing.status,
-        parsed.requestAnswer.length > 0 ? parsed.requestAnswer : existing.answer,
-        parsed.requestOptionId.length > 0 ? parsed.requestOptionId : existing.selectedOptionId,
+        nextStatus.length > 0 ? nextStatus : existing.status,
+        requestAnswer.length > 0 ? requestAnswer : existing.answer,
+        nextOptionId.length > 0 ? nextOptionId : existing.selectedOptionId,
         source.length > 0 ? source : existing.rawJson,
         existing.createdAt,
         now,
@@ -10518,9 +14251,9 @@ struct NGFAgentHomePage {
         prompt,
         '',
         true,
-        parsed.requestStatus.length > 0 ? parsed.requestStatus : AgentHomeInteractionStatus.PENDING,
-        '',
-        '',
+        nextStatus.length > 0 ? nextStatus : AgentHomeInteractionStatus.PENDING,
+        requestAnswer,
+        nextOptionId,
         source,
         now,
         now,
@@ -10536,6 +14269,7 @@ struct NGFAgentHomePage {
     this.persistence.saveUserRequest(item).catch((error: Error): void => {
       logger.error(TAG, 'persist permission request failed: ' + this.errorToString(error));
     });
+    this.syncPermissionRequestFlowLight();
     this.publishAgentUserRequestNotification(item);
   }
 
@@ -10578,7 +14312,7 @@ struct NGFAgentHomePage {
       item = new AgentHomeUserRequestItem(
         'agent_request_' + String(now),
         sessionId,
-        this.currentSessionProviderId(),
+        this.providerIdForLocalSession(sessionId),
         requestId,
         parsed.requestKind.length > 0 ? parsed.requestKind : AgentHomeUserRequestKind.REQUEST,
         parsed.requestTitle,
@@ -10609,7 +14343,11 @@ struct NGFAgentHomePage {
   private permissionRequestTitleFromSource(source: string): string {
     const hostContext = this.getUIContext().getHostContext();
     const baseTitle = resolveResourceString(hostContext, $r('app.string.agent_home_permission_title'));
-    const permissionObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'permission');
+    const payloadObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'payload');
+    let permissionObject = AgentBridgeIncomingParser.extractObjectProperty(payloadObject, 'permission');
+    if (permissionObject.length === 0) {
+      permissionObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'permission');
+    }
     const targetSource = permissionObject.length > 0 ? permissionObject : source;
     const permissionName = this.cleanPermissionField(
       AgentBridgeIncomingParser.extractFirstStringProperty(targetSource, 'permission', 'type')
@@ -10617,11 +14355,20 @@ struct NGFAgentHomePage {
     if (permissionName.length > 0) {
       return baseTitle + ': ' + permissionName;
     }
+    const metadataObject = AgentBridgeIncomingParser.extractObjectProperty(targetSource, 'metadata');
+    const toolName = this.permissionToolValue(targetSource, metadataObject);
+    if (toolName.length > 0) {
+      return baseTitle + ': ' + toolName;
+    }
     return baseTitle;
   }
 
   private permissionRequestPromptFromSource(source: string): string {
-    const permissionObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'permission');
+    const payloadObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'payload');
+    let permissionObject = AgentBridgeIncomingParser.extractObjectProperty(payloadObject, 'permission');
+    if (permissionObject.length === 0) {
+      permissionObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'permission');
+    }
     const targetSource = permissionObject.length > 0 ? permissionObject : source;
     const permissionName = this.cleanPermissionField(
       AgentBridgeIncomingParser.extractFirstStringProperty(targetSource, 'permission', 'type')
@@ -10641,9 +14388,21 @@ struct NGFAgentHomePage {
       )
     );
     const patternsJson = AgentBridgeIncomingParser.extractArrayProperty(targetSource, 'patterns');
+    const actionValue = this.permissionActionValue(targetSource, metadataObject);
+    const toolValue = this.permissionToolValue(targetSource, metadataObject);
+    const commandValue = this.permissionCommandValue(targetSource, metadataObject);
     let prompt = '';
     if (permissionName.length > 0) {
       prompt = permissionName;
+    }
+    if (actionValue.length > 0) {
+      prompt = this.appendPromptLine(prompt, actionValue);
+    }
+    if (toolValue.length > 0 && prompt.indexOf(toolValue) < 0) {
+      prompt = this.appendPromptLine(prompt, toolValue);
+    }
+    if (commandValue.length > 0) {
+      prompt = this.appendPromptLine(prompt, commandValue);
     }
     if (pathValue.length > 0) {
       prompt = this.appendPromptLine(prompt, pathValue);
@@ -10673,6 +14432,70 @@ struct NGFAgentHomePage {
       return value;
     }
     return source + '\n' + value;
+  }
+
+  private permissionActionValue(targetSource: string, metadataObject: string): string {
+    const metadataAction = this.firstNonEmptyText(
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(metadataObject, 'action')),
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(metadataObject, 'operation'))
+    );
+    if (metadataAction.length > 0) {
+      return metadataAction;
+    }
+    return this.firstNonEmptyText(
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(targetSource, 'action')),
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(targetSource, 'operation'))
+    );
+  }
+
+  private permissionToolValue(targetSource: string, metadataObject: string): string {
+    const metadataTool = this.firstNonEmptyText(
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(metadataObject, 'toolName')),
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(metadataObject, 'tool'))
+    );
+    if (metadataTool.length > 0) {
+      return metadataTool;
+    }
+    return this.firstNonEmptyText(
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(targetSource, 'toolName')),
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(targetSource, 'tool'))
+    );
+  }
+
+  private permissionCommandValue(targetSource: string, metadataObject: string): string {
+    let value = this.firstNonEmptyText(
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(metadataObject, 'command')),
+      this.firstNonEmptyText(
+        this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(metadataObject, 'cmd')),
+        this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(metadataObject, 'bash'))
+      )
+    );
+    if (value.length > 0) {
+      return value;
+    }
+    value = this.firstNonEmptyText(
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(targetSource, 'command')),
+      this.firstNonEmptyText(
+        this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(targetSource, 'cmd')),
+        this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(targetSource, 'bash'))
+      )
+    );
+    if (value.length > 0) {
+      return value;
+    }
+    value = AgentBridgeIncomingParser.extractArrayProperty(metadataObject, 'argv');
+    if (value.length > 0) {
+      return value;
+    }
+    value = AgentBridgeIncomingParser.extractArrayProperty(metadataObject, 'args');
+    if (value.length > 0) {
+      return value;
+    }
+    value = AgentBridgeIncomingParser.extractArrayProperty(targetSource, 'argv');
+    if (value.length > 0) {
+      return value;
+    }
+    return AgentBridgeIncomingParser.extractArrayProperty(targetSource, 'args');
   }
 
   private upsertPlanFromBridge(parsed: AgentBridgeParsedMessage): void {
@@ -10710,8 +14533,8 @@ struct NGFAgentHomePage {
       item = new AgentHomePlanItem(
         'agent_plan_' + String(now),
         sessionId,
-        this.activeWorkspaceId,
-        this.currentSessionProviderId(),
+        this.workspaceIdForLocalSession(sessionId),
+        this.providerIdForLocalSession(sessionId),
         planId,
         parsed.planTitle,
         parsed.planContent,
@@ -10800,6 +14623,32 @@ struct NGFAgentHomePage {
     return -1;
   }
 
+  private findPermissionUserRequestIndex(sessionId: string, requestId: string, permissionId: string): number {
+    if (requestId.length > 0) {
+      const directIndex = this.findUserRequestIndex(sessionId, requestId);
+      if (directIndex >= 0) {
+        return directIndex;
+      }
+    }
+    for (let index = 0; index < this.userRequests.length; index++) {
+      const item = this.userRequests[index];
+      if (item.sessionId !== sessionId || !this.isPermissionRequest(item)) {
+        continue;
+      }
+      if (permissionId.length > 0 && item.requestId === permissionId) {
+        return index;
+      }
+      const itemPermissionId = this.permissionIdForRequest(item);
+      if (requestId.length > 0 && itemPermissionId === requestId) {
+        return index;
+      }
+      if (permissionId.length > 0 && itemPermissionId === permissionId) {
+        return index;
+      }
+    }
+    return -1;
+  }
+
   private findPlanIndex(sessionId: string, planId: string): number {
     for (let index = 0; index < this.plans.length; index++) {
       const item = this.plans[index];
@@ -10831,6 +14680,45 @@ struct NGFAgentHomePage {
       }
     }
     return this.activeSessionId;
+  }
+
+  private bridgeSessionIdForLocalSession(sessionId: string): string {
+    for (let index = 0; index < this.sessions.length; index++) {
+      const item = this.sessions[index];
+      if (item.id === sessionId) {
+        return item.bridgeSessionId;
+      }
+    }
+    return '';
+  }
+
+  private sessionIdsForLocalSession(sessionId: string): Array<string> {
+    const sessionIds: Array<string> = [];
+    this.addUniqueSessionId(sessionIds, sessionId);
+    const bridgeSessionId = this.bridgeSessionIdForLocalSession(sessionId);
+    this.addUniqueSessionId(sessionIds, bridgeSessionId);
+    if (bridgeSessionId.length > 0) {
+      this.addUniqueSessionId(sessionIds, this.localSessionIdForBridgeSession(bridgeSessionId));
+    }
+    return sessionIds;
+  }
+
+  private addUniqueSessionId(sessionIds: Array<string>, sessionId: string): void {
+    if (sessionId.length === 0 || this.isSessionIdInList(sessionId, sessionIds)) {
+      return;
+    }
+    sessionIds.push(sessionId);
+  }
+
+  private sessionIdListForLog(sessionIds: Array<string>): string {
+    if (sessionIds.length === 0) {
+      return '';
+    }
+    let text = sessionIds[0];
+    for (let index = 1; index < sessionIds.length; index++) {
+      text += ',' + sessionIds[index];
+    }
+    return text;
   }
 
   private resolveMessageImportTargetSessionId(source: string): string {
@@ -10868,6 +14756,14 @@ struct NGFAgentHomePage {
         this.client.requestWorkspaceFileDownload(this.currentBridgeSessionId(), this.activeWorkspaceId, path);
       }
       return;
+    }
+    if (this.workspacePreviewContentKind(path, mediaType) === NGFRichContentKind.IMAGE && this.isRasterPreviewDataUrl(normalizedContent)) {
+      const imageBuffer = this.rasterPreviewBufferFromDataUrl(normalizedContent);
+      if (imageBuffer !== null) {
+        this.updateActiveWorkspacePreviewPixelMap(imageBuffer, path).catch((error: Error): void => {
+          logger.warn(TAG, 'decode inline preview image failed: ' + this.errorToString(error));
+        });
+      }
     }
 
     const preview = new AgentHomePreviewItem(
@@ -10914,7 +14810,12 @@ struct NGFAgentHomePage {
       return;
     }
     this.markBridgeDownloadPathHandled(parsed.downloadPath);
-    if (this.shouldHandleAsWorkspacePreviewImageDownload(parsed)) {
+    if (this.shouldHandleAsMessageAttachmentImageDownload(parsed)) {
+      this.saveMessageAttachmentImageDownload(parsed).catch((error: Error): void => {
+        logger.warn(TAG, 'save message attachment image failed: ' + this.errorToString(error));
+        this.removePendingMessageAttachmentImagePath(parsed.downloadFilePath);
+      });
+    } else if (this.shouldHandleAsWorkspacePreviewImageDownload(parsed)) {
       this.saveWorkspacePreviewImageDownload(parsed).catch((error: Error): void => {
         logger.error(TAG, 'save preview image download failed: ' + this.errorToString(error));
         this.pendingWorkspacePreviewImagePath = '';
@@ -11029,7 +14930,9 @@ struct NGFAgentHomePage {
   private sendPendingFirstMessageIfNeeded(sessionId: string): void {
     if (this.pendingFirstMessage.length > 0 && this.currentBridgeSessionId() === sessionId) {
       const pending = this.pendingFirstMessage;
+      const contextItems = this.pendingFirstContextItems;
       this.pendingFirstMessage = '';
+      this.pendingFirstContextItems = [];
       this.addMessage(AgentHomeMessageRole.USER, '', pending, '');
       this.touchActiveSession();
       this.markReplySubmitted();
@@ -11044,7 +14947,8 @@ struct NGFAgentHomePage {
         this.selectedReasoningMode,
         this.currentAgentRunMode(),
         this.currentSelectedInteractionModes(),
-        this.currentOpenCodeAgent()
+        this.currentOpenCodeAgent(),
+        contextItems
       );
     }
   }
@@ -11063,6 +14967,7 @@ struct NGFAgentHomePage {
     this.selectedReasoningMode = reasoningMode;
     this.activeSessionId = '';
     this.pendingFirstMessage = '';
+    this.pendingFirstContextItems = [];
     this.pendingBridgeCreateLocalSessionId = '';
     this.pendingBridgeCreateProviderId = '';
     this.persistProfile();
@@ -11291,6 +15196,18 @@ struct NGFAgentHomePage {
     });
   }
 
+  private copyDesktopSetupCommand(): void {
+    pasteboard.getSystemPasteboard().setData(
+      pasteboard.createData(pasteboard.MIMETYPE_TEXT_PLAIN, AGENT_HOME_DESKTOP_SETUP_COMMAND)
+    ).then((): void => {
+      this.showTransientStatus(
+        resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_onboarding_command_copied'))
+      );
+    }).catch((error: Error): void => {
+      logger.error(TAG, 'copy desktop bridge command failed: ' + this.errorToString(error));
+    });
+  }
+
   private originalSessionIdForDisplay(session: AgentHomeSessionItem): string {
     const remoteSession = this.remoteSessionForLocalSession(session);
     if (remoteSession && remoteSession.remoteSessionId.length > 0) {
@@ -11313,6 +15230,36 @@ struct NGFAgentHomePage {
       }
     }
     return null;
+  }
+
+  private removeRemoteSessionCacheForLocalSession(session: AgentHomeSessionItem): void {
+    const nextItems: Array<AgentBridgeRemoteSession> = [];
+    for (let index = 0; index < this.remoteSessions.length; index++) {
+      const item = this.remoteSessions[index];
+      if (!this.isRemoteSessionCacheForLocalSession(item, session)) {
+        nextItems.push(item);
+      }
+    }
+    this.remoteSessions = nextItems;
+    this.ensureSessionImportProvider();
+  }
+
+  private isRemoteSessionCacheForLocalSession(
+    item: AgentBridgeRemoteSession,
+    session: AgentHomeSessionItem
+  ): boolean {
+    const providerMatches = item.providerId === session.providerId ||
+      item.providerId.length === 0 ||
+      session.providerId.length === 0;
+    if (!providerMatches) {
+      return false;
+    }
+    if (session.bridgeSessionId.length > 0) {
+      if (item.sessionId === session.bridgeSessionId || item.remoteSessionId === session.bridgeSessionId) {
+        return true;
+      }
+    }
+    return item.sessionId === session.id || item.remoteSessionId === session.id;
   }
 
   private async deleteSessionById(sessionId: string): Promise<void> {
@@ -11542,10 +15489,14 @@ struct NGFAgentHomePage {
     if (this.activeSessionId.length > 0) {
       this.beginConversationRenderTransition(this.activeSessionId);
     }
+    this.prepareWorkspaceBrowserForWorkspaceSwitch();
     this.syncWorkspaceDrafts();
     this.persistProfile();
     this.closeSheet();
     const requestedHistory = this.refreshActiveSessionHistory();
+    if (this.connectionStatus === AgentBridgeConnectionStatus.CONNECTED) {
+      this.refreshWorkspaceBrowserRoot();
+    }
     if (!requestedHistory && this.activeSessionId.length > 0) {
       this.scheduleConversationRenderReady(this.activeSessionId);
     }
@@ -11634,13 +15585,6 @@ struct NGFAgentHomePage {
     this.sessions = nextItems;
   }
 
-  private openFrameworkConsole(): void {
-    this.closeSheet();
-    this.getUIContext().getRouter().pushUrl({ url: 'pages/ngf/MainMenuPage' }).catch((error: Error): void => {
-      logger.error(TAG, 'open framework console failed: ' + this.errorToString(error));
-    });
-  }
-
   private selectProvider(providerId: string): void {
     if (!this.hasProvider(providerId)) {
       return;
@@ -11695,33 +15639,56 @@ struct NGFAgentHomePage {
   }
 
   private selectInteractionMode(modeId: string): void {
-    if (!this.hasInteractionMode(modeId, this.currentProviderInteractionModes())) {
+    const modes = this.currentProviderInteractionModes();
+    if (!this.hasInteractionMode(modeId, modes)) {
       return;
     }
-    this.agentRunMode = modeId;
+    if (this.interactionModeCategory(modeId, modes) === 'run') {
+      this.agentRunMode = modeId;
+    }
     const items: Array<string> = [];
     items.push(modeId);
-    this.selectedInteractionModeIds = items;
+    this.selectedInteractionModeIds = this.withDefaultInteractionModes(items, modes);
+  }
+
+  private selectInteractionModeInCategory(modeId: string): void {
+    const modes = this.currentProviderInteractionModes();
+    if (!this.hasInteractionMode(modeId, modes)) {
+      return;
+    }
+    const targetCategory = this.interactionModeCategory(modeId, modes);
+    const items: Array<string> = [];
+    for (let index = 0; index < this.selectedInteractionModeIds.length; index++) {
+      const item = this.selectedInteractionModeIds[index];
+      if (this.hasInteractionMode(item, modes) && this.interactionModeCategory(item, modes) !== targetCategory) {
+        items.push(item);
+      }
+    }
+    items.push(modeId);
+    this.selectedInteractionModeIds = this.withDefaultInteractionModes(items, modes);
+    this.agentRunMode = this.currentAgentRunMode();
   }
 
   private toggleInteractionMode(modeId: string): void {
-    if (!this.hasInteractionMode(modeId, this.currentProviderInteractionModes())) {
+    const modes = this.currentProviderInteractionModes();
+    if (!this.hasInteractionMode(modeId, modes)) {
       return;
     }
+    const targetCategory = this.interactionModeCategory(modeId, modes);
     const items: Array<string> = [];
     let didRemove = false;
     for (let index = 0; index < this.selectedInteractionModeIds.length; index++) {
       const item = this.selectedInteractionModeIds[index];
       if (item === modeId) {
         didRemove = true;
-      } else if (this.hasInteractionMode(item, this.currentProviderInteractionModes())) {
+      } else if (this.hasInteractionMode(item, modes) && this.interactionModeCategory(item, modes) !== targetCategory) {
         items.push(item);
       }
     }
     if (!didRemove) {
       items.push(modeId);
     }
-    this.selectedInteractionModeIds = items;
+    this.selectedInteractionModeIds = this.withDefaultInteractionModes(items, modes);
     this.agentRunMode = this.currentAgentRunMode();
   }
 
@@ -11732,15 +15699,25 @@ struct NGFAgentHomePage {
     this.sessionImportProviderId = providerId;
     if (this.connectionStatus === AgentBridgeConnectionStatus.CONNECTED) {
       this.requestRemoteSessions();
+    } else {
+      this.updateRemoteSessionsLoadingState();
     }
   }
 
   private requestRemoteSessions(): void {
+    if (this.connectionStatus !== AgentBridgeConnectionStatus.CONNECTED) {
+      this.pendingRemoteSessionsRequestPairs = [];
+      this.loadingRemoteSessions = false;
+      return;
+    }
     const providerId = this.activeSessionImportProviderId();
     const requestId = this.client.requestSessions(providerId);
     if (requestId.length > 0) {
       this.trackPendingRemoteSessionsRequest(requestId, providerId);
+      this.loadingRemoteSessions = true;
       logger.info(TAG, 'request remote sessions: providerId=' + providerId + ', requestId=' + requestId);
+    } else {
+      this.updateRemoteSessionsLoadingState();
     }
   }
 
@@ -11927,6 +15904,8 @@ struct NGFAgentHomePage {
     }
     this.applyRemoteSessionCache(nextItems);
     this.persistRemoteSessionsForProvider(effectiveProviderId, normalizedItems);
+    this.clearPendingRemoteSessionsRequestsForProvider(effectiveProviderId);
+    this.updateRemoteSessionsLoadingState();
   }
 
   private upsertRemoteSessionCache(remoteSession: AgentBridgeRemoteSession): void {
@@ -12162,8 +16141,10 @@ struct NGFAgentHomePage {
           resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_remote_session_history_loaded'))
         );
       }
+      this.finishStartupHistorySyncIfNeeded(localSessionId);
     }).catch((error: Error): void => {
       logger.error(TAG, 'replace imported messages failed: ' + this.errorToString(error));
+      this.finishStartupHistorySyncIfNeeded(localSessionId);
     });
     this.persistence.deleteToolCallsForSession(localSessionId).then((): void => {
       for (let index = 0; index < importedToolCalls.length; index++) {
@@ -12541,6 +16522,9 @@ struct NGFAgentHomePage {
   }
 
   private ensureSelectedRuntimeOptions(): void {
+    if (!this.hasProvider(this.selectedProviderId)) {
+      this.selectedProviderId = this.defaultSelectableProviderId();
+    }
     const models = this.currentProviderModels();
     if (models.length > 0 && !this.hasModel(this.selectedModelId, models)) {
       if (!this.shouldPreserveExternalModelId(models)) {
@@ -12615,42 +16599,70 @@ struct NGFAgentHomePage {
   }
 
   private confirmClearCurrentSession(): void {
+    const session = this.currentSession();
+    if (session === null) {
+      logger.warn(TAG, 'clear current session ignored: no active session');
+      this.showTransientStatus(resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_no_active_session')));
+      return;
+    }
     const hostContext = this.getUIContext().getHostContext();
+    const sessionId = session.id;
+    logger.info(TAG, 'clear current session confirmation requested: sessionId=' + sessionId + ', bridgeSessionId=' + session.bridgeSessionId);
+    this.closeSheet();
     this.getUIContext().showAlertDialog({
       title: resolveResourceString(hostContext, $r('app.string.agent_home_clear_session_title')),
       message: resolveResourceString(hostContext, $r('app.string.agent_home_clear_session_message')),
       primaryButton: {
         value: resolveResourceString(hostContext, $r('app.string.agent_home_clear')),
         action: (): void => {
-          this.clearCurrentSessionContent().catch((error: Error): void => {
+          logger.info(TAG, 'clear current session confirmed: sessionId=' + sessionId);
+          this.clearCurrentSessionContent(sessionId).then((): void => {
+            this.showTransientStatus(resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_clear_session_done')));
+          }).catch((error: Error): void => {
             logger.error(TAG, 'clear current session action failed: ' + this.errorToString(error));
+            this.showTransientStatus(this.errorToString(error));
           });
         }
       },
       secondaryButton: {
         value: resolveResourceString(hostContext, $r('app.string.agent_home_cancel')),
         action: (): void => {
+          logger.info(TAG, 'clear current session cancelled: sessionId=' + sessionId);
         }
       }
     });
   }
 
   private confirmClearCurrentPreviews(): void {
+    const session = this.currentSession();
+    if (session === null) {
+      logger.warn(TAG, 'clear current previews ignored: no active session');
+      this.showTransientStatus(resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_no_active_session')));
+      return;
+    }
     const hostContext = this.getUIContext().getHostContext();
+    const sessionId = session.id;
+    logger.info(TAG, 'clear current previews confirmation requested: sessionId=' + sessionId + ', bridgeSessionId=' + session.bridgeSessionId);
+    this.closeSheet();
     this.getUIContext().showAlertDialog({
       title: resolveResourceString(hostContext, $r('app.string.agent_home_clear_previews_title')),
       message: resolveResourceString(hostContext, $r('app.string.agent_home_clear_previews_message')),
       primaryButton: {
         value: resolveResourceString(hostContext, $r('app.string.agent_home_clear')),
         action: (): void => {
-          this.clearCurrentPreviews().catch((error: Error): void => {
+          logger.info(TAG, 'clear current previews confirmed: sessionId=' + sessionId);
+          this.clearCurrentPreviews(sessionId).then((): void => {
+            this.showTransientStatus(resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_clear_previews_done')));
+          }).catch((error: Error): void => {
             logger.error(TAG, 'clear current previews action failed: ' + this.errorToString(error));
+            this.showTransientStatus(this.errorToString(error));
           });
         }
       },
       secondaryButton: {
         value: resolveResourceString(hostContext, $r('app.string.agent_home_cancel')),
         action: (): void => {
+          logger.info(TAG, 'clear current previews cancelled: sessionId=' + sessionId);
         }
       }
     });
@@ -12658,71 +16670,291 @@ struct NGFAgentHomePage {
 
   private confirmResetAgentData(): void {
     const hostContext = this.getUIContext().getHostContext();
+    logger.info(TAG, 'reset agent data confirmation requested: workspaces=' + String(this.workspaces.length) +
+      ', sessions=' + String(this.sessions.length) +
+      ', messages=' + String(this.messages.length) +
+      ', previews=' + String(this.previews.length));
+    this.closeSheet();
     this.getUIContext().showAlertDialog({
       title: resolveResourceString(hostContext, $r('app.string.agent_home_reset_data_title')),
       message: resolveResourceString(hostContext, $r('app.string.agent_home_reset_data_message')),
       primaryButton: {
         value: resolveResourceString(hostContext, $r('app.string.agent_home_reset_data')),
         action: (): void => {
-          this.resetAgentData().catch((error: Error): void => {
+          logger.info(TAG, 'reset agent data confirmed');
+          this.resetAgentData().then((): void => {
+            this.showTransientStatus(resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_reset_data_done')));
+          }).catch((error: Error): void => {
             logger.error(TAG, 'reset agent data action failed: ' + this.errorToString(error));
+            this.showTransientStatus(this.errorToString(error));
           });
         }
       },
       secondaryButton: {
         value: resolveResourceString(hostContext, $r('app.string.agent_home_cancel')),
         action: (): void => {
+          logger.info(TAG, 'reset agent data cancelled');
         }
       }
     });
   }
 
-  private async clearCurrentSessionContent(): Promise<void> {
-    const nextMessages: Array<AgentHomeChatItem> = [];
-    for (let index = 0; index < this.messages.length; index++) {
-      const item = this.messages[index];
-      if (item.sessionId !== this.activeSessionId) {
-        nextMessages.push(item);
+  private async clearCurrentSessionContent(sessionId: string): Promise<void> {
+    const session = this.findLocalSessionById(sessionId);
+    if (session === null) {
+      throw new Error('session not found: ' + sessionId);
+    }
+    const remoteSession = this.remoteSessionForLocalSession(session);
+    const remoteSessionId = remoteSession !== null ? remoteSession.remoteSessionId : '';
+    const remoteCacheSessionId = remoteSession !== null ? remoteSession.sessionId :
+      (session.bridgeSessionId.length > 0 ? session.bridgeSessionId : session.id);
+    const sessionIds = this.sessionIdsForLocalSession(sessionId);
+    logger.info(TAG, 'clear current session content start: sessionId=' + sessionId +
+      ', sessionIds=' + this.sessionIdListForLog(sessionIds) +
+      ', remoteCacheSessionId=' + remoteCacheSessionId +
+      ', remoteSessionId=' + remoteSessionId);
+    const sessionsBefore = this.sessions.length;
+    const remoteSessionsBefore = this.remoteSessions.length;
+    const messagesBefore = this.messages.length;
+    const previewsBefore = this.previews.length;
+    const toolCallsBefore = this.toolCalls.length;
+    const userRequestsBefore = this.userRequests.length;
+    const plansBefore = this.plans.length;
+    const previewCachePaths = await this.previewCachePathsForSessionIds(sessionIds);
+    await this.persistence.deleteSessionCascade(session.id);
+    if (session.bridgeSessionId.length > 0 && session.bridgeSessionId !== session.id) {
+      await this.persistence.deleteSessionCascade(session.bridgeSessionId);
+    }
+    await this.persistence.deleteRemoteSessionCache(session.providerId, remoteCacheSessionId, remoteSessionId);
+    const nextSessions: Array<AgentHomeSessionItem> = [];
+    for (let index = 0; index < this.sessions.length; index++) {
+      const item = this.sessions[index];
+      if (item.id !== session.id) {
+        nextSessions.push(item);
       }
     }
-    this.messages = nextMessages;
-    try {
-      await this.persistence.deleteMessagesForSession(this.activeSessionId);
-    } catch (e) {
-      logger.error(TAG, 'clear current session messages failed: ' + e);
+    this.sessions = nextSessions;
+    const removedSessionIds: Array<string> = [];
+    const removedBridgeSessionIds: Array<string> = [];
+    removedSessionIds.push(session.id);
+    if (session.bridgeSessionId.length > 0) {
+      removedBridgeSessionIds.push(session.bridgeSessionId);
     }
+    this.removeSessionScopedLocalState(removedSessionIds, removedBridgeSessionIds);
+    this.removeRemoteSessionCacheForLocalSession(session);
+    const previewFilesRemoved = this.clearPreviewCacheFiles(previewCachePaths);
+    this.activeSessionId = '';
+    if (this.activeSessionActionId === session.id) {
+      this.activeSessionActionId = '';
+    }
+    if (this.pendingBridgeCreateLocalSessionId === session.id) {
+      this.pendingBridgeCreateLocalSessionId = '';
+      this.pendingBridgeCreateProviderId = '';
+    }
+    this.previewPath = '';
+    this.activeWorkspacePreviewPath = '';
+    this.activeWorkspacePreviewErrorText = '';
+    this.pendingWorkspacePreviewImagePath = '';
+    this.stopActiveTurnTimer();
+    this.stopContextCompactionStatus();
+    this.resetActiveAssistantStream();
+    this.releaseActiveWorkspacePreviewPixelMap();
+    this.persistProfile();
+    logger.info(TAG, 'clear current session content done: sessionId=' + sessionId +
+      ', sessionsRemoved=' + String(sessionsBefore - this.sessions.length) +
+      ', remoteSessionsRemoved=' + String(remoteSessionsBefore - this.remoteSessions.length) +
+      ', messagesRemoved=' + String(messagesBefore - this.messages.length) +
+      ', previewsRemoved=' + String(previewsBefore - this.previews.length) +
+      ', previewFilesRemoved=' + String(previewFilesRemoved) +
+      ', toolCallsRemoved=' + String(toolCallsBefore - this.toolCalls.length) +
+      ', userRequestsRemoved=' + String(userRequestsBefore - this.userRequests.length) +
+      ', plansRemoved=' + String(plansBefore - this.plans.length) +
+      ', activeSessionId=' + this.activeSessionId);
   }
 
-  private async clearCurrentPreviews(): Promise<void> {
+  private async clearCurrentPreviews(sessionId: string): Promise<void> {
+    const sessionIds = this.sessionIdsForLocalSession(sessionId);
+    logger.info(TAG, 'clear current previews start: sessionId=' + sessionId +
+      ', sessionIds=' + this.sessionIdListForLog(sessionIds));
+    const previewsBefore = this.previews.length;
+    const previewCachePaths = await this.previewCachePathsForSessionIds(sessionIds);
+    for (let index = 0; index < sessionIds.length; index++) {
+      await this.persistence.deletePreviewsForSession(sessionIds[index]);
+    }
     const nextPreviews: Array<AgentHomePreviewItem> = [];
     for (let index = 0; index < this.previews.length; index++) {
       const item = this.previews[index];
-      if (item.sessionId !== this.activeSessionId) {
+      if (!this.isSessionIdInList(item.sessionId, sessionIds)) {
         nextPreviews.push(item);
       }
     }
     this.previews = nextPreviews;
-    try {
-      await this.persistence.deletePreviewsForSession(this.activeSessionId);
-    } catch (e) {
-      logger.error(TAG, 'clear current session previews failed: ' + e);
-    }
+    this.previewPath = '';
+    this.activeWorkspacePreviewPath = '';
+    this.activeWorkspacePreviewErrorText = '';
+    this.pendingWorkspacePreviewImagePath = '';
+    this.releaseActiveWorkspacePreviewPixelMap();
+    const previewFilesRemoved = this.clearPreviewCacheFiles(previewCachePaths);
+    logger.info(TAG, 'clear current previews done: sessionId=' + sessionId +
+      ', previewsRemoved=' + String(previewsBefore - this.previews.length) +
+      ', previewFilesRemoved=' + String(previewFilesRemoved));
   }
 
   private async resetAgentData(): Promise<void> {
-    try {
-      await this.persistence.clearAll();
-      this.workspaces = [];
-      this.sessions = [];
-      this.messages = [];
-      this.previews = [];
-      this.initializeDefaults();
-      const snapshot = await this.persistence.loadOrCreate(this.buildBootstrapState());
-      this.applySnapshot(snapshot);
-      this.closeSheet();
-    } catch (e) {
-      logger.error(TAG, 'reset agent data failed: ' + e);
+    logger.info(TAG, 'reset agent data start: workspaces=' + String(this.workspaces.length) +
+      ', sessions=' + String(this.sessions.length) +
+      ', messages=' + String(this.messages.length) +
+      ', previews=' + String(this.previews.length) +
+      ', toolCalls=' + String(this.toolCalls.length) +
+      ', userRequests=' + String(this.userRequests.length) +
+      ', plans=' + String(this.plans.length));
+    await this.persistence.clearAll();
+    this.workspaces = [];
+    this.sessions = [];
+    this.messages = [];
+    this.previews = [];
+    this.toolCalls = [];
+    this.userRequests = [];
+    this.plans = [];
+    this.workspaceChanges = [];
+    this.workspaceFiles = [];
+    this.gitCommits = [];
+    this.previewPath = '';
+    this.activeWorkspacePreviewPath = '';
+    this.activeWorkspacePreviewErrorText = '';
+    this.pendingWorkspacePreviewImagePath = '';
+    this.releaseActiveWorkspacePreviewPixelMap();
+    const previewFilesRemoved = this.clearAllPreviewCacheFiles();
+    this.resetActiveAssistantStream();
+    this.initializeDefaults();
+    const snapshot = await this.persistence.loadOrCreate(this.buildBootstrapState());
+    this.applySnapshot(snapshot);
+    logger.info(TAG, 'reset agent data done: workspaces=' + String(this.workspaces.length) +
+      ', sessions=' + String(this.sessions.length) +
+      ', previewFilesRemoved=' + String(previewFilesRemoved) +
+      ', activeWorkspaceId=' + this.activeWorkspaceId +
+      ', activeSessionId=' + this.activeSessionId);
+  }
+
+  private async previewCachePathsForSessionIds(sessionIds: Array<string>): Promise<Array<string>> {
+    const paths: Array<string> = [];
+    for (let index = 0; index < this.previews.length; index++) {
+      const item = this.previews[index];
+      if (this.isSessionIdInList(item.sessionId, sessionIds)) {
+        this.addPreviewCachePath(paths, this.previewCachePathFromContent(item.content));
+      }
     }
+    for (let index = 0; index < sessionIds.length; index++) {
+      const contents: Array<string> = await this.persistence.loadPreviewContentsForSession(sessionIds[index]);
+      for (let contentIndex = 0; contentIndex < contents.length; contentIndex++) {
+        this.addPreviewCachePath(paths, this.previewCachePathFromContent(contents[contentIndex]));
+      }
+    }
+    return paths;
+  }
+
+  private previewCachePathFromContent(content: string): string {
+    const trimmed = content.trim();
+    if (trimmed.length === 0) {
+      return '';
+    }
+    const relativePrefix = AGENT_HOME_PREVIEW_CACHE_DIR + '/';
+    if (trimmed.startsWith(relativePrefix)) {
+      return trimmed;
+    }
+    const normalized = trimmed.startsWith('file://') ? trimmed.substring('file://'.length) : trimmed;
+    const marker = '/' + AGENT_HOME_PREVIEW_CACHE_DIR + '/';
+    const markerIndex = normalized.indexOf(marker);
+    if (markerIndex < 0) {
+      return '';
+    }
+    const fileNameStart = markerIndex + marker.length;
+    if (fileNameStart >= normalized.length) {
+      return '';
+    }
+    return relativePrefix + normalized.substring(fileNameStart);
+  }
+
+  private addPreviewCachePath(paths: Array<string>, path: string): void {
+    if (!this.isSafePreviewCachePath(path)) {
+      return;
+    }
+    for (let index = 0; index < paths.length; index++) {
+      if (paths[index] === path) {
+        return;
+      }
+    }
+    paths.push(path);
+  }
+
+  private isSafePreviewCachePath(path: string): boolean {
+    const prefix = AGENT_HOME_PREVIEW_CACHE_DIR + '/';
+    if (!path.startsWith(prefix)) {
+      return false;
+    }
+    if (path.length <= prefix.length) {
+      return false;
+    }
+    if (path.indexOf('..') >= 0 || path.indexOf('\\') >= 0) {
+      logger.warn(TAG, 'unsafe preview cache path ignored: ' + path);
+      return false;
+    }
+    return true;
+  }
+
+  private clearPreviewCacheFiles(paths: Array<string>): number {
+    let removed = 0;
+    for (let index = 0; index < paths.length; index++) {
+      const path = paths[index];
+      if (!FileUtils.exists(path)) {
+        logger.info(TAG, 'preview cache file already absent: ' + path);
+        continue;
+      }
+      if (FileUtils.deleteFile(path)) {
+        removed = removed + 1;
+        logger.info(TAG, 'preview cache file deleted: ' + path);
+      } else {
+        logger.warn(TAG, 'preview cache file delete failed: ' + path);
+      }
+    }
+    return removed;
+  }
+
+  private clearAllPreviewCacheFiles(): number {
+    if (!FileUtils.exists(AGENT_HOME_PREVIEW_CACHE_DIR)) {
+      logger.info(TAG, 'preview cache directory already absent: ' + AGENT_HOME_PREVIEW_CACHE_DIR);
+      return 0;
+    }
+    const removed = this.clearPreviewCacheDirectoryContent(AGENT_HOME_PREVIEW_CACHE_DIR);
+    if (FileUtils.exists(AGENT_HOME_PREVIEW_CACHE_DIR) && FileUtils.deleteDirectory(AGENT_HOME_PREVIEW_CACHE_DIR)) {
+      logger.info(TAG, 'preview cache directory deleted: ' + AGENT_HOME_PREVIEW_CACHE_DIR);
+    }
+    return removed;
+  }
+
+  private clearPreviewCacheDirectoryContent(directoryPath: string): number {
+    let removed = 0;
+    const entries: Array<NGFFileEntry> = FileUtils.listDirectory(directoryPath);
+    for (let index = 0; index < entries.length; index++) {
+      const entry = entries[index];
+      const childPath = directoryPath + '/' + entry.name;
+      if (entry.isDirectory) {
+        removed = removed + this.clearPreviewCacheDirectoryContent(childPath);
+        if (FileUtils.deleteDirectory(childPath)) {
+          logger.info(TAG, 'preview cache subdirectory deleted: ' + childPath);
+        } else {
+          logger.warn(TAG, 'preview cache subdirectory delete failed: ' + childPath);
+        }
+        continue;
+      }
+      if (FileUtils.deleteFile(childPath)) {
+        removed = removed + 1;
+        logger.info(TAG, 'preview cache file deleted: ' + childPath);
+      } else {
+        logger.warn(TAG, 'preview cache file delete failed: ' + childPath);
+      }
+    }
+    return removed;
   }
 
   private syncWorkspaceDrafts(): void {
@@ -13047,9 +17279,26 @@ struct NGFAgentHomePage {
     }
   }
 
+  private prepareWorkspaceBrowserForWorkspaceSwitch(): void {
+    this.expandedWorkspaceDirs = [];
+    this.pendingWorkspaceFilesParentPath = '';
+    this.loadingWorkspaceFileParentPaths = [];
+    if (this.connectionStatus === AgentBridgeConnectionStatus.CONNECTED && this.currentBridgeSessionId().length > 0) {
+      this.loadingWorkspaceChanges = true;
+      this.loadingWorkspaceFiles = true;
+      this.addLoadingWorkspaceFileParentPath('');
+      return;
+    }
+    this.loadingWorkspaceChanges = false;
+    this.loadingWorkspaceFiles = false;
+  }
+
   private refreshWorkspaceBrowserRoot(): void {
     const bridgeSessionId = this.currentBridgeSessionId();
     if (bridgeSessionId.length === 0 || this.connectionStatus !== AgentBridgeConnectionStatus.CONNECTED) {
+      this.loadingWorkspaceChanges = false;
+      this.loadingWorkspaceFiles = false;
+      this.removeLoadingWorkspaceFileParentPath('');
       this.showTransientStatus(resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_workspace_requires_session')));
       return;
     }
@@ -13189,12 +17438,12 @@ struct NGFAgentHomePage {
     this.openWorkspaceContentPreview(item.path);
   }
 
-  private openWorkspaceContentPreview(path: string): void {
+  private openWorkspaceContentPreview(path: string, preferExactPath: boolean = false): void {
     const normalizedPath = this.normalizeWorkspaceFilePath(path);
     if (normalizedPath.length === 0) {
       return;
     }
-    const requestPath = this.resolveWorkspacePreviewRequestPath(normalizedPath);
+    const requestPath = preferExactPath ? normalizedPath : this.resolveWorkspacePreviewRequestPath(normalizedPath);
     if (requestPath.length === 0) {
       this.showTransientStatus(resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_workspace_content_preview_file_required')));
       return;
@@ -13218,19 +17467,328 @@ struct NGFAgentHomePage {
     this.openSheet(AgentHomeSheetKey.WORKSPACE_CONTENT_PREVIEW);
   }
 
+  private handleAssistantAnswerLinkClick(url: string): boolean {
+    const path = this.workspaceReferencePathFromRichContentLink(url);
+    logger.info(TAG, 'assistant answer link clicked: url=' + url + ', workspacePath=' + path);
+    if (path.length > 0) {
+      this.openWorkspaceReferenceFromRichContent(path);
+      return true;
+    }
+    this.showTransientStatus(url);
+    return true;
+  }
+
+  private workspaceReferencePathFromRichContentLink(url: string): string {
+    let value = this.decodeRichContentLinkUrl(url).trim();
+    if (value.length === 0 || value.startsWith('#')) {
+      return '';
+    }
+    value = this.stripRichContentFileUrlPrefix(value);
+    if (this.richContentLinkHasExternalScheme(value)) {
+      return '';
+    }
+    value = this.stripRichContentUrlSuffix(value);
+    value = this.stripRichContentLineSuffix(value);
+    return this.resolveWorkspaceReferencePath(value);
+  }
+
+  private resolveWorkspaceReferencePath(rawText: string): string {
+    let value = this.stripRichContentReferenceEdge(rawText);
+    if (value.length === 0 || value.startsWith('#')) {
+      return '';
+    }
+    value = this.stripRichContentFileUrlPrefix(value);
+    if (this.richContentLinkHasExternalScheme(value)) {
+      return '';
+    }
+    value = this.stripRichContentUrlSuffix(value);
+    value = this.stripRichContentLineSuffix(value);
+    value = this.stripRichContentReferenceEdge(value);
+    const normalizedPath = this.normalizeWorkspaceFilePath(value);
+    if (normalizedPath.length === 0) {
+      return '';
+    }
+    const change = this.workspaceChangeForReferencePath(normalizedPath);
+    if (change !== null) {
+      return this.normalizeWorkspaceFilePath(change.path);
+    }
+    if (this.isWorkspacePreviewableFilePath(normalizedPath)) {
+      return normalizedPath;
+    }
+    const knownPath = this.knownWorkspacePathForShortReference(normalizedPath);
+    if (knownPath.length > 0) {
+      return knownPath;
+    }
+    return '';
+  }
+
+  private stripRichContentReferenceEdge(text: string): string {
+    let value = text.trim();
+    let changed = true;
+    while (changed && value.length > 0) {
+      changed = false;
+      const first = value.charAt(0);
+      if (first === '`' || first === '"' || first === '\'' || first === '<' || first === '[' || first === '(' || first === '（') {
+        value = value.substring(1).trim();
+        changed = true;
+      }
+      if (value.length === 0) {
+        return value;
+      }
+      const last = value.charAt(value.length - 1);
+      if (last === '`' ||
+        last === '"' ||
+        last === '\'' ||
+        last === '>' ||
+        last === ']' ||
+        last === ')' ||
+        last === '）' ||
+        last === '.' ||
+        last === ',' ||
+        last === '，' ||
+        last === '。' ||
+        last === '、' ||
+        last === ';' ||
+        last === '；' ||
+        last === ':') {
+        value = value.substring(0, value.length - 1).trim();
+        changed = true;
+      }
+    }
+    return value;
+  }
+
+  private workspaceChangeForReferencePath(path: string): AgentHomeWorkspaceChangeItem | null {
+    const normalizedPath = this.normalizeWorkspaceFilePath(path);
+    const changes = this.visibleWorkspaceChanges();
+    for (let index = 0; index < changes.length; index++) {
+      const item = changes[index];
+      if (this.normalizeWorkspaceFilePath(item.path) === normalizedPath ||
+        this.normalizeWorkspaceFilePath(item.oldPath) === normalizedPath) {
+        return item;
+      }
+    }
+    return this.workspaceChangeForShortReference(normalizedPath);
+  }
+
+  private workspaceChangeForShortReference(path: string): AgentHomeWorkspaceChangeItem | null {
+    if (path.indexOf('/') >= 0) {
+      return null;
+    }
+    const changes = this.visibleWorkspaceChanges();
+    for (let index = 0; index < changes.length; index++) {
+      const item = changes[index];
+      if (this.fileNameFromPath(item.path) === path || this.fileNameFromPath(item.oldPath) === path) {
+        return item;
+      }
+    }
+    return null;
+  }
+
+  private knownWorkspacePathForShortReference(path: string): string {
+    if (path.indexOf('/') >= 0) {
+      return '';
+    }
+    for (let index = 0; index < this.workspaceFiles.length; index++) {
+      const item = this.workspaceFiles[index];
+      if (item.workspaceId === this.activeWorkspaceId && item.kind === 'file' && item.name === path) {
+        return this.normalizeWorkspaceFilePath(item.path);
+      }
+    }
+    return '';
+  }
+
+  private openWorkspaceReferenceFromRichContent(path: string): void {
+    const normalizedPath = this.normalizeWorkspaceFilePath(path);
+    const change = this.workspaceChangeForReferencePath(normalizedPath);
+    if (change !== null) {
+      this.openWorkspaceDiffDetail(change);
+      return;
+    }
+    this.openWorkspaceContentPreview(normalizedPath, true);
+  }
+
+  private decodeRichContentLinkUrl(url: string): string {
+    try {
+      return decodeURIComponent(url);
+    } catch (_error) {
+      return url;
+    }
+  }
+
+  private stripRichContentFileUrlPrefix(url: string): string {
+    if (url.startsWith('file:///')) {
+      return url.substring(8);
+    }
+    if (url.startsWith('file://')) {
+      return url.substring(7);
+    }
+    if (url.startsWith('vscode://file/')) {
+      return url.substring(14);
+    }
+    return url;
+  }
+
+  private richContentLinkHasExternalScheme(url: string): boolean {
+    const colonIndex = url.indexOf(':');
+    if (colonIndex < 0 || colonIndex === 1) {
+      return false;
+    }
+    const slashIndex = url.indexOf('/');
+    return slashIndex < 0 || colonIndex < slashIndex;
+  }
+
+  private stripRichContentUrlSuffix(url: string): string {
+    let value = url;
+    const hashIndex = value.indexOf('#');
+    if (hashIndex >= 0) {
+      value = value.substring(0, hashIndex);
+    }
+    const queryIndex = value.indexOf('?');
+    if (queryIndex >= 0) {
+      value = value.substring(0, queryIndex);
+    }
+    return value;
+  }
+
+  private stripRichContentLineSuffix(path: string): string {
+    let value = path;
+    let shouldContinue = true;
+    while (shouldContinue) {
+      const colonIndex = value.lastIndexOf(':');
+      if (colonIndex <= 1 || colonIndex >= value.length - 1) {
+        shouldContinue = false;
+      } else {
+        const suffix = value.substring(colonIndex + 1);
+        if (this.isPositiveIntegerText(suffix)) {
+          value = value.substring(0, colonIndex);
+        } else {
+          shouldContinue = false;
+        }
+      }
+    }
+    return value;
+  }
+
+  private isPositiveIntegerText(text: string): boolean {
+    if (text.length === 0) {
+      return false;
+    }
+    for (let index = 0; index < text.length; index++) {
+      const char = text.charAt(index);
+      if (char < '0' || char > '9') {
+        return false;
+      }
+    }
+    return true;
+  }
+
   private previewWorkspaceFile(path: string): void {
     this.previewPath = path;
-    this.client.requestWorkspaceFile(this.currentBridgeSessionId(), this.activeWorkspaceId, path);
+    const parentPath = this.parentPathFromWorkspacePath(path);
+    logger.info(TAG, 'request workspace file preview: path=' + path + ', parentPath=' + parentPath);
+    this.client.requestWorkspaceFile(this.currentBridgeSessionId(), this.activeWorkspaceId, path, parentPath);
   }
 
   private previewWorkspaceImageFile(path: string): void {
     this.previewPath = path;
     this.pendingWorkspacePreviewImagePath = this.normalizeWorkspaceFilePath(path);
-    this.client.requestWorkspaceFileDownload(this.currentBridgeSessionId(), this.activeWorkspaceId, path);
+    const parentPath = this.parentPathFromWorkspacePath(path);
+    logger.info(TAG, 'request workspace image preview: path=' + path + ', parentPath=' + parentPath);
+    this.client.requestWorkspaceFileDownload(this.currentBridgeSessionId(), this.activeWorkspaceId, path, parentPath);
   }
 
   private downloadWorkspaceFile(path: string): void {
-    this.client.requestWorkspaceFileDownload(this.currentBridgeSessionId(), this.activeWorkspaceId, path);
+    this.client.requestWorkspaceFileDownload(
+      this.currentBridgeSessionId(),
+      this.activeWorkspaceId,
+      path,
+      this.parentPathFromWorkspacePath(path)
+    );
+  }
+
+  private shouldHandleAsMessageAttachmentImageDownload(parsed: AgentBridgeParsedMessage): boolean {
+    if (parsed.requestKind !== AGENT_HOME_ATTACHMENT_PREVIEW_DOWNLOAD_KIND) {
+      return false;
+    }
+    const parsedPath = parsed.downloadFilePath;
+    if (parsedPath.length === 0) {
+      return false;
+    }
+    return this.isMessageAttachmentImagePending(parsedPath);
+  }
+
+  private async saveMessageAttachmentImageDownload(parsed: AgentBridgeParsedMessage): Promise<void> {
+    if (parsed.downloadPath.length === 0 || parsed.downloadFilePath.length === 0) {
+      throw new Error('attachment download payload is incomplete');
+    }
+    const pathValue = parsed.downloadFilePath;
+    const url = this.buildBridgeDownloadUrl(parsed.downloadPath);
+    const httpRequest = http.createHttp();
+    try {
+      const options: http.HttpRequestOptions = {
+        method: http.RequestMethod.GET,
+        connectTimeout: 15000,
+        readTimeout: 60000,
+        expectDataType: http.HttpDataType.ARRAY_BUFFER
+      };
+      const response: http.HttpResponse = await httpRequest.request(url, options);
+      if (response.responseCode < 200 || response.responseCode >= 300) {
+        throw new Error('download failed: ' + String(response.responseCode));
+      }
+      if (!(response.result instanceof ArrayBuffer) || response.result.byteLength <= 0) {
+        throw new Error('download response is empty');
+      }
+      const mediaType = this.workspaceRasterMediaTypeForPath(pathValue);
+      let content = this.writeMessageAttachmentImageCache(pathValue, mediaType, response.result);
+      if (content.length === 0) {
+        content = this.rasterPreviewDataUrlFromBuffer(response.result, mediaType);
+      }
+      this.upsertMessageAttachmentImageCache(pathValue, content);
+      this.removePendingMessageAttachmentImagePath(pathValue);
+      logger.info(TAG, 'message attachment image cached: path=' + pathValue);
+    } catch (error) {
+      throw new Error(this.errorToString(error));
+    } finally {
+      httpRequest.destroy();
+    }
+  }
+
+  private writeMessageAttachmentImageCache(pathValue: string, mediaType: string, imageBuffer: ArrayBuffer): string {
+    const fileName = this.safePreviewImageFileName('message_attachment_' + String(Date.now()), pathValue, mediaType);
+    const directory = this.messageAttachmentPreviewCacheDirectoryPath();
+    if (directory.length > 0) {
+      const absolutePath = directory + '/' + fileName;
+      if (FileUtils.createDirectory(directory, true) && FileUtils.writeBytes(absolutePath, imageBuffer)) {
+        return absolutePath;
+      }
+    }
+    const relativePath = AGENT_HOME_ATTACHMENT_PREVIEW_CACHE_DIR + '/' + fileName;
+    if (FileUtils.createDirectory(AGENT_HOME_ATTACHMENT_PREVIEW_CACHE_DIR, true) && FileUtils.writeBytes(relativePath, imageBuffer)) {
+      return relativePath;
+    }
+    return '';
+  }
+
+  private messageAttachmentPreviewCacheDirectoryPath(): string {
+    const ctx = uiContextManager.getAbilityContext();
+    if (ctx !== null && ctx.filesDir.length > 0) {
+      return ctx.filesDir + '/' + AGENT_HOME_ATTACHMENT_PREVIEW_CACHE_DIR;
+    }
+    return '';
+  }
+
+  private upsertMessageAttachmentImageCache(pathValue: string, content: string): void {
+    const normalizedPath = this.normalizedMessageAttachmentPath(pathValue);
+    const nextItems: Array<AgentHomeMessageAttachmentImageCache> = [];
+    nextItems.push(new AgentHomeMessageAttachmentImageCache(pathValue, content));
+    for (let index = 0; index < this.messageAttachmentImageCache.length && nextItems.length < 80; index++) {
+      const item = this.messageAttachmentImageCache[index];
+      if (this.normalizedMessageAttachmentPath(item.path) !== normalizedPath) {
+        nextItems.push(item);
+      }
+    }
+    this.messageAttachmentImageCache = nextItems;
   }
 
   private shouldHandleAsWorkspacePreviewImageDownload(parsed: AgentBridgeParsedMessage): boolean {
@@ -13275,19 +17833,20 @@ struct NGFAgentHomePage {
       }
       this.previewSequence = this.previewSequence + 1;
       const previewId = 'agent_home_preview_' + String(Date.now()) + '_' + String(this.previewSequence);
-      FileUtils.createDirectory('agent-previews', true);
-      const relativePath = 'agent-previews/' + this.safePreviewImageFileName(previewId, normalizedPath, this.workspaceRasterMediaTypeForPath(normalizedPath));
-      if (!FileUtils.writeBytes(relativePath, response.result)) {
-        throw new Error('write preview image failed');
-      }
       await this.updateActiveWorkspacePreviewPixelMap(response.result, normalizedPath);
+      const mediaType = this.workspaceRasterMediaTypeForPath(normalizedPath);
+      let previewContent = this.writeRasterPreviewBuffer(previewId, normalizedPath, mediaType, response.result);
+      if (previewContent.length === 0) {
+        logger.warn(TAG, 'preview image cache write failed, keeping in-memory pixel map: path=' + normalizedPath);
+        previewContent = this.rasterPreviewDataUrlFromBuffer(response.result, mediaType);
+      }
       const sessionId = parsed.sessionId.length > 0 ? this.localSessionIdForBridgeSession(parsed.sessionId) : this.activeSessionId;
       const preview = new AgentHomePreviewItem(
         previewId,
         sessionId,
         normalizedPath,
-        this.workspaceRasterMediaTypeForPath(normalizedPath),
-        relativePath,
+        mediaType,
+        previewContent,
         Date.now()
       );
       this.pushWorkspacePreviewItem(preview);
@@ -13296,6 +17855,8 @@ struct NGFAgentHomePage {
       this.showTransientStatus(
         resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_preview_updated')) + ': ' + normalizedPath
       );
+    } catch (error) {
+      throw new Error(this.errorToString(error));
     } finally {
       httpRequest.destroy();
     }
@@ -13332,6 +17893,8 @@ struct NGFAgentHomePage {
         resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_workspace_download_ready')) +
           ': ' + relativePath
       );
+    } catch (error) {
+      throw new Error(this.errorToString(error));
     } finally {
       httpRequest.destroy();
     }
@@ -13654,7 +18217,7 @@ struct NGFAgentHomePage {
     for (let index = 0; index < userRequests.length; index++) {
       const item = userRequests[index];
       this.insertConversationItem(items, new AgentHomeConversationItem(
-        'conversation_request_' + item.id,
+        'conversation_request_' + item.id + '_' + item.status + '_' + String(item.updatedAt),
         AgentHomeConversationItemKind.USER_REQUEST,
         item.createdAt,
         null,
@@ -13692,7 +18255,8 @@ struct NGFAgentHomePage {
       '_' + String(item.text.length) +
       '_' + String(item.reasoningText.length) +
       '_' + String(item.durationText.length) +
-      '_' + item.agentName;
+      '_' + item.agentName +
+      '_' + this.conversationRichContentThemeKey();
   }
 
   private conversationToolCallItemId(item: AgentHomeToolCallItem): string {
@@ -13973,6 +18537,56 @@ struct NGFAgentHomePage {
     return item.kind === AgentHomeUserRequestKind.PERMISSION;
   }
 
+  private isPendingPermissionRequest(item: AgentHomeUserRequestItem): boolean {
+    return this.isPermissionRequest(item) && item.status.toLowerCase() === AgentHomeInteractionStatus.PENDING;
+  }
+
+  private hasPendingPermissionRequests(): boolean {
+    for (let index = 0; index < this.userRequests.length; index++) {
+      const item = this.userRequests[index];
+      if (this.isPendingPermissionRequest(item)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private syncPermissionRequestFlowLight(): void {
+    if (this.hasPendingPermissionRequests()) {
+      const scenePreset: NGFHdsSceneFlowPreset = NGFHdsEffectPresetFactory.buildFlowLightScenePreset(true);
+      this.permissionRequestFlowLightStopping = false;
+      this.permissionRequestFlowLightController.setSceneParams(scenePreset.sceneParams);
+      if (!this.permissionRequestFlowLightActive) {
+        this.permissionRequestFlowLightController.start();
+      }
+      this.permissionRequestFlowLightActive = true;
+      return;
+    }
+    this.stopPermissionRequestFlowLight();
+  }
+
+  private stopPermissionRequestFlowLight(): void {
+    if (!this.permissionRequestFlowLightActive || this.permissionRequestFlowLightStopping) {
+      this.permissionRequestFlowLightActive = false;
+      return;
+    }
+    const scenePreset: NGFHdsSceneFlowPreset = NGFHdsEffectPresetFactory.buildFlowLightScenePreset(false);
+    this.permissionRequestFlowLightStopping = true;
+    this.permissionRequestFlowLightActive = false;
+    this.permissionRequestFlowLightController.setSceneParams(scenePreset.sceneParams);
+    this.permissionRequestFlowLightController.stop();
+    this.permissionRequestFlowLightStopping = false;
+  }
+
+  private handlePermissionRequestFlowLightFinished(): void {
+    if (this.permissionRequestFlowLightStopping) {
+      return;
+    }
+    if (!this.hasPendingPermissionRequests()) {
+      this.stopPermissionRequestFlowLight();
+    }
+  }
+
   private activePlan(): AgentHomePlanItem | null {
     for (let index = 0; index < this.plans.length; index++) {
       const item = this.plans[index];
@@ -14250,12 +18864,130 @@ struct NGFAgentHomePage {
     return AgentHomeInteractionStatus.PENDING;
   }
 
-  private activeRequestRawText(): string {
+  private activeRequestRawDisplayText(): string {
     const item = this.activeRequest();
-    if (item) {
-      return item.rawJson;
+    if (item === null) {
+      return '';
     }
-    return '';
+    if (this.isPermissionRequest(item)) {
+      return this.permissionRawDisplayText(item.rawJson);
+    }
+    return this.requestRawDisplayText(item.rawJson);
+  }
+
+  private requestRawDisplayText(source: string): string {
+    const cleanSource = AgentBridgeIncomingParser.cleanJsonText(source).trim();
+    if (cleanSource.length === 0) {
+      return '';
+    }
+    const payloadObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'payload');
+    const targetSource = payloadObject.length > 0 ? payloadObject : source;
+    const inputObject = AgentBridgeIncomingParser.extractObjectProperty(targetSource, 'input');
+    const questionSource = inputObject.length > 0 ? inputObject : targetSource;
+    const questionObjects = AgentBridgeIncomingParser.extractObjectArray(questionSource, 'questions');
+    const firstQuestion = questionObjects.length > 0 ? questionObjects[0] : '';
+    const lines: Array<string> = [];
+    this.appendRawDisplayLine(lines, 'event', AgentBridgeIncomingParser.extractStringProperty(source, 'event'));
+    this.appendRawDisplayLine(lines, 'provider', this.extractRawPayloadField(payloadObject, source, 'providerId'));
+    this.appendRawDisplayLine(lines, 'session', AgentBridgeIncomingParser.extractStringProperty(source, 'sessionId'));
+    this.appendRawDisplayLine(lines, 'requestId', this.extractRawPayloadField(payloadObject, source, 'requestId'));
+    this.appendRawDisplayLine(lines, 'toolCallId', AgentBridgeIncomingParser.extractFirstStringProperty(targetSource, 'toolCallId', 'id'));
+    this.appendRawDisplayLine(lines, 'tool', AgentBridgeIncomingParser.extractFirstStringProperty(targetSource, 'name', 'toolName'));
+    this.appendRawDisplayLine(lines, 'status', this.extractRawPayloadField(payloadObject, source, 'status'));
+    this.appendRawDisplayLine(lines, 'optionId', this.extractRawPayloadField(payloadObject, source, 'optionId'));
+    this.appendRawDisplayLine(lines, 'title', this.extractRawPayloadField(payloadObject, source, 'title'));
+    this.appendRawDisplayLine(lines, 'prompt', this.extractRawPayloadField(payloadObject, source, 'prompt'));
+    if (firstQuestion.length > 0) {
+      this.appendRawDisplayLine(lines, 'question.header', AgentBridgeIncomingParser.extractStringProperty(firstQuestion, 'header'));
+      this.appendRawDisplayLine(lines, 'question.text', AgentBridgeIncomingParser.extractStringProperty(firstQuestion, 'question'));
+      this.appendRawDisplayLine(lines, 'question.options', AgentBridgeIncomingParser.extractArrayProperty(firstQuestion, 'options'));
+    } else {
+      this.appendRawDisplayLine(lines, 'options', AgentBridgeIncomingParser.extractArrayProperty(targetSource, 'options'));
+    }
+    const createdAt = AgentBridgeIncomingParser.extractNumberProperty(source, 'createdAt', 0);
+    if (createdAt > 0) {
+      lines.push('createdAt: ' + String(createdAt));
+    }
+    if (lines.length > 0) {
+      return lines.join('\n');
+    }
+    return cleanSource;
+  }
+
+  private permissionRawDisplayText(source: string): string {
+    const cleanSource = AgentBridgeIncomingParser.cleanJsonText(source).trim();
+    if (cleanSource.length === 0) {
+      return '';
+    }
+    const payloadObject = AgentBridgeIncomingParser.extractObjectProperty(source, 'payload');
+    const permissionObject = AgentBridgeIncomingParser.extractObjectProperty(payloadObject, 'permission');
+    const targetSource = permissionObject.length > 0 ? permissionObject :
+      (payloadObject.length > 0 ? payloadObject : source);
+    const metadataObject = AgentBridgeIncomingParser.extractObjectProperty(targetSource, 'metadata');
+    const lines: Array<string> = [];
+    this.appendRawDisplayLine(lines, 'event', AgentBridgeIncomingParser.extractStringProperty(source, 'event'));
+    this.appendRawDisplayLine(lines, 'provider', this.extractRawPayloadField(payloadObject, source, 'providerId'));
+    this.appendRawDisplayLine(lines, 'session', AgentBridgeIncomingParser.extractStringProperty(source, 'sessionId'));
+    this.appendRawDisplayLine(lines, 'requestId', this.extractRawPayloadField(payloadObject, source, 'requestId'));
+    this.appendRawDisplayLine(lines, 'permissionId', this.extractRawPayloadField(payloadObject, source, 'permissionId'));
+    this.appendRawDisplayLine(lines, 'status', this.extractRawPayloadField(payloadObject, source, 'status'));
+    this.appendRawDisplayLine(lines, 'reply', this.extractRawPayloadField(payloadObject, source, 'reply'));
+    this.appendRawDisplayLine(lines, 'optionId', this.extractRawPayloadField(payloadObject, source, 'optionId'));
+    this.appendRawDisplayLine(
+      lines,
+      'permission',
+      AgentBridgeIncomingParser.extractFirstStringProperty(targetSource, 'permission', 'type')
+    );
+    this.appendRawDisplayLine(lines, 'action', AgentBridgeIncomingParser.extractFirstStringProperty(targetSource, 'action', 'name'));
+    this.appendRawDisplayLine(lines, 'tool', AgentBridgeIncomingParser.extractFirstStringProperty(targetSource, 'toolName', 'tool'));
+    this.appendRawDisplayLine(lines, 'command', this.permissionCommandValue(targetSource, metadataObject));
+    this.appendRawDisplayLine(lines, 'path', this.permissionRawPathValue(targetSource, metadataObject));
+    this.appendRawDisplayLine(lines, 'patterns', AgentBridgeIncomingParser.extractArrayProperty(targetSource, 'patterns'));
+    this.appendRawDisplayLine(lines, 'prompt', this.extractRawPayloadField(payloadObject, source, 'prompt'));
+    const createdAt = AgentBridgeIncomingParser.extractNumberProperty(source, 'createdAt', 0);
+    if (createdAt > 0) {
+      lines.push('createdAt: ' + String(createdAt));
+    }
+    if (lines.length > 0) {
+      return lines.join('\n');
+    }
+    return cleanSource;
+  }
+
+  private extractRawPayloadField(payloadObject: string, source: string, key: string): string {
+    const payloadValue = this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(payloadObject, key));
+    if (payloadValue.length > 0) {
+      return payloadValue;
+    }
+    return this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(source, key));
+  }
+
+  private permissionRawPathValue(targetSource: string, metadataObject: string): string {
+    const metadataPath = this.firstNonEmptyText(
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(metadataObject, 'filePath')),
+      this.firstNonEmptyText(
+        this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(metadataObject, 'path')),
+        this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(metadataObject, 'directory'))
+      )
+    );
+    if (metadataPath.length > 0) {
+      return metadataPath;
+    }
+    return this.firstNonEmptyText(
+      this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(targetSource, 'filePath')),
+      this.firstNonEmptyText(
+        this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(targetSource, 'path')),
+        this.cleanPermissionField(AgentBridgeIncomingParser.extractStringProperty(targetSource, 'directory'))
+      )
+    );
+  }
+
+  private appendRawDisplayLine(lines: Array<string>, label: string, value: string): void {
+    const cleanValue = this.cleanPermissionField(value);
+    if (cleanValue.length === 0) {
+      return;
+    }
+    lines.push(label + ': ' + cleanValue);
   }
 
   private activeRequestOptions(): Array<AgentHomeRequestOptionItem> {
@@ -14536,6 +19268,110 @@ struct NGFAgentHomePage {
     return $r('app.color.text_body');
   }
 
+  private permissionStatusAccentColor(status: string): ResourceColor {
+    const value = status.toLowerCase();
+    if (value === AgentHomeInteractionStatus.REJECTED || value === AgentHomeInteractionStatus.ERROR) {
+      return $r('app.color.tag_red');
+    }
+    return $r('app.color.tag_green');
+  }
+
+  private permissionRequestAccentColor(item: AgentHomeUserRequestItem): ResourceColor {
+    return this.permissionStatusAccentColor(item.status);
+  }
+
+  private permissionRequestIconBackgroundColor(item: AgentHomeUserRequestItem): ResourceColor {
+    const value = item.status.toLowerCase();
+    if (value === AgentHomeInteractionStatus.REJECTED || value === AgentHomeInteractionStatus.ERROR) {
+      return this.isDarkMode ? '#33DC2626' : $r('app.color.background_error');
+    }
+    return this.isDarkMode ? '#3322C55E' : $r('app.color.background_success');
+  }
+
+  private permissionRequestBorderColor(
+    item: AgentHomeUserRequestItem,
+    surfacePreset: NGFHdsInteractiveEffectPreset
+  ): ResourceColor {
+    const value = item.status.toLowerCase();
+    if (value === AgentHomeInteractionStatus.REJECTED || value === AgentHomeInteractionStatus.ERROR) {
+      return $r('app.color.tag_red');
+    }
+    if (this.isPendingPermissionRequest(item) || value === AgentHomePermissionStatus.ALLOWED) {
+      return $r('app.color.tag_green');
+    }
+    return surfacePreset.borderColor;
+  }
+
+  private permissionAllowButtonBackgroundColor(item: AgentHomeUserRequestItem | null = null): ResourceColor {
+    if (item !== null && !this.isPendingPermissionRequest(item)) {
+      return $r('app.color.background_secondary');
+    }
+    return $r('app.color.tag_green');
+  }
+
+  private permissionDenyButtonBackgroundColor(): ResourceColor {
+    return $r('app.color.tag_red');
+  }
+
+
+  private activeRequestHeaderIconColor(): ResourceColor {
+    const item = this.activeRequest();
+    if (item !== null && this.isPermissionRequest(item)) {
+      return this.permissionStatusAccentColor(item.status);
+    }
+    return this.colorForInteractionStatus(this.activeRequestStatus());
+  }
+
+
+  private activateUserRequest(item: AgentHomeUserRequestItem): void {
+    this.activeRequestId = item.id;
+    this.selectedRequestOptionId = item.selectedOptionId;
+    this.requestAnswerDraft = item.answer;
+  }
+
+  private openUserRequestSheet(item: AgentHomeUserRequestItem): void {
+    this.activateUserRequest(item);
+    this.openSheet(AgentHomeSheetKey.REQUEST_DETAIL);
+  }
+
+  private bridgeSessionIdForRequestItem(item: AgentHomeUserRequestItem): string {
+    const requestBridgeSessionId = this.bridgeSessionIdForLocalSession(item.sessionId);
+    if (requestBridgeSessionId.length > 0) {
+      return requestBridgeSessionId;
+    }
+    const currentBridgeSessionId = this.currentBridgeSessionId();
+    if (currentBridgeSessionId.length > 0) {
+      return currentBridgeSessionId;
+    }
+    return item.sessionId;
+  }
+
+  private permissionRequestIdForRequest(item: AgentHomeUserRequestItem): string {
+    const payloadObject = AgentBridgeIncomingParser.extractObjectProperty(item.rawJson, 'payload');
+    const requestId = this.extractRawPayloadField(payloadObject, item.rawJson, 'requestId');
+    if (requestId.length > 0) {
+      return requestId;
+    }
+    return item.requestId;
+  }
+
+  private permissionIdForRequest(item: AgentHomeUserRequestItem): string {
+    const payloadObject = AgentBridgeIncomingParser.extractObjectProperty(item.rawJson, 'payload');
+    const permissionId = this.extractRawPayloadField(payloadObject, item.rawJson, 'permissionId');
+    if (permissionId.length > 0) {
+      return permissionId;
+    }
+    return this.permissionRequestIdForRequest(item);
+  }
+
+  private allowPermissionOnceFromRow(item: AgentHomeUserRequestItem): void {
+    if (!this.isPendingPermissionRequest(item)) {
+      return;
+    }
+    this.activateUserRequest(item);
+    this.respondToPermissionRequest(item, AgentHomePermissionReply.ONCE);
+  }
+
   private canSubmitActiveRequest(): boolean {
     const item = this.activeRequest();
     if (!item || item.status !== AgentHomeInteractionStatus.PENDING) {
@@ -14553,10 +19389,11 @@ struct NGFAgentHomePage {
       return;
     }
     const answer = this.requestAnswerDraft.trim();
+    const responseSessionId = this.bridgeSessionIdForRequestItem(item);
     this.updateUserRequestStatus(item, AgentHomeInteractionStatus.ANSWERED, answer, this.selectedRequestOptionId);
     this.client.respondRequest(
       item.providerId,
-      this.currentBridgeSessionId(),
+      responseSessionId,
       item.requestId,
       this.selectedRequestOptionId,
       answer,
@@ -14570,7 +19407,7 @@ struct NGFAgentHomePage {
     if (item === null) {
       return false;
     }
-    return this.isPermissionRequest(item) && item.status === AgentHomeInteractionStatus.PENDING;
+    return this.isPendingPermissionRequest(item);
   }
 
   private respondToActivePermission(reply: string): void {
@@ -14578,16 +19415,24 @@ struct NGFAgentHomePage {
     if (item === null || !this.canRespondActivePermission()) {
       return;
     }
-    const answer = this.requestAnswerDraft.trim();
+    this.respondToPermissionRequest(item, reply);
+  }
+
+  private respondToPermissionRequest(item: AgentHomeUserRequestItem, reply: string): void {
+    if (!this.isPendingPermissionRequest(item)) {
+      return;
+    }
+    const answer = item.id === this.activeRequestId ? this.requestAnswerDraft.trim() : item.answer.trim();
     const nextStatus = reply === AgentHomePermissionReply.REJECT ? AgentHomeInteractionStatus.REJECTED : AgentHomePermissionStatus.ALLOWED;
-    const bridgeSessionId = this.currentBridgeSessionId();
-    const responseSessionId = bridgeSessionId.length > 0 ? bridgeSessionId : item.sessionId;
+    const responseSessionId = this.bridgeSessionIdForRequestItem(item);
+    const requestId = this.permissionRequestIdForRequest(item);
+    const permissionId = this.permissionIdForRequest(item);
     this.updateUserRequestStatus(item, nextStatus, answer, reply);
     this.client.respondPermission(
       item.providerId,
       responseSessionId,
-      item.requestId,
-      item.requestId,
+      requestId,
+      permissionId,
       reply,
       answer
     );
@@ -14599,7 +19444,17 @@ struct NGFAgentHomePage {
     if (!item) {
       return;
     }
-    this.updateUserRequestStatus(item, AgentHomeInteractionStatus.DISMISSED, '', '');
+    if (!this.isPermissionRequest(item) && item.status === AgentHomeInteractionStatus.PENDING) {
+      this.client.respondRequest(
+        item.providerId,
+        this.bridgeSessionIdForRequestItem(item),
+        item.requestId,
+        AgentHomeInteractionStatus.DISMISSED,
+        '',
+        ''
+      );
+    }
+    this.updateUserRequestStatus(item, AgentHomeInteractionStatus.DISMISSED, '', AgentHomeInteractionStatus.DISMISSED);
     this.closeSheet();
   }
 
@@ -14633,6 +19488,7 @@ struct NGFAgentHomePage {
       nextItems.push(this.userRequests[index].id === source.id ? item : this.userRequests[index]);
     }
     this.userRequests = nextItems;
+    this.syncPermissionRequestFlowLight();
     this.persistence.saveUserRequest(item).catch((error: Error): void => {
       logger.error(TAG, 'persist request response failed: ' + this.errorToString(error));
     });
@@ -14644,11 +19500,23 @@ struct NGFAgentHomePage {
   private respondToPlan(source: AgentHomePlanItem, nextStatus: string): void {
     const reply = nextStatus === AgentHomeInteractionStatus.REJECTED ? 'reject' : 'implement';
     this.updatePlanStatus(source, nextStatus);
-    this.client.respondPlan(source.providerId, this.currentBridgeSessionId(), source.planId, reply, '');
+    this.client.respondPlan(source.providerId, this.bridgeSessionIdForPlanItem(source), source.planId, reply, '');
     if (nextStatus === AgentHomeInteractionStatus.IMPLEMENTING) {
       this.agentRunMode = AgentHomeRunMode.GOAL;
     }
     this.closeSheet();
+  }
+
+  private bridgeSessionIdForPlanItem(item: AgentHomePlanItem): string {
+    const planBridgeSessionId = this.bridgeSessionIdForLocalSession(item.sessionId);
+    if (planBridgeSessionId.length > 0) {
+      return planBridgeSessionId;
+    }
+    const currentBridgeSessionId = this.currentBridgeSessionId();
+    if (currentBridgeSessionId.length > 0) {
+      return currentBridgeSessionId;
+    }
+    return item.sessionId;
   }
 
   private updatePlanStatus(source: AgentHomePlanItem, status: string): void {
@@ -15322,6 +20190,53 @@ struct NGFAgentHomePage {
     return path + '  +' + String(item.additions) + '  -' + String(item.deletions);
   }
 
+  private hasActiveWorkspaceChange(): boolean {
+    return this.activeWorkspaceChange() !== null;
+  }
+
+  private activeWorkspaceChangeSummaryPathText(): string {
+    const item = this.activeWorkspaceChange();
+    if (item === null) {
+      return this.resolveDetailEmptyText();
+    }
+    if (item.oldPath.length > 0 && item.oldPath !== item.path) {
+      return item.oldPath + ' -> ' + item.path;
+    }
+    return item.path;
+  }
+
+  private activeWorkspaceChangeIsDirectory(): boolean {
+    const item = this.activeWorkspaceChange();
+    if (item === null) {
+      return false;
+    }
+    return this.isWorkspaceDirectoryChange(item);
+  }
+
+  private activeWorkspaceChangeFileCountText(): string {
+    const item = this.activeWorkspaceChange();
+    if (item === null) {
+      return '';
+    }
+    return this.workspaceChangeFileCountText(item);
+  }
+
+  private activeWorkspaceChangeAdditions(): number {
+    const item = this.activeWorkspaceChange();
+    if (item === null) {
+      return 0;
+    }
+    return item.additions;
+  }
+
+  private activeWorkspaceChangeDeletions(): number {
+    const item = this.activeWorkspaceChange();
+    if (item === null) {
+      return 0;
+    }
+    return item.deletions;
+  }
+
   private activeWorkspaceChangePreviewPath(): string {
     const item = this.activeWorkspaceChange();
     if (item === null) {
@@ -15357,6 +20272,9 @@ struct NGFAgentHomePage {
   private isWorkspacePreviewableFilePath(path: string): boolean {
     const normalizedPath = this.normalizeWorkspaceFilePath(path);
     if (normalizedPath.length === 0) {
+      return false;
+    }
+    if (this.isAbsoluteWorkspaceFilePath(normalizedPath)) {
       return false;
     }
     for (let index = 0; index < this.workspaceFiles.length; index++) {
@@ -16010,16 +20928,7 @@ struct NGFAgentHomePage {
 
   private normalizeWorkspaceFilePath(path: string): string {
     let normalized = path.trim().split('\\').join('/');
-    const workspacePath = this.normalizeWorkspacePathForCompare(this.currentWorkspacePath());
-    const comparablePath = normalized.length >= 2 && normalized.charAt(1) === ':' ? normalized.toLowerCase() : normalized;
-    if (workspacePath.length > 0 && comparablePath === workspacePath) {
-      normalized = '';
-    } else if (workspacePath.length > 0) {
-      const workspacePrefix = workspacePath.endsWith('/') ? workspacePath : workspacePath + '/';
-      if (comparablePath.startsWith(workspacePrefix)) {
-        normalized = normalized.substring(workspacePrefix.length);
-      }
-    }
+    normalized = this.stripKnownWorkspacePrefixFromFilePath(normalized);
     while (normalized.startsWith('/')) {
       normalized = normalized.substring(1);
     }
@@ -16027,6 +20936,101 @@ struct NGFAgentHomePage {
       normalized = normalized.substring(0, normalized.length - 1);
     }
     return normalized;
+  }
+
+  private stripKnownWorkspacePrefixFromFilePath(path: string): string {
+    let normalized = this.stripWorkspacePrefixFromFilePath(path, this.currentWorkspacePath());
+    if (normalized !== path) {
+      return normalized;
+    }
+    const currentRemoteSession = this.currentRemoteSession();
+    if (currentRemoteSession !== null) {
+      normalized = this.stripWorkspacePrefixFromFilePath(path, currentRemoteSession.workspacePath);
+      if (normalized !== path) {
+        return normalized;
+      }
+    }
+    for (let index = 0; index < this.workspaces.length; index++) {
+      normalized = this.stripWorkspacePrefixFromFilePath(path, this.workspaces[index].subtitle);
+      if (normalized !== path) {
+        return normalized;
+      }
+    }
+    for (let index = 0; index < this.remoteSessions.length; index++) {
+      normalized = this.stripWorkspacePrefixFromFilePath(path, this.remoteSessions[index].workspacePath);
+      if (normalized !== path) {
+        return normalized;
+      }
+    }
+    normalized = this.stripWorkspaceTitleSegmentFromFilePath(path);
+    if (normalized !== path) {
+      return normalized;
+    }
+    return path;
+  }
+
+  private stripWorkspaceTitleSegmentFromFilePath(path: string): string {
+    let normalized = this.stripWorkspaceTitleSegment(path, this.currentWorkspaceTitle());
+    if (normalized !== path) {
+      return normalized;
+    }
+    for (let index = 0; index < this.workspaces.length; index++) {
+      normalized = this.stripWorkspaceTitleSegment(path, this.workspaces[index].title);
+      if (normalized !== path) {
+        return normalized;
+      }
+    }
+    for (let index = 0; index < this.remoteSessions.length; index++) {
+      normalized = this.stripWorkspaceTitleSegment(path, this.remoteSessions[index].workspaceTitle);
+      if (normalized !== path) {
+        return normalized;
+      }
+    }
+    return path;
+  }
+
+  private stripWorkspaceTitleSegment(path: string, workspaceTitle: string): string {
+    const title = workspaceTitle.trim();
+    if (title.length === 0 || title === '-') {
+      return path;
+    }
+    const normalizedPath = path.split('\\').join('/');
+    const lowerPath = normalizedPath.toLowerCase();
+    const lowerTitle = title.toLowerCase();
+    if (lowerPath === lowerTitle) {
+      return '';
+    }
+    if (lowerPath.startsWith(lowerTitle + '/')) {
+      return normalizedPath.substring(title.length + 1);
+    }
+    if (lowerPath.startsWith('/' + lowerTitle + '/')) {
+      return normalizedPath.substring(title.length + 2);
+    }
+    return path;
+  }
+
+  private stripWorkspacePrefixFromFilePath(path: string, workspacePath: string): string {
+    const normalizedWorkspace = this.normalizeWorkspacePathForCompare(workspacePath);
+    if (normalizedWorkspace.length === 0) {
+      return path;
+    }
+    const comparablePath = path.length >= 2 && path.charAt(1) === ':' ? path.toLowerCase() : path;
+    if (comparablePath === normalizedWorkspace) {
+      return '';
+    }
+    const workspacePrefix = normalizedWorkspace.endsWith('/') ? normalizedWorkspace : normalizedWorkspace + '/';
+    if (comparablePath.startsWith(workspacePrefix)) {
+      return path.substring(workspacePrefix.length);
+    }
+    return path;
+  }
+
+  private isAbsoluteWorkspaceFilePath(path: string): boolean {
+    if (path.startsWith('/')) {
+      return true;
+    }
+    return path.length >= 3 && path.charAt(1) === ':' &&
+      (path.charAt(2) === '/' || path.charAt(2) === '\\');
   }
 
   private resolveWorkspaceFilesParentPath(
@@ -16130,9 +21134,12 @@ struct NGFAgentHomePage {
     const items: Array<AgentBridgeRemoteSession> = [];
     const providerId = this.activeSessionImportProviderId();
     const query = this.normalizedSessionSheetSearchText();
+    const workspaceFilterId = this.effectiveRemoteWorkspaceFilterId();
     for (let index = 0; index < this.remoteSessions.length; index++) {
       const item = this.remoteSessions[index];
-      if (item.providerId === providerId && this.matchesRemoteSessionSearch(item, query)) {
+      if (item.providerId === providerId &&
+        this.matchesRemoteWorkspaceFilter(item, workspaceFilterId) &&
+        this.matchesRemoteSessionSearch(item, query)) {
         items.push(item);
       }
     }
@@ -16140,6 +21147,147 @@ struct NGFAgentHomePage {
       return right.updatedAt - left.updatedAt;
     });
     return items;
+  }
+
+  private remoteSessionSectionsForSheet(): Array<AgentHomeRemoteSessionSection> {
+    const sessions = this.filteredRemoteSessionsForSheet();
+    const sections: Array<AgentHomeRemoteSessionSection> = [];
+    for (let index = 0; index < sessions.length; index++) {
+      const item = sessions[index];
+      const sectionId = this.remoteWorkspaceFilterIdForSession(item);
+      const existingIndex = this.findRemoteSessionSectionIndex(sections, sectionId);
+      if (existingIndex < 0) {
+        const sectionSessions: Array<AgentBridgeRemoteSession> = [];
+        sectionSessions.push(item);
+        sections.push(new AgentHomeRemoteSessionSection(
+          sectionId,
+          this.remoteWorkspaceTitleForSession(item),
+          this.remoteWorkspacePathForSession(item),
+          1,
+          item.updatedAt,
+          sectionSessions
+        ));
+      } else {
+        const section = sections[existingIndex];
+        section.sessions.push(item);
+        section.count = section.count + 1;
+        section.updatedAt = Math.max(section.updatedAt, item.updatedAt);
+      }
+    }
+    sections.sort((left: AgentHomeRemoteSessionSection, right: AgentHomeRemoteSessionSection): number => {
+      return right.updatedAt - left.updatedAt;
+    });
+    return sections;
+  }
+
+  private findRemoteSessionSectionIndex(sections: Array<AgentHomeRemoteSessionSection>, sectionId: string): number {
+    for (let index = 0; index < sections.length; index++) {
+      if (sections[index].id === sectionId) {
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  private remoteWorkspaceFilterOptions(): Array<AgentHomeRemoteWorkspaceFilterOption> {
+    const providerId = this.activeSessionImportProviderId();
+    const options: Array<AgentHomeRemoteWorkspaceFilterOption> = [];
+    options.push(new AgentHomeRemoteWorkspaceFilterOption(
+      AgentHomeRemoteWorkspaceFilter.ALL,
+      resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_remote_workspace_filter_all')),
+      '',
+      this.remoteSessionCountForProvider(providerId)
+    ));
+    for (let index = 0; index < this.remoteSessions.length; index++) {
+      const item = this.remoteSessions[index];
+      if (item.providerId !== providerId) {
+        continue;
+      }
+      const optionId = this.remoteWorkspaceFilterIdForSession(item);
+      const existingIndex = this.findRemoteWorkspaceFilterOptionIndex(options, optionId);
+      if (existingIndex < 0) {
+        options.push(new AgentHomeRemoteWorkspaceFilterOption(
+          optionId,
+          this.remoteWorkspaceTitleForSession(item),
+          this.remoteWorkspacePathForSession(item),
+          1
+        ));
+      } else {
+        const option = options[existingIndex];
+        option.count = option.count + 1;
+      }
+    }
+    options.sort((left: AgentHomeRemoteWorkspaceFilterOption, right: AgentHomeRemoteWorkspaceFilterOption): number => {
+      if (left.id === AgentHomeRemoteWorkspaceFilter.ALL) {
+        return -1;
+      }
+      if (right.id === AgentHomeRemoteWorkspaceFilter.ALL) {
+        return 1;
+      }
+      if (left.title < right.title) {
+        return -1;
+      }
+      if (left.title > right.title) {
+        return 1;
+      }
+      return 0;
+    });
+    return options;
+  }
+
+  private findRemoteWorkspaceFilterOptionIndex(options: Array<AgentHomeRemoteWorkspaceFilterOption>, optionId: string): number {
+    for (let index = 0; index < options.length; index++) {
+      if (options[index].id === optionId) {
+        return index;
+      }
+    }
+    return -1;
+  }
+
+  private effectiveRemoteWorkspaceFilterId(): string {
+    const options = this.remoteWorkspaceFilterOptions();
+    for (let index = 0; index < options.length; index++) {
+      if (options[index].id === this.remoteWorkspaceFilterId) {
+        return this.remoteWorkspaceFilterId;
+      }
+    }
+    return AgentHomeRemoteWorkspaceFilter.ALL;
+  }
+
+  private matchesRemoteWorkspaceFilter(item: AgentBridgeRemoteSession, filterId: string): boolean {
+    if (filterId === AgentHomeRemoteWorkspaceFilter.ALL) {
+      return true;
+    }
+    return this.remoteWorkspaceFilterIdForSession(item) === filterId;
+  }
+
+  private isRemoteWorkspaceFilterSelected(filterId: string): boolean {
+    return this.effectiveRemoteWorkspaceFilterId() === filterId;
+  }
+
+  private remoteWorkspaceFilterIdForSession(item: AgentBridgeRemoteSession): string {
+    const path = this.remoteWorkspacePathForSession(item);
+    if (path.length === 0) {
+      return 'workspace:unknown';
+    }
+    return 'workspace:' + this.normalizeWorkspacePathForCompare(path);
+  }
+
+  private remoteWorkspacePathForSession(item: AgentBridgeRemoteSession): string {
+    if (item.workspacePath.length > 0) {
+      return item.workspacePath;
+    }
+    return item.workspaceTitle;
+  }
+
+  private remoteWorkspaceTitleForSession(item: AgentBridgeRemoteSession): string {
+    if (item.workspaceTitle.length > 0) {
+      return item.workspaceTitle;
+    }
+    if (item.workspacePath.length > 0) {
+      return this.workspaceTitleFromPath(item.workspacePath);
+    }
+    return resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_remote_workspace_filter_unknown'));
   }
 
   private normalizedSessionSheetSearchText(): string {
@@ -16153,7 +21301,13 @@ struct NGFAgentHomePage {
     const title = item.title.toLowerCase();
     const sessionId = item.sessionId.toLowerCase();
     const remoteSessionId = item.remoteSessionId.toLowerCase();
-    return title.indexOf(query) >= 0 || sessionId.indexOf(query) >= 0 || remoteSessionId.indexOf(query) >= 0;
+    const workspacePath = item.workspacePath.toLowerCase();
+    const workspaceTitle = item.workspaceTitle.toLowerCase();
+    return title.indexOf(query) >= 0 ||
+      sessionId.indexOf(query) >= 0 ||
+      remoteSessionId.indexOf(query) >= 0 ||
+      workspacePath.indexOf(query) >= 0 ||
+      workspaceTitle.indexOf(query) >= 0;
   }
 
   private activeSessionImportProviderId(): string {
@@ -16168,24 +21322,24 @@ struct NGFAgentHomePage {
   }
 
   private shouldShowRunModeControls(): boolean {
-    return this.currentProviderInteractionModes().length > 1;
+    return this.currentProviderInteractionModesForCategory('run').length > 1;
   }
 
   private currentAgentRunMode(): string {
     const modes = this.currentProviderInteractionModes();
     if (modes.length === 0) {
-      return AgentHomeRunMode.GOAL;
+      return '';
     }
-    if (this.isInteractionModeSelected(AgentHomeRunMode.PLAN) && this.hasInteractionMode(AgentHomeRunMode.PLAN, modes)) {
+    if (this.isInteractionModeSelected(AgentHomeRunMode.PLAN) && this.hasInteractionModeInCategory(AgentHomeRunMode.PLAN, modes, 'run')) {
       return AgentHomeRunMode.PLAN;
     }
-    if (this.isInteractionModeSelected(AgentHomeRunMode.BUILD) && this.hasInteractionMode(AgentHomeRunMode.BUILD, modes)) {
+    if (this.isInteractionModeSelected(AgentHomeRunMode.BUILD) && this.hasInteractionModeInCategory(AgentHomeRunMode.BUILD, modes, 'run')) {
       return AgentHomeRunMode.BUILD;
     }
-    if (this.isInteractionModeSelected(AgentHomeRunMode.GOAL) && this.hasInteractionMode(AgentHomeRunMode.GOAL, modes)) {
+    if (this.isInteractionModeSelected(AgentHomeRunMode.GOAL) && this.hasInteractionModeInCategory(AgentHomeRunMode.GOAL, modes, 'run')) {
       return AgentHomeRunMode.GOAL;
     }
-    return this.defaultInteractionModeId(modes);
+    return '';
   }
 
   private currentSelectedInteractionModes(): Array<string> {
@@ -16197,10 +21351,35 @@ struct NGFAgentHomePage {
         items.push(modeId);
       }
     }
-    if (items.length === 0 && modes.length > 0) {
-      items.push(this.defaultInteractionModeId(modes));
+    return this.withDefaultInteractionModes(items, modes);
+  }
+
+  private currentProviderInteractionModesForCategory(category: string): Array<AgentBridgeInteractionModeOption> {
+    const targetCategory = this.normalizedInteractionModeCategory(category);
+    const modes = this.currentProviderInteractionModes();
+    const items: Array<AgentBridgeInteractionModeOption> = [];
+    for (let index = 0; index < modes.length; index++) {
+      const mode = modes[index];
+      if (this.normalizedInteractionModeCategory(mode.category) === targetCategory) {
+        items.push(mode);
+      }
     }
     return items;
+  }
+
+  private hasInteractionModesInCategory(category: string): boolean {
+    const targetCategory = this.normalizedInteractionModeCategory(category);
+    const modes = this.currentProviderInteractionModes();
+    for (let index = 0; index < modes.length; index++) {
+      if (this.normalizedInteractionModeCategory(modes[index].category) === targetCategory) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private shouldShowPermissionModeButton(): boolean {
+    return this.currentProviderInteractionModesForCategory('approval').length > 0;
   }
 
   private currentOpenCodeAgent(): string {
@@ -16247,10 +21426,80 @@ struct NGFAgentHomePage {
         items.push(modeId);
       }
     }
-    if (items.length === 0 && modes.length > 0) {
-      items.push(this.defaultInteractionModeId(modes));
+    this.selectedInteractionModeIds = this.withDefaultInteractionModes(items, modes);
+  }
+
+  private withDefaultInteractionModes(
+    selectedModes: Array<string>,
+    modes: Array<AgentBridgeInteractionModeOption>
+  ): Array<string> {
+    const items: Array<string> = [];
+    const selectedCategories: Array<string> = [];
+    for (let index = 0; index < selectedModes.length; index++) {
+      const modeId = selectedModes[index];
+      if (!this.hasInteractionMode(modeId, modes)) {
+        continue;
+      }
+      const category = this.interactionModeCategory(modeId, modes);
+      if (this.hasInteractionCategory(category, selectedCategories)) {
+        continue;
+      }
+      items.push(modeId);
+      selectedCategories.push(category);
     }
-    this.selectedInteractionModeIds = items;
+    for (let index = 0; index < modes.length; index++) {
+      const category = this.normalizedInteractionModeCategory(modes[index].category);
+      if (this.hasInteractionCategory(category, selectedCategories)) {
+        continue;
+      }
+      if (category === 'run') {
+        continue;
+      }
+      const defaultModeId = this.defaultInteractionModeIdForCategory(modes, category);
+      if (defaultModeId.length > 0) {
+        items.push(defaultModeId);
+        selectedCategories.push(category);
+      }
+    }
+    return items;
+  }
+
+  private hasInteractionModeInCategory(
+    modeId: string,
+    modes: Array<AgentBridgeInteractionModeOption>,
+    category: string
+  ): boolean {
+    for (let index = 0; index < modes.length; index++) {
+      const mode = modes[index];
+      if (mode.id === modeId && this.normalizedInteractionModeCategory(mode.category) === category) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private interactionModeCategory(modeId: string, modes: Array<AgentBridgeInteractionModeOption>): string {
+    for (let index = 0; index < modes.length; index++) {
+      const mode = modes[index];
+      if (mode.id === modeId) {
+        return this.normalizedInteractionModeCategory(mode.category);
+      }
+    }
+    return 'run';
+  }
+
+  private normalizedInteractionModeCategory(category: string): string {
+    const value = category.trim();
+    return value.length > 0 ? value : 'run';
+  }
+
+  private hasInteractionCategory(category: string, categories: Array<string>): boolean {
+    for (let index = 0; index < categories.length; index++) {
+      if (categories[index] === category) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private isInteractionModeSelected(modeId: string): boolean {
@@ -16260,6 +21509,18 @@ struct NGFAgentHomePage {
       }
     }
     return false;
+  }
+
+  private currentModelIcon(): Resource {
+    const model = this.currentModelOption();
+    if (model) {
+      return this.iconForModel(model);
+    }
+    const fallbackModels = this.currentProviderModels();
+    if (fallbackModels.length > 0) {
+      return this.iconForModel(fallbackModels[0]);
+    }
+    return $r('app.media.opencode');
   }
 
   private iconForModel(model: AgentBridgeModelOption): Resource {
@@ -16321,6 +21582,12 @@ struct NGFAgentHomePage {
   }
 
   private symbolForInteractionMode(modeId: string): Resource {
+    if (modeId.indexOf('permissions-full-access') >= 0 || modeId.indexOf('full-access') >= 0) {
+      return $r('sys.symbol.exclamationmark_triangle');
+    }
+    if (modeId.indexOf('permissions') >= 0 || modeId.indexOf('approval') >= 0 || modeId.indexOf('review') >= 0) {
+      return $r('sys.symbol.security_shield');
+    }
     if (modeId === AgentHomeRunMode.BUILD || modeId.indexOf('build') >= 0) {
       return $r('sys.symbol.wrench_arrow_counterclockwise');
     }
@@ -16334,6 +21601,48 @@ struct NGFAgentHomePage {
       return $r('sys.symbol.list_checkmark');
     }
     return $r('sys.symbol.scope');
+  }
+
+  private currentPermissionMode(): AgentBridgeInteractionModeOption | null {
+    const modes = this.currentProviderInteractionModesForCategory('approval');
+    for (let index = 0; index < this.selectedInteractionModeIds.length; index++) {
+      const modeId = this.selectedInteractionModeIds[index];
+      for (let modeIndex = 0; modeIndex < modes.length; modeIndex++) {
+        const mode = modes[modeIndex];
+        if (mode.id === modeId) {
+          return mode;
+        }
+      }
+    }
+    const defaultModeId = this.defaultInteractionModeIdForCategory(this.currentProviderInteractionModes(), 'approval');
+    for (let index = 0; index < modes.length; index++) {
+      const mode = modes[index];
+      if (mode.id === defaultModeId) {
+        return mode;
+      }
+    }
+    return modes.length > 0 ? modes[0] : null;
+  }
+
+  private symbolForCurrentPermissionMode(): Resource {
+    const mode = this.currentPermissionMode();
+    if (mode !== null) {
+      return this.symbolForInteractionMode(mode.id);
+    }
+    return $r('sys.symbol.security_shield');
+  }
+
+  private isCurrentPermissionMode(modeId: string): boolean {
+    const mode = this.currentPermissionMode();
+    return mode !== null && mode.id === modeId;
+  }
+
+  private isPermissionModeNonDefault(): boolean {
+    const mode = this.currentPermissionMode();
+    if (mode === null) {
+      return false;
+    }
+    return !mode.isDefault;
   }
 
   private symbolForSpeedMode(modeId: string): Resource {
@@ -16370,7 +21679,7 @@ struct NGFAgentHomePage {
     if (this.providerOptions.length > 0) {
       return this.providerOptions[0].id;
     }
-    return AgentBridgeProviderId.MOCK;
+    return AgentBridgeProviderId.CODEX;
   }
 
   private isNewSessionProviderSelected(providerId: string): boolean {
@@ -16448,6 +21757,23 @@ struct NGFAgentHomePage {
     if (this.providerOptions.length > 0) {
       this.sessionImportProviderId = this.providerOptions[0].id;
     }
+  }
+
+  private normalizeSelectableProviderId(providerId: string): string {
+    if (providerId.length > 0 && providerId !== AgentBridgeProviderId.MOCK && this.hasProvider(providerId)) {
+      return providerId;
+    }
+    return this.defaultSelectableProviderId();
+  }
+
+  private defaultSelectableProviderId(): string {
+    if (this.hasProvider(AgentBridgeProviderId.CODEX)) {
+      return AgentBridgeProviderId.CODEX;
+    }
+    if (this.providerOptions.length > 0) {
+      return this.providerOptions[0].id;
+    }
+    return AgentBridgeProviderId.CODEX;
   }
 
   private remoteSessionCountForProvider(providerId: string): number {
@@ -16617,9 +21943,13 @@ struct NGFAgentHomePage {
 
   private providerInteractionModesForId(providerId: string): Array<AgentBridgeInteractionModeOption> {
     const provider = this.providerOptionForId(providerId);
-    if (provider && provider.interactionModes.length > 0) {
-      return provider.interactionModes;
+    if (provider) {
+      return this.mergeProviderInteractionModesWithDefaults(providerId, provider.interactionModes);
     }
+    return this.defaultInteractionModesForProviderId(providerId);
+  }
+
+  private defaultInteractionModesForProviderId(providerId: string): Array<AgentBridgeInteractionModeOption> {
     if (
       providerId === AgentBridgeProviderId.OPENCODE ||
         providerId === AgentBridgeProviderId.DEVECO ||
@@ -16627,7 +21957,34 @@ struct NGFAgentHomePage {
     ) {
       return AgentBridgeDefaultOptions.buildOpenCodeInteractionModes();
     }
+    if (providerId === AgentBridgeProviderId.CODEX) {
+      return AgentBridgeDefaultOptions.buildCodexInteractionModes();
+    }
     return AgentBridgeDefaultOptions.buildDefaultInteractionModes();
+  }
+
+  private mergeProviderInteractionModesWithDefaults(
+    providerId: string,
+    providerModes: Array<AgentBridgeInteractionModeOption>
+  ): Array<AgentBridgeInteractionModeOption> {
+    const defaults = this.defaultInteractionModesForProviderId(providerId);
+    if (providerModes.length === 0) {
+      return defaults;
+    }
+    if (providerId !== AgentBridgeProviderId.CODEX) {
+      return providerModes;
+    }
+    const modes: Array<AgentBridgeInteractionModeOption> = [];
+    for (let index = 0; index < providerModes.length; index++) {
+      modes.push(providerModes[index]);
+    }
+    for (let index = 0; index < defaults.length; index++) {
+      const mode = defaults[index];
+      if (!this.hasInteractionMode(mode.id, modes)) {
+        modes.push(mode);
+      }
+    }
+    return modes;
   }
 
   private providerDisplayNameForId(providerId: string): string {
@@ -16729,6 +22086,7 @@ struct NGFAgentHomePage {
     }
     this.beginConversationRenderTransition(session.id);
     this.pendingHistoryImportSessionId = session.id;
+    this.beginStartupHistorySyncWait(session.id);
     this.client.requestSessionMessages(session.bridgeSessionId);
     return true;
   }
@@ -16762,17 +22120,7 @@ struct NGFAgentHomePage {
 
   private currentProviderInteractionModes(): Array<AgentBridgeInteractionModeOption> {
     const provider = this.currentProviderOption();
-    if (provider.interactionModes.length > 0) {
-      return provider.interactionModes;
-    }
-    if (
-      provider.id === AgentBridgeProviderId.OPENCODE ||
-        provider.id === AgentBridgeProviderId.DEVECO ||
-        provider.id === AgentBridgeProviderId.MIMO
-    ) {
-      return AgentBridgeDefaultOptions.buildOpenCodeInteractionModes();
-    }
-    return AgentBridgeDefaultOptions.buildDefaultInteractionModes();
+    return this.mergeProviderInteractionModesWithDefaults(provider.id, provider.interactionModes);
   }
 
   private currentModelOption(): AgentBridgeModelOption | null {
@@ -16794,6 +22142,14 @@ struct NGFAgentHomePage {
     }
     const modelId = this.currentEffectiveModelId();
     return modelId.length > 0 ? modelId : this.currentProviderOption().displayName;
+  }
+
+  private currentPermissionModeDisplayText(): string {
+    const mode = this.currentPermissionMode();
+    if (mode !== null) {
+      return mode.displayName;
+    }
+    return '';
   }
 
   private richBlocksForText(messageId: string, text: string): Array<AgentHomeRichBlock> {
@@ -16844,6 +22200,40 @@ struct NGFAgentHomePage {
         this.flushRichParagraphBlocks(messageId, blocks, paragraphLines);
         this.flushRichStructuredBlocks(messageId, blocks, structuredLines);
         index = index + 1;
+        continue;
+      }
+
+      const imageTarget = this.markdownImageTargetForLine(trimmed);
+      if (imageTarget.length > 0) {
+        this.flushRichParagraphBlocks(messageId, blocks, paragraphLines);
+        this.flushRichStructuredBlocks(messageId, blocks, structuredLines);
+        blocks.push(new AgentHomeRichBlock(
+          this.richBlockId(messageId, blocks.length, AgentHomeRichBlockKind.IMAGE),
+          AgentHomeRichBlockKind.IMAGE,
+          this.markdownImageAltForLine(trimmed),
+          '',
+          imageTarget
+        ));
+        index = index + 1;
+        continue;
+      }
+
+      if (this.isMarkdownTableLine(trimmed) && index + 1 < lines.length && this.isMarkdownTableSeparator(lines[index + 1].trim())) {
+        this.flushRichParagraphBlocks(messageId, blocks, paragraphLines);
+        this.flushRichStructuredBlocks(messageId, blocks, structuredLines);
+        const tableLines: Array<string> = [];
+        tableLines.push(trimmed);
+        tableLines.push(lines[index + 1].trim());
+        index = index + 2;
+        while (index < lines.length && this.isMarkdownTableLine(lines[index].trim())) {
+          tableLines.push(lines[index].trim());
+          index = index + 1;
+        }
+        blocks.push(new AgentHomeRichBlock(
+          this.richBlockId(messageId, blocks.length, AgentHomeRichBlockKind.TABLE),
+          AgentHomeRichBlockKind.TABLE,
+          tableLines.join('\n')
+        ));
         continue;
       }
 
@@ -17088,6 +22478,84 @@ struct NGFAgentHomePage {
     return line.substring(2).trim();
   }
 
+  private markdownImageAltForLine(line: string): string {
+    if (!line.startsWith('![')) {
+      return '';
+    }
+    const labelClose = line.indexOf('](');
+    if (labelClose <= 2) {
+      return '';
+    }
+    return line.substring(2, labelClose).trim();
+  }
+
+  private markdownImageTargetForLine(line: string): string {
+    if (!line.startsWith('![')) {
+      return '';
+    }
+    const labelClose = line.indexOf('](');
+    if (labelClose <= 2) {
+      return '';
+    }
+    const targetClose = line.lastIndexOf(')');
+    if (targetClose <= labelClose + 2) {
+      return '';
+    }
+    return line.substring(labelClose + 2, targetClose).trim();
+  }
+
+  private isMarkdownTableLine(line: string): boolean {
+    return line.indexOf('|') >= 0;
+  }
+
+  private isMarkdownTableSeparator(line: string): boolean {
+    if (line.indexOf('-') < 0 || line.indexOf('|') < 0) {
+      return false;
+    }
+    const cleaned = line.split('|').join('').split('-').join('').split(':').join('').split(' ').join('').split('\t').join('');
+    return cleaned.length === 0;
+  }
+
+  private markdownTableRowsForBlock(block: AgentHomeRichBlock): Array<AgentHomeMarkdownTableRow> {
+    const rows: Array<AgentHomeMarkdownTableRow> = [];
+    const lines = block.text.split('\r\n').join('\n').split('\r').join('\n').split('\n');
+    if (lines.length < 2) {
+      return rows;
+    }
+    rows.push(new AgentHomeMarkdownTableRow(
+      block.id + '_header',
+      this.markdownTableCellsForLine(block.id + '_header', lines[0]),
+      true
+    ));
+    for (let index = 2; index < lines.length; index++) {
+      rows.push(new AgentHomeMarkdownTableRow(
+        block.id + '_row_' + index.toString(),
+        this.markdownTableCellsForLine(block.id + '_row_' + index.toString(), lines[index]),
+        false
+      ));
+    }
+    return rows;
+  }
+
+  private markdownTableCellsForLine(rowId: string, line: string): Array<AgentHomeMarkdownTableCell> {
+    let normalized = line.trim();
+    if (normalized.startsWith('|')) {
+      normalized = normalized.substring(1);
+    }
+    if (normalized.endsWith('|')) {
+      normalized = normalized.substring(0, normalized.length - 1);
+    }
+    const rawCells = normalized.split('|');
+    const cells: Array<AgentHomeMarkdownTableCell> = [];
+    for (let index = 0; index < rawCells.length; index++) {
+      cells.push(new AgentHomeMarkdownTableCell(
+        rowId + '_cell_' + index.toString(),
+        rawCells[index].trim()
+      ));
+    }
+    return cells;
+  }
+
   private isStructuredPlainTextLine(line: string): boolean {
     if (line.length === 0) {
       return false;
@@ -17165,6 +22633,111 @@ struct NGFAgentHomePage {
     return true;
   }
 
+  private hasClickableRichInlineRun(text: string): boolean {
+    if (text.indexOf('](') >= 0) {
+      return true;
+    }
+    let token = '';
+    for (let index = 0; index < text.length; index++) {
+      const char = text.charAt(index);
+      if (char === '`') {
+        const closing = text.indexOf('`', index + 1);
+        if (closing > index + 1 && this.richInlineTokenLooksWorkspaceReference(text.substring(index + 1, closing))) {
+          return true;
+        }
+      }
+      if (this.isRichPlainTokenSeparator(char)) {
+        if (this.richInlineTokenLooksWorkspaceReference(token)) {
+          return true;
+        }
+        token = '';
+      } else {
+        token = token + char;
+      }
+    }
+    return this.richInlineTokenLooksWorkspaceReference(token);
+  }
+
+  private richInlineTokenLooksWorkspaceReference(rawText: string): boolean {
+    const value = this.lightNormalizeRichContentReference(rawText);
+    if (value.length === 0 || value.startsWith('#')) {
+      return false;
+    }
+    if (this.richContentLinkHasExternalScheme(value)) {
+      return false;
+    }
+    if (value.indexOf('/') >= 0 || value.indexOf('\\') >= 0) {
+      return true;
+    }
+    if (value.startsWith('.')) {
+      return value.length > 1;
+    }
+    return this.fileNameLooksPreviewable(value);
+  }
+
+  private lightNormalizeRichContentReference(rawText: string): string {
+    let value = this.stripRichContentReferenceEdge(rawText);
+    if (value.length === 0) {
+      return '';
+    }
+    value = this.stripRichContentFileUrlPrefix(value);
+    value = this.stripRichContentUrlSuffix(value);
+    value = this.stripRichContentLineSuffix(value);
+    value = this.stripRichContentReferenceEdge(value);
+    return value;
+  }
+
+  private fileNameLooksPreviewable(name: string): boolean {
+    const trimmed = name.trim();
+    if (trimmed.length === 0 || trimmed.indexOf(' ') >= 0) {
+      return false;
+    }
+    const dotIndex = trimmed.indexOf('.');
+    if (dotIndex < 0) {
+      return false;
+    }
+    if (dotIndex === trimmed.length - 1) {
+      return false;
+    }
+    for (let index = 0; index < trimmed.length; index++) {
+      const char = trimmed.charAt(index);
+      const code = trimmed.charCodeAt(index);
+      const isUpper = code >= 65 && code <= 90;
+      const isLower = code >= 97 && code <= 122;
+      const isDigit = code >= 48 && code <= 57;
+      if (!isUpper && !isLower && !isDigit && char !== '.' && char !== '_' && char !== '-' && char !== '+') {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private clickableRichInlineTarget(rawText: string): string {
+    const value = this.lightNormalizeRichContentReference(rawText);
+    if (this.richInlineTokenLooksWorkspaceReference(value)) {
+      return value;
+    }
+    return '';
+  }
+
+  private appendRichPathOrPlainRun(runs: Array<AgentHomeRichInlineRun>, text: string, fallbackKind: string): void {
+    const target = this.clickableRichInlineTarget(text);
+    if (target.length > 0) {
+      this.appendRichRun(runs, AgentHomeRichInlineKind.LINK, text, target);
+      return;
+    }
+    this.appendRichRun(runs, fallbackKind, text);
+  }
+
+  private appendRichPathOrPlainRunForDisplay(runs: Array<AgentHomeRichInlineRun>, text: string): void {
+    const target = this.clickableRichInlineTarget(text);
+    if (target.length > 0) {
+      this.appendRichRun(runs, AgentHomeRichInlineKind.LINK, text, target);
+      return;
+    }
+    this.appendRichRun(runs, this.inlineKindForPathText(text), text);
+  }
+
   private richInlineRunsForText(text: string): Array<AgentHomeRichInlineRun> {
     const runs: Array<AgentHomeRichInlineRun> = [];
     let buffer = '';
@@ -17180,12 +22753,12 @@ struct NGFAgentHomePage {
             const label = text.substring(index + 1, labelClose);
             const target = text.substring(labelClose + 2, targetClose);
             const normalizedLabel = this.inlinePathDisplayText(label);
-            this.appendRichRun(runs, this.inlineKindForLinkLabel(normalizedLabel), normalizedLabel);
+            this.appendRichRun(runs, AgentHomeRichInlineKind.LINK, normalizedLabel, target);
             if (target.length > 0) {
               const normalizedTarget = this.inlinePathDisplayText(target);
               if (!this.isRedundantMarkdownLinkTarget(normalizedLabel, normalizedTarget)) {
                 this.appendRichRun(runs, AgentHomeRichInlineKind.PLAIN, ' ');
-                this.appendRichRun(runs, this.inlineKindForPathText(normalizedTarget), normalizedTarget);
+                this.appendRichPathOrPlainRunForDisplay(runs, normalizedTarget);
               }
             }
             index = targetClose + 1;
@@ -17201,7 +22774,7 @@ struct NGFAgentHomePage {
             this.appendRichPlainRun(runs, buffer);
             buffer = '';
             const normalizedCandidate = this.inlinePathDisplayText(candidate);
-            this.appendRichRun(runs, this.inlineKindForPathText(normalizedCandidate), normalizedCandidate);
+            this.appendRichPathOrPlainRunForDisplay(runs, normalizedCandidate);
             index = closing + 1;
             continue;
           }
@@ -17212,7 +22785,8 @@ struct NGFAgentHomePage {
         if (closing > index + 1) {
           this.appendRichPlainRun(runs, buffer);
           buffer = '';
-          this.appendRichRun(runs, AgentHomeRichInlineKind.CODE, text.substring(index + 1, closing));
+          const codeText = text.substring(index + 1, closing);
+          this.appendRichPathOrPlainRun(runs, codeText, AgentHomeRichInlineKind.CODE);
           index = closing + 1;
           continue;
         }
@@ -17317,17 +22891,65 @@ struct NGFAgentHomePage {
     if (text.length === 0) {
       return;
     }
-    this.appendRichRun(runs, AgentHomeRichInlineKind.PLAIN, text);
+    let token = '';
+    for (let index = 0; index < text.length; index++) {
+      const char = text.charAt(index);
+      if (this.isRichPlainTokenSeparator(char)) {
+        this.appendRichPlainToken(runs, token);
+        token = '';
+        this.appendRichRun(runs, AgentHomeRichInlineKind.PLAIN, char);
+      } else {
+        token = token + char;
+      }
+    }
+    this.appendRichPlainToken(runs, token);
   }
 
-  private appendRichRun(runs: Array<AgentHomeRichInlineRun>, kind: string, text: string): void {
+  private appendRichPlainToken(runs: Array<AgentHomeRichInlineRun>, token: string): void {
+    if (token.length === 0) {
+      return;
+    }
+    const referencePath = this.clickableRichInlineTarget(token);
+    if (referencePath.length > 0) {
+      this.appendRichRun(runs, AgentHomeRichInlineKind.LINK, token, referencePath);
+      return;
+    }
+    this.appendRichRun(runs, AgentHomeRichInlineKind.PLAIN, token);
+  }
+
+  private isRichPlainTokenSeparator(char: string): boolean {
+    return char === ' ' ||
+      char === '\n' ||
+      char === '\t' ||
+      char === ',' ||
+      char === '，' ||
+      char === '。' ||
+      char === '、' ||
+      char === ';' ||
+      char === '；' ||
+      char === '(' ||
+      char === ')' ||
+      char === '（' ||
+      char === '）' ||
+      char === '[' ||
+      char === ']' ||
+      char === '【' ||
+      char === '】' ||
+      char === '"' ||
+      char === '\'' ||
+      char === '“' ||
+      char === '”';
+  }
+
+  private appendRichRun(runs: Array<AgentHomeRichInlineRun>, kind: string, text: string, target: string = ''): void {
     if (text.length === 0) {
       return;
     }
     runs.push(new AgentHomeRichInlineRun(
       kind + '_' + String(runs.length),
       kind,
-      text
+      text,
+      target
     ));
   }
 
@@ -17337,6 +22959,13 @@ struct NGFAgentHomePage {
       radius: 6
     };
     return style;
+  }
+
+  private inlineCodeTextBackgroundColor(): ResourceColor {
+    if (this.isDarkMode) {
+      return $r('app.color.glass_bg_effect_strong');
+    }
+    return $r('app.color.background_surface');
   }
 
   private inlineCodeTextColor(): ResourceColor {
@@ -17467,6 +23096,10 @@ struct NGFAgentHomePage {
     const hostContext = this.getUIContext().getHostContext();
     const parts: Array<string> = [];
     parts.push(resolveResourceString(hostContext, $r('app.string.agent_home_status_model')) + ': ' + this.currentModelDisplayText());
+    const permissionMode = this.currentPermissionModeDisplayText();
+    if (permissionMode.length > 0) {
+      parts.push(resolveResourceString(hostContext, $r('app.string.agent_home_detail_permission_mode')) + ': ' + permissionMode);
+    }
     if (this.activeSessionId.length > 0) {
       parts.push(this.resolveReplyStateText());
     } else {
@@ -17600,7 +23233,7 @@ struct NGFAgentHomePage {
 
   private estimateCurrentCostText(): string {
     const modelId = this.currentEffectiveModelId().toLowerCase();
-    if (this.selectedProviderId === AgentBridgeProviderId.MOCK || modelId.indexOf('free') >= 0) {
+    if (modelId.indexOf('free') >= 0) {
       return '$0.00';
     }
     return resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_detail_pricing_not_configured'));
@@ -17608,7 +23241,7 @@ struct NGFAgentHomePage {
 
   private currentPricingSourceText(): string {
     const modelId = this.currentEffectiveModelId().toLowerCase();
-    if (this.selectedProviderId === AgentBridgeProviderId.MOCK || modelId.indexOf('free') >= 0) {
+    if (modelId.indexOf('free') >= 0) {
       return resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_detail_pricing_free_model'));
     }
     return resolveResourceString(this.getUIContext().getHostContext(), $r('app.string.agent_home_detail_pricing_not_configured'));
@@ -17700,7 +23333,7 @@ struct NGFAgentHomePage {
   }
 
   private shouldPreserveExternalModelId(models: Array<AgentBridgeModelOption>): boolean {
-    if (this.selectedProviderId === AgentBridgeProviderId.MOCK || this.selectedModelId.length === 0) {
+    if (this.selectedModelId.length === 0) {
       return false;
     }
     return models.length === 1 && models[0].id === 'configured';
@@ -17767,6 +23400,22 @@ struct NGFAgentHomePage {
       }
     }
     return modes[0].id;
+  }
+
+  private defaultInteractionModeIdForCategory(modes: Array<AgentBridgeInteractionModeOption>, category: string): string {
+    for (let index = 0; index < modes.length; index++) {
+      const mode = modes[index];
+      if (this.normalizedInteractionModeCategory(mode.category) === category && mode.isDefault) {
+        return mode.id;
+      }
+    }
+    for (let index = 0; index < modes.length; index++) {
+      const mode = modes[index];
+      if (this.normalizedInteractionModeCategory(mode.category) === category) {
+        return mode.id;
+      }
+    }
+    return '';
   }
 
   private currentWorkspaceTitle(): string {
@@ -18346,33 +23995,75 @@ struct NGFAgentHomePage {
     if (!this.isRasterPreviewDataUrl(content)) {
       return content;
     }
-    return this.writeRasterPreviewDataUrl(previewId, path, mediaType, content);
+    const cachedContent = this.writeRasterPreviewDataUrl(previewId, path, mediaType, content);
+    return cachedContent.length > 0 ? cachedContent : content;
   }
 
   private writeRasterPreviewDataUrl(previewId: string, path: string, mediaType: string, content: string): string {
+    const imageBuffer = this.rasterPreviewBufferFromDataUrl(content);
+    if (imageBuffer === null) {
+      return '';
+    }
+    return this.writeRasterPreviewBuffer(previewId, path, mediaType, imageBuffer);
+  }
+
+  private rasterPreviewBufferFromDataUrl(content: string): ArrayBuffer | null {
     const trimmed = content.trim();
     const commaIndex = trimmed.indexOf(',');
     if (commaIndex < 0 || commaIndex + 1 >= trimmed.length) {
-      return '';
+      return null;
     }
     const base64Content = trimmed.substring(commaIndex + 1);
     try {
       const base64Helper: util.Base64Helper = new util.Base64Helper();
       const imageBytes: Uint8Array = base64Helper.decodeSync(base64Content);
       if (imageBytes.length <= 0) {
-        return '';
+        return null;
       }
       const imageBuffer: ArrayBuffer = new ArrayBuffer(imageBytes.length);
       const targetBytes: Uint8Array = new Uint8Array(imageBuffer);
       targetBytes.set(imageBytes);
-      const directory = 'agent-previews';
-      FileUtils.createDirectory(directory, true);
-      const relativePath = directory + '/' + this.safePreviewImageFileName(previewId, path, mediaType);
-      if (FileUtils.writeBytes(relativePath, imageBuffer)) {
-        return relativePath;
-      }
+      return imageBuffer;
     } catch (error) {
-      logger.error(TAG, 'materialize raster preview failed: path=' + path + ', error=' + this.errorToString(error));
+      logger.warn(TAG, 'decode raster preview data url failed: ' + this.errorToString(error));
+    }
+    return null;
+  }
+
+  private rasterPreviewDataUrlFromBuffer(buffer: ArrayBuffer, mediaType: string): string {
+    try {
+      const base64Helper: util.Base64Helper = new util.Base64Helper();
+      const encodedBytes: Uint8Array = base64Helper.encodeSync(new Uint8Array(buffer));
+      const decoder: util.TextDecoder = util.TextDecoder.create('utf-8');
+      const normalizedMediaType = mediaType.length > 0 ? mediaType : 'image/png';
+      return 'data:' + normalizedMediaType + ';base64,' + decoder.decodeToString(encodedBytes);
+    } catch (error) {
+      logger.warn(TAG, 'encode raster preview data url failed: ' + this.errorToString(error));
+    }
+    return 'agent-preview-pixelmap:' + String(Date.now());
+  }
+
+  private writeRasterPreviewBuffer(previewId: string, path: string, mediaType: string, imageBuffer: ArrayBuffer): string {
+    const fileName = this.safePreviewImageFileName(previewId, path, mediaType);
+    const absoluteDirectory = this.previewCacheDirectoryPath();
+    if (absoluteDirectory.length > 0) {
+      const absolutePath = absoluteDirectory + '/' + fileName;
+      if (FileUtils.createDirectory(absoluteDirectory, true) && FileUtils.writeBytes(absolutePath, imageBuffer)) {
+        return absolutePath;
+      }
+    }
+    const relativeDirectory = AGENT_HOME_PREVIEW_CACHE_DIR;
+    const relativePath = relativeDirectory + '/' + fileName;
+    if (FileUtils.createDirectory(relativeDirectory, true) && FileUtils.writeBytes(relativePath, imageBuffer)) {
+      return relativePath;
+    }
+    return '';
+  }
+
+  private previewCacheDirectoryPath(): string {
+    const ctx = uiContextManager.getAbilityContext();
+    if (ctx !== null && ctx.filesDir.length > 0) {
+      return ctx.filesDir + '/' + AGENT_HOME_PREVIEW_CACHE_DIR;
     }
     return '';
   }
@@ -18443,7 +24134,7 @@ struct NGFAgentHomePage {
     if (trimmed.startsWith('/')) {
       return 'file://' + trimmed;
     }
-    if (trimmed.startsWith('agent-previews/')) {
+    if (trimmed.startsWith(AGENT_HOME_PREVIEW_CACHE_DIR + '/')) {
       const ctx = uiContextManager.getAbilityContext();
       if (ctx !== null && ctx.filesDir.length > 0) {
         return 'file://' + ctx.filesDir + '/' + trimmed;
@@ -18555,7 +24246,7 @@ struct NGFAgentHomePage {
 
   private isRasterPreviewFileContent(content: string): boolean {
     const trimmed = content.trim();
-    if (trimmed.startsWith('agent-previews/')) {
+    if (trimmed.startsWith(AGENT_HOME_PREVIEW_CACHE_DIR + '/')) {
       return true;
     }
     if (trimmed.startsWith('file://') || trimmed.startsWith('/')) {
@@ -18671,7 +24362,7 @@ struct NGFAgentHomePage {
     if (this.selectedProviderId === AgentBridgeProviderId.ANTIGRAVITY) {
       return $r('app.string.agent_bridge_provider_antigravity');
     }
-    return $r('app.string.agent_bridge_provider_mock');
+    return $r('app.string.agent_bridge_provider_codex');
   }
 
   private resolveConnectionStatusPlainText(): string {
@@ -18729,6 +24420,16 @@ struct NGFAgentHomePage {
       return $r('app.color.tag_red');
     }
     return $r('app.color.text_secondary');
+  }
+
+  private resolveConnectionStatusSymbol(): Resource {
+    if (this.connectionStatus === AgentBridgeConnectionStatus.CONNECTED) {
+      return $r('sys.symbol.checkmark_circle');
+    }
+    if (this.connectionStatus === AgentBridgeConnectionStatus.ERROR) {
+      return $r('sys.symbol.exclamationmark_triangle');
+    }
+    return $r('sys.symbol.info_circle');
   }
 
   private shouldShowDisconnectedComposerState(): boolean {
@@ -18862,6 +24563,7 @@ struct NGFAgentHomePage {
       nextPairs.push(providerId);
     }
     this.pendingRemoteSessionsRequestPairs = nextPairs;
+    this.updateRemoteSessionsLoadingState();
   }
 
   private consumePendingRemoteSessionsRequestProviderId(requestId: string): string {
@@ -18880,6 +24582,7 @@ struct NGFAgentHomePage {
       }
     }
     this.pendingRemoteSessionsRequestPairs = nextPairs;
+    this.updateRemoteSessionsLoadingState();
     if (providerId.length > 0) {
       logger.info(TAG, 'resolve remote sessions provider from request: requestId=' + requestId + ', providerId=' + providerId);
     }
@@ -18902,6 +24605,38 @@ struct NGFAgentHomePage {
       }
     }
     this.pendingRemoteSessionsRequestPairs = nextPairs;
+    this.updateRemoteSessionsLoadingState();
+  }
+
+  private clearPendingRemoteSessionsRequestsForProvider(providerId: string): void {
+    const nextPairs: Array<string> = [];
+    for (let index = 0; index < this.pendingRemoteSessionsRequestPairs.length; index += 2) {
+      const existingRequestId = this.pendingRemoteSessionsRequestPairs[index];
+      const existingProviderId = index + 1 < this.pendingRemoteSessionsRequestPairs.length ?
+        this.pendingRemoteSessionsRequestPairs[index + 1] :
+        '';
+      if (existingProviderId !== providerId) {
+        nextPairs.push(existingRequestId);
+        nextPairs.push(existingProviderId);
+      }
+    }
+    this.pendingRemoteSessionsRequestPairs = nextPairs;
+  }
+
+  private updateRemoteSessionsLoadingState(): void {
+    this.loadingRemoteSessions = this.hasPendingRemoteSessionsRequestForProvider(this.activeSessionImportProviderId());
+  }
+
+  private hasPendingRemoteSessionsRequestForProvider(providerId: string): boolean {
+    for (let index = 0; index < this.pendingRemoteSessionsRequestPairs.length; index += 2) {
+      const existingProviderId = index + 1 < this.pendingRemoteSessionsRequestPairs.length ?
+        this.pendingRemoteSessionsRequestPairs[index + 1] :
+        '';
+      if (existingProviderId === providerId) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private persistRemoteSessionsForProvider(providerId: string, items: Array<AgentBridgeRemoteSession>): void {

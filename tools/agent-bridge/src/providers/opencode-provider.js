@@ -7,6 +7,7 @@ const os = require('os');
 const path = require('path');
 const { URL } = require('url');
 const { EventType, makeEvent } = require('../protocol');
+const { buildOpenCodePartsWithContext } = require('./context-utils');
 
 const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 const MAX_LOCAL_DB_SESSIONS = 500;
@@ -419,16 +420,8 @@ function buildMessageBody(text, modelId) {
 }
 
 function buildPromptBody(payload, session) {
-  const text = readStringValue(payload, 'text', '');
-  const explicitParts = readArrayValue(payload, 'parts');
-  const parts = explicitParts.length > 0 ? explicitParts : [
-    {
-      type: 'text',
-      text
-    }
-  ];
   const body = {
-    parts
+    parts: buildOpenCodePartsWithContext(payload, session)
   };
   const modelId = readStringValue(payload, 'modelId', readStringValue(payload, 'model', session ? session.modelId : ''));
   const model = typeof payload.model === 'object' && payload.model !== null ? payload.model : parseModelSelection(modelId);
@@ -1090,10 +1083,67 @@ function normalizedPlanPayload(providerId, properties) {
     providerId,
     planId: readStringValue(properties, 'id', readStringValue(properties, 'planId', readStringValue(properties, 'requestId', ''))),
     title: readStringValue(properties, 'title', readStringValue(properties, 'name', '')),
-    content: readStringValue(properties, 'plan', readStringValue(properties, 'content', readStringValue(properties, 'text', readStringValue(properties, 'markdown', '')))),
+    content: readPlanContentValue(properties),
     status: readStringValue(properties, 'status', readStringValue(properties, 'state', 'pending')),
     rawJson: safeJsonText(properties)
   };
+}
+
+function readPlanContentValue(properties) {
+  const direct = readStringValue(properties, 'plan', '');
+  if (direct.length > 0) {
+    return direct;
+  }
+  const content = readStringValue(properties, 'content', '');
+  if (content.length > 0) {
+    return content;
+  }
+  const text = readStringValue(properties, 'text', '');
+  if (text.length > 0) {
+    return text;
+  }
+  const markdown = readStringValue(properties, 'markdown', '');
+  if (markdown.length > 0) {
+    return markdown;
+  }
+  const planItems = readArrayValue(properties, 'plan');
+  if (planItems.length > 0) {
+    return safeJsonText({ plan: planItems });
+  }
+  const steps = readArrayValue(properties, 'steps');
+  if (steps.length > 0) {
+    return safeJsonText({ plan: steps });
+  }
+  const planObject = readObjectValue(properties, 'plan');
+  if (planObject) {
+    const nestedSteps = readArrayValue(planObject, 'steps');
+    if (nestedSteps.length > 0) {
+      return safeJsonText({ plan: nestedSteps });
+    }
+    return safeJsonText(planObject);
+  }
+  return '';
+}
+
+function isPlanPayload(properties) {
+  if (!properties || typeof properties !== 'object') {
+    return false;
+  }
+  const kind = readStringValue(properties, 'kind', '').toLowerCase();
+  const category = readStringValue(properties, 'category', '').toLowerCase();
+  const title = readStringValue(properties, 'title', readStringValue(properties, 'header', readStringValue(properties, 'name', ''))).toLowerCase();
+  const content = readPlanContentValue(properties);
+  const options = normalizeQuestionOptions(properties);
+  if (kind === 'plan' || category === 'plan') {
+    return true;
+  }
+  if (content.length > 0 && options.length === 0) {
+    return true;
+  }
+  if (title.indexOf('plan') >= 0 && options.length === 0) {
+    return true;
+  }
+  return readArrayValue(properties, 'steps').length > 0;
 }
 
 function isPlanEventType(eventType) {
@@ -1105,6 +1155,10 @@ function isPlanEventType(eventType) {
     lower === 'plan.requested' ||
     lower === 'plan.created' ||
     lower === 'plan.updated' ||
+    lower === 'plan.proposed' ||
+    lower === 'plan.proposal' ||
+    lower === 'plan.approval' ||
+    lower === 'plan.needs_approval' ||
     lower.indexOf('plan') >= 0 && (lower.indexOf('asked') >= 0 || lower.indexOf('request') >= 0 || lower.indexOf('proposal') >= 0);
 }
 
@@ -1938,6 +1992,14 @@ class OpenCodeProvider {
 
     if (eventType === 'question.asked') {
       const localId = localSessionIdFromRemote(readStringValue(properties, 'sessionID', ''), this.id);
+      if (isPlanPayload(properties)) {
+        const planPayload = normalizedPlanPayload(this.id, properties);
+        planPayload.agent = readAgentName(properties);
+        if (planPayload.content.length > 0 || planPayload.rawJson.length > 0) {
+          emit(makeEvent(EventType.PLAN_REQUESTED, localId, planPayload));
+        }
+        return;
+      }
       const payload = normalizedQuestionPayload(this.id, properties);
       payload.agent = readAgentName(properties);
       emit(makeEvent(EventType.QUESTION_REQUESTED, localId, payload));

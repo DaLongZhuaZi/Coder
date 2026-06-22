@@ -25,7 +25,6 @@ export class DeviceCapabilityDetectorFacade implements IDeviceCapabilityDetector
     const results: Array<NGFCapabilityResult> = [];
     const types: Array<NGFCapabilityType> = [
       NGFCapabilityType.CAMERA,
-      NGFCapabilityType.GPS,
       NGFCapabilityType.NFC,
       NGFCapabilityType.BLUETOOTH,
       NGFCapabilityType.WIFI,
@@ -66,8 +65,6 @@ export class DeviceCapabilityDetectorFacade implements IDeviceCapabilityDetector
       switch (type) {
         case NGFCapabilityType.CAMERA:
           return this.detectCamera(deviceType);
-        case NGFCapabilityType.GPS:
-          return new NGFCapabilityResult(type, true, '位置服务由系统提供');
         case NGFCapabilityType.NFC:
           return this.detectNfc(deviceType);
         case NGFCapabilityType.BLUETOOTH:

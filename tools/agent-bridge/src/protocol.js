@@ -3,11 +3,13 @@
 const PROTOCOL_VERSION = 'agent-bridge.v1';
 
 const RequestType = Object.freeze({
+  PING: 'bridge.ping',
   CAPABILITIES_GET: 'capabilities.get',
   SESSION_CREATE: 'session.create',
   SESSION_LIST: 'session.list',
   SESSION_MESSAGES: 'session.messages',
   SESSION_REVERT: 'session.revert',
+  SESSION_ABORT: 'session.abort',
   MESSAGE_SEND: 'message.send',
   PREVIEW_GET: 'preview.get',
   PERMISSION_RESPOND: 'permission.respond',
@@ -19,6 +21,7 @@ const RequestType = Object.freeze({
   WORKSPACE_FILES_LIST: 'workspace.files.list',
   WORKSPACE_FILE_GET: 'workspace.file.get',
   WORKSPACE_FILE_DOWNLOAD: 'workspace.file.download',
+  ATTACHMENT_FILE_DOWNLOAD: 'attachment.file.download',
   WORKSPACE_GIT_STAGE: 'workspace.git.stage',
   WORKSPACE_GIT_UNSTAGE: 'workspace.git.unstage',
   WORKSPACE_GIT_DISCARD: 'workspace.git.discard',

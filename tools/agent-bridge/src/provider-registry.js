@@ -92,6 +92,44 @@ class ProviderRegistry {
     return await match.provider.revertSession(payload, emit);
   }
 
+  async abortSession(payload, emit) {
+    const sessionId = payload && typeof payload.sessionId === 'string' ? payload.sessionId : '';
+    const remoteSessionId = payload && typeof payload.remoteSessionId === 'string' ? payload.remoteSessionId : '';
+    const providerId = payload && typeof payload.providerId === 'string' ? payload.providerId : '';
+    const match = sessionId.length > 0 ? this.findSession(sessionId) : null;
+    let provider = match ? match.provider : null;
+    if (!provider && providerId.length > 0) {
+      provider = this.resolve(providerId);
+    }
+    if (!provider) {
+      throw new Error('Provider not found for abort request: ' + (providerId.length > 0 ? providerId : sessionId));
+    }
+    if (typeof provider.abortSession === 'function') {
+      return await provider.abortSession(payload, emit);
+    }
+    if (typeof provider.proxyOpenCodeRequest === 'function') {
+      const effectiveRemoteSessionId = remoteSessionId.length > 0 ? remoteSessionId : sessionId;
+      if (effectiveRemoteSessionId.length === 0) {
+        throw new Error('Session id is required for abort request: ' + provider.id);
+      }
+      return await provider.proxyOpenCodeRequest({
+        providerId: provider.id,
+        method: 'POST',
+        path: '/session/' + encodeURIComponent(effectiveRemoteSessionId) + '/abort',
+        query: {},
+        body: null,
+        accept: 'application/json'
+      });
+    }
+    return {
+      status: 'unsupported',
+      providerId: provider.id,
+      sessionId,
+      remoteSessionId,
+      terminated: false
+    };
+  }
+
   subscribeEvents(subscriberId, emit) {
     const cleanup = [];
     for (const provider of this.providers.values()) {
@@ -108,12 +146,12 @@ class ProviderRegistry {
     };
   }
 
-  async respondPermission(payload) {
+  async respondPermission(payload, emit) {
     const provider = this.resolveProviderForInteraction(payload, 'opencode');
     if (typeof provider.respondPermission !== 'function') {
       throw new Error('Provider does not support permission responses: ' + provider.id);
     }
-    return await provider.respondPermission(payload);
+    return await provider.respondPermission(payload, emit);
   }
 
   async respondRequest(payload, emit) {

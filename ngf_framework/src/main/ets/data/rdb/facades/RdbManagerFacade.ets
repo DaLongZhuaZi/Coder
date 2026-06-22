@@ -91,15 +91,13 @@ class RdbManagerFacade implements IRelationalStore {
         results.push(new NGFRdbRow(cells));
       }
 
-      resultSet.close();
-      resultSet = null;
       return results;
     } catch (e) {
       logger.error(TAG, '查询 SQL 行对象失败: ' + sql + ' | err: ' + e);
       throw new Error('查询 SQL 行对象失败: ' + sql + ' | err: ' + e);
     } finally {
       if (resultSet) {
-        resultSet.close();
+        this.closeResultSetSafely(resultSet, sql);
       }
     }
   }
@@ -153,6 +151,14 @@ class RdbManagerFacade implements IRelationalStore {
       throw new Error('数据库尚未初始化，请先调用 init()');
     }
     return this.store;
+  }
+
+  private closeResultSetSafely(resultSet: relationalStore.ResultSet, sql: string): void {
+    try {
+      resultSet.close();
+    } catch (e) {
+      logger.warn(TAG, '关闭查询结果集失败: ' + sql + ' | err: ' + e);
+    }
   }
 }
 

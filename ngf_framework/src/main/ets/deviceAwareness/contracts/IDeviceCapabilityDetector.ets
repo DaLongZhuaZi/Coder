@@ -3,7 +3,6 @@
  */
 export enum NGFCapabilityType {
   CAMERA = 'camera',
-  GPS = 'gps',
   NFC = 'nfc',
   BLUETOOTH = 'bluetooth',
   WIFI = 'wifi',

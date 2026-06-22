@@ -59,7 +59,7 @@ HarmonyOS App
 
 第一阶段只交付最小闭环：
 
-1. 电脑运行 `tools/agent-bridge`。
+1. 电脑先运行 `npm install -g @dlzz/agent-bridge` 安装桌面 Bridge，再通过 `ngf-agent-bridge --setup` 完成首次配置；后续用 `ngf-agent-bridge` 启动常驻服务，仓库开发场景可改用 `tools/agent-bridge`。
 2. App 或调试客户端通过 token 连接 Bridge。
 3. 获取 Bridge 健康状态和 Provider 能力。
 4. 创建一个会话。
@@ -147,7 +147,7 @@ HarmonyOS App
 
 建议分阶段落点：
 
-- `tools/agent-bridge/`：桌面 Bridge 服务和 Provider Adapter。
+- `tools/agent-bridge/`：桌面 Bridge 服务和 Provider Adapter 源码，对外发布为 npm 包 `@dlzz/agent-bridge`。
 - `docs/agent-bridge-architecture.md`：架构说明和协议草案。
 - `entry/src/main/ets/features/agentBridge/`：后续 App 业务客户端、状态模型、页面 ViewModel。
 - `entry/src/main/ets/pages/agent/`：后续 App 业务页面。
@@ -168,7 +168,7 @@ HarmonyOS App
 ## 8. 实施顺序
 
 1. API 基线回到 HarmonyOS 6.1.0 (API 23)。
-2. 搭建 `tools/agent-bridge`，提供 HTTP/WS 协议和 mock provider。
+2. 已搭建 `tools/agent-bridge`，提供 HTTP/WS 协议和 mock provider，并已发布为 npm 包 `@dlzz/agent-bridge`。
 3. 在 App 侧新增连接配置与会话状态模型。
 4. 新增 Agent 主页面：主机列表、会话列表、消息流、工具/预览面板。
 5. 完善 OpenCode provider 的事件流订阅与权限映射。

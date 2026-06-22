@@ -41,6 +41,9 @@ const wsLogger = createTerminalLogger('bridge.ws');
 const requestLogger = createTerminalLogger('bridge.request');
 let activeConnections = 0;
 let serverShuttingDown = false;
+const activeClientConnections = new Map();
+const WS_HEARTBEAT_INTERVAL_MS = 15000;
+const WS_IDLE_TIMEOUT_MS = 45000;
 
 function sendJson(res, statusCode, value) {
   const body = JSON.stringify(value, null, 2);
@@ -323,6 +326,11 @@ async function handleClientMessage(rawText, connection) {
       return;
     }
 
+    if (message.type === RequestType.PING) {
+      connection.sendJson(makeResponse(id, { pong: true, now: Date.now() }));
+      return;
+    }
+
     if (message.type === RequestType.SESSION_CREATE) {
       const providerId = readString(payload, 'providerId', 'mock');
       const provider = registry.resolve(providerId);
@@ -372,6 +380,12 @@ async function handleClientMessage(rawText, connection) {
       return;
     }
 
+    if (message.type === RequestType.SESSION_ABORT) {
+      const result = await registry.abortSession(payload, (event) => connection.sendJson(event));
+      connection.sendJson(makeResponse(id, { accepted: true, result }));
+      return;
+    }
+
     if (message.type === RequestType.MESSAGE_SEND) {
       const sessionId = readString(payload, 'sessionId', '');
       const match = registry.findSession(sessionId);
@@ -410,7 +424,7 @@ async function handleClientMessage(rawText, connection) {
     }
 
     if (message.type === RequestType.PERMISSION_RESPOND) {
-      const result = await registry.respondPermission(payload);
+      const result = await registry.respondPermission(payload, (event) => connection.sendJson(event));
       connection.sendJson(makeResponse(id, { accepted: true, result }));
       return;
     }
@@ -466,6 +480,14 @@ async function handleClientMessage(rawText, connection) {
 
     if (message.type === RequestType.WORKSPACE_FILE_DOWNLOAD) {
       const result = await workspaceService.prepareDownload(payload);
+      const sessionId = readString(payload, 'sessionId', '');
+      connection.sendJson(makeResponse(id, result));
+      connection.sendJson(makeEvent(EventType.FILE_DOWNLOAD_READY, sessionId, result));
+      return;
+    }
+
+    if (message.type === RequestType.ATTACHMENT_FILE_DOWNLOAD) {
+      const result = await workspaceService.prepareAttachmentDownload(payload);
       const sessionId = readString(payload, 'sessionId', '');
       connection.sendJson(makeResponse(id, result));
       connection.sendJson(makeEvent(EventType.FILE_DOWNLOAD_READY, sessionId, result));
@@ -541,12 +563,40 @@ function handleUpgrade(req, socket, head) {
   acceptWebSocket(req, socket, head, {
     onOpen(connection) {
       const connectionId = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
+      const clientId = reqUrl.searchParams.get('clientId') || '';
       activeConnections += 1;
       connection.connectionId = connectionId;
+      connection.clientId = clientId;
       connection.remoteAddress = remoteAddressFromRequest(req);
       connection.connectedAt = Date.now();
+      if (clientId.length > 0) {
+        const previousConnection = activeClientConnections.get(clientId);
+        if (previousConnection && previousConnection !== connection) {
+          wsLogger.warn('client.superseded', {
+            clientId,
+            previousConnectionId: previousConnection.connectionId || '',
+            connectionId
+          });
+          previousConnection.close();
+        }
+        activeClientConnections.set(clientId, connection);
+      }
+      connection.heartbeatTimer = setInterval(() => {
+        if (Date.now() - connection.lastSeenAt > WS_IDLE_TIMEOUT_MS) {
+          wsLogger.warn('client.idle_timeout', {
+            connectionId,
+            clientId,
+            remote: connection.remoteAddress,
+            idleMs: Date.now() - connection.lastSeenAt
+          });
+          connection.close();
+          return;
+        }
+        connection.sendPing();
+      }, WS_HEARTBEAT_INTERVAL_MS);
       wsLogger.ready('client.connected', {
         connectionId,
+        clientId,
         remote: connection.remoteAddress,
         activeConnections
       });
@@ -578,11 +628,23 @@ function handleUpgrade(req, socket, head) {
         connection.providerCleanup();
         connection.providerCleanup = null;
       }
+      if (connection && connection.heartbeatTimer) {
+        clearInterval(connection.heartbeatTimer);
+        connection.heartbeatTimer = null;
+      }
+      if (
+        connection &&
+        connection.clientId &&
+        activeClientConnections.get(connection.clientId) === connection
+      ) {
+        activeClientConnections.delete(connection.clientId);
+      }
       if (activeConnections > 0) {
         activeConnections -= 1;
       }
       wsLogger.info('client.disconnected', {
         connectionId: connection && connection.connectionId ? connection.connectionId : '',
+        clientId: connection && connection.clientId ? connection.clientId : '',
         remote: connection && connection.remoteAddress ? connection.remoteAddress : '',
         activeConnections,
         durationMs: connection && typeof connection.connectedAt === 'number' ? Date.now() - connection.connectedAt : ''

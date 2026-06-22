@@ -16,6 +16,7 @@ class WebSocketConnection {
     this.buffer = Buffer.alloc(0);
     this.closed = false;
     this.closeHandled = false;
+    this.lastSeenAt = Date.now();
 
     socket.on('data', (chunk) => this.handleData(chunk));
     socket.on('close', () => this.handleClose());
@@ -26,6 +27,7 @@ class WebSocketConnection {
     if (this.closed) {
       return;
     }
+    this.lastSeenAt = Date.now();
     this.buffer = Buffer.concat([this.buffer, chunk]);
     while (true) {
       const frame = this.readFrame();
@@ -39,6 +41,11 @@ class WebSocketConnection {
         return;
       } else if (frame.opcode === 0x9) {
         this.sendFrame(0xA, frame.payload);
+      } else if (frame.opcode === 0xA) {
+        this.lastSeenAt = Date.now();
+        if (this.handlers && typeof this.handlers.onPong === 'function') {
+          this.handlers.onPong(this);
+        }
       }
     }
   }
@@ -106,6 +113,10 @@ class WebSocketConnection {
     this.sendFrame(0x1, Buffer.from(text, 'utf8'));
   }
 
+  sendPing() {
+    this.sendFrame(0x9, Buffer.alloc(0));
+  }
+
   sendFrame(opcode, payload) {
     if (this.closed) {
       return;
@@ -131,12 +142,12 @@ class WebSocketConnection {
     if (this.closed) {
       return;
     }
-    this.closed = true;
     try {
       this.sendFrame(0x8, Buffer.alloc(0));
     } catch (_error) {
       // Ignore close write failures.
     }
+    this.closed = true;
     this.socket.destroy();
     this.handleClose();
   }

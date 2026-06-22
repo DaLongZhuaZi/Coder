@@ -103,7 +103,7 @@ function createConfig() {
     },
     claude: {
       command: process.env.AGENT_BRIDGE_CLAUDE_COMMAND || readProfileString(profile, 'claudeCommand', 'claude'),
-      args: process.env.AGENT_BRIDGE_CLAUDE_ARGS || '-p --output-format stream-json --include-partial-messages',
+      args: process.env.AGENT_BRIDGE_CLAUDE_ARGS || '-p --verbose --output-format stream-json --include-partial-messages',
       timeoutMs: readPositiveNumber('AGENT_BRIDGE_CLAUDE_TIMEOUT_MS', DEFAULT_CLI_TIMEOUT_MS)
     },
     antigravity: {

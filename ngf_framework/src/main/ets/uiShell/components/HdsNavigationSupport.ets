@@ -3,6 +3,7 @@ import {
   hdsMaterial,
   HdsNavigationBadgeIconOptions,
   HdsNavigationBackgroundStyle,
+  HdsNavigationIconItemStyle,
   HdsNavigationIconOptions,
   HdsNavigationMenuContentOptions,
   HdsNavigationMenuItemOptions,
@@ -74,9 +75,25 @@ class NGFHdsNavigationTitleStyle implements HdsNavigationTitleStyle {
 
 class NGFHdsTitleBarContentStyle implements HdsTitleBarContentStyle {
   titleStyle?: HdsNavigationTitleStyle;
+  menuStyle?: HdsNavigationIconItemStyle;
 
-  constructor(titleStyle: HdsNavigationTitleStyle) {
+  constructor(titleStyle: HdsNavigationTitleStyle, menuStyle?: HdsNavigationIconItemStyle) {
     this.titleStyle = titleStyle;
+    if (menuStyle !== undefined) {
+      this.menuStyle = menuStyle;
+    }
+  }
+}
+
+class NGFHdsNavigationIconItemStyle implements HdsNavigationIconItemStyle {
+  backgroundColor?: ResourceColor;
+  iconColor?: ResourceColor;
+  textColor?: ResourceColor;
+
+  constructor(iconColor: ResourceColor) {
+    this.backgroundColor = '#00000000';
+    this.iconColor = iconColor;
+    this.textColor = iconColor;
   }
 }
 
@@ -261,10 +278,58 @@ export class NGFHdsTitleBarOptionsFactory {
     avoidLayoutSafeArea: boolean = false,
     enableComponentSafeArea: boolean = false
   ): HdsNavigationTitleBarOptions {
-    const originalTitleStyle = new NGFHdsNavigationTitleStyle($r('app.color.text_body'), $r('app.color.text_secondary'));
-    const scrollTitleStyle = new NGFHdsNavigationTitleStyle($r('app.color.text_body'), $r('app.color.text_secondary'));
-    const originalContentStyle = new NGFHdsTitleBarContentStyle(originalTitleStyle);
-    const scrollContentStyle = new NGFHdsTitleBarContentStyle(scrollTitleStyle);
+    return NGFHdsTitleBarOptionsFactory.buildTransparentSurfaceWithMenuTitleColors(
+      mainTitle,
+      subTitle,
+      materialLevel,
+      menuActions,
+      maxMenuCount,
+      avoidLayoutSafeArea,
+      enableComponentSafeArea,
+      $r('app.color.text_body'),
+      $r('app.color.text_secondary')
+    );
+  }
+
+  static buildTransparentWhiteSurfaceWithMenu(
+    mainTitle: ResourceStr,
+    subTitle: ResourceStr,
+    materialLevel: hdsMaterial.MaterialLevel,
+    menuActions: Array<NGFHdsTitleBarMenuAction>,
+    maxMenuCount: number = 3,
+    avoidLayoutSafeArea: boolean = false,
+    enableComponentSafeArea: boolean = false
+  ): HdsNavigationTitleBarOptions {
+    return NGFHdsTitleBarOptionsFactory.buildTransparentSurfaceWithMenuTitleColors(
+      mainTitle,
+      subTitle,
+      materialLevel,
+      menuActions,
+      maxMenuCount,
+      avoidLayoutSafeArea,
+      enableComponentSafeArea,
+      '#FFFFFFFF',
+      '#FFFFFFFF'
+    );
+  }
+
+  private static buildTransparentSurfaceWithMenuTitleColors(
+    mainTitle: ResourceStr,
+    subTitle: ResourceStr,
+    materialLevel: hdsMaterial.MaterialLevel,
+    menuActions: Array<NGFHdsTitleBarMenuAction>,
+    maxMenuCount: number,
+    avoidLayoutSafeArea: boolean,
+    enableComponentSafeArea: boolean,
+    mainTitleColor: ResourceColor,
+    subTitleColor: ResourceColor
+  ): HdsNavigationTitleBarOptions {
+    const originalTitleStyle = new NGFHdsNavigationTitleStyle(mainTitleColor, subTitleColor);
+    const scrollTitleStyle = new NGFHdsNavigationTitleStyle(mainTitleColor, subTitleColor);
+    const originalMenuStyle = new NGFHdsNavigationIconItemStyle(mainTitleColor);
+    const scrollMenuStyle = new NGFHdsNavigationIconItemStyle(mainTitleColor);
+    const originalContentStyle = new NGFHdsTitleBarContentStyle(originalTitleStyle, originalMenuStyle);
+    const scrollContentStyle = new NGFHdsTitleBarContentStyle(scrollTitleStyle, scrollMenuStyle);
     const originalBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 18);
     const scrollBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 28);
     const originalBarStyle = new NGFHdsNavigationTitleBarStyle(originalBackgroundStyle, originalContentStyle);

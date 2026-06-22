@@ -26,13 +26,6 @@
         }
       },
       {
-        "name": "ohos.permission.APPROXIMATELY_LOCATION",
-        "reason": "$string:ngf_background_task_reason",
-        "usedScene": {
-          "when": "inuse"
-        }
-      },
-      {
         "name": "ohos.permission.ACCELEROMETER",
         "reason": "$string:ngf_detect_gesture_reason",
         "usedScene": {

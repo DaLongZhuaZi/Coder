@@ -8,7 +8,7 @@ const readline = require('readline/promises');
 const { spawn } = require('child_process');
 const { loadProfile, profilePath, saveProfile } = require('./profile-store');
 const { scanProviders } = require('./provider-scan');
-const { renderTerminalQr, writeQrImageFiles } = require('./qr-code');
+const { writeQrImageFiles } = require('./qr-code');
 
 const STRINGS = {
   en: {
@@ -220,10 +220,6 @@ function yes(value, fallbackValue) {
   return trimmed === 'y' || trimmed === 'yes' || trimmed === 'true' || trimmed === '1' || trimmed === '是' || trimmed === '好';
 }
 
-function quotePowerShell(value) {
-  return "'" + String(value).replace(/'/g, "''") + "'";
-}
-
 function connectionEndpoint(host, port) {
   return 'ws://' + host + ':' + String(port) + '/ws';
 }
@@ -263,23 +259,6 @@ function connectionPayload(endpoint, token, providerId, workspacePath, workspace
 
 function qrOutputDirectory() {
   return path.join(os.homedir(), '.ngf-agent-bridge');
-}
-
-function openFile(filePath) {
-  let child = null;
-  if (process.platform === 'win32') {
-    child = spawn(
-      'powershell.exe',
-      ['-NoProfile', '-Command', 'Start-Process -FilePath ' + quotePowerShell(filePath)],
-      { detached: true, stdio: 'ignore' }
-    );
-  } else if (process.platform === 'darwin') {
-    child = spawn('open', [filePath], { detached: true, stdio: 'ignore' });
-  } else {
-    child = spawn('xdg-open', [filePath], { detached: true, stdio: 'ignore' });
-  }
-  child.on('error', () => {});
-  child.unref();
 }
 
 function startCommandHint() {
@@ -540,7 +519,7 @@ function printConnectionSummary(language, options, qrFiles) {
   console.log(tr(language, 'qrSecret'));
 }
 
-async function maybeStartBridge(rl, language, options) {
+async function maybeStartBridge(rl, language, options, args) {
   console.log('');
   console.log(tr(language, 'manualCommand'));
   console.log(startCommandHint());
@@ -548,7 +527,11 @@ async function maybeStartBridge(rl, language, options) {
   console.log(tr(language, 'startQuestion'));
   console.log('');
   console.log(tr(language, 'starting'));
-  const child = spawn(process.execPath, [path.join(__dirname, 'desktop-launcher.js'), '--no-open-qr'], {
+  const launcherArgs = [path.join(__dirname, 'desktop-launcher.js')];
+  if (args.terminalQr) {
+    launcherArgs.push('--terminal-qr');
+  }
+  const child = spawn(process.execPath, launcherArgs, {
     cwd: options.repoRoot,
     stdio: 'inherit'
   });
@@ -632,16 +615,7 @@ async function runWizard() {
     });
     printConnectionSummary(language, options, qrFiles);
 
-    if (args.terminalQr) {
-      console.log('');
-      console.log(tr(language, 'terminalQr'));
-      console.log('');
-      console.log(renderTerminalQr(payload, 4));
-    }
-    console.log('');
-    console.log(tr(language, 'openingQr'));
-    openFile(qrFiles.htmlPath);
-    await maybeStartBridge(rl, language, options);
+    await maybeStartBridge(rl, language, options, args);
   } finally {
     rl.close();
   }
@@ -651,6 +625,9 @@ function printHelp() {
   console.log(STRINGS.en.title);
   console.log('');
   console.log(STRINGS.en.helpUsage);
+  console.log('  npm install -g @dlzz/agent-bridge');
+  console.log('  ngf-agent-bridge --setup');
+  console.log('  ngf-agent-bridge');
   console.log('  npm run agent-bridge:setup');
   console.log('  npm run agent-bridge:start');
   console.log('  ngf-agent-bridge --setup --lang zh');
