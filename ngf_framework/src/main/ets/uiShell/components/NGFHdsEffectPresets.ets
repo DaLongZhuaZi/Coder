@@ -420,6 +420,22 @@ export class NGFHdsEffectPresetFactory {
     ).buildVisualEffect();
   }
 
+  static buildReadableSurfacePreset(pressed: boolean = false): NGFHdsMaterialSurfacePreset {
+    return new NGFHdsMaterialSurfacePreset(
+      NGFHdsEffectPresetFactory.buildSystemMaterialParams(hdsMaterial.MaterialType.NONE, hdsMaterial.MaterialLevel.SMOOTH),
+      new NGFHdsBackgroundEffectOptions(pressed ? 3 : 1, 1.00, 1.00, $r('app.color.background_surface')),
+      new NGFHdsVisualEffectPresetSpec(hdsEffect.PressShadowType.NONE, null),
+      'READABLE',
+      'solid readable surface / no point light',
+      'FF',
+      pressed ? 1.2 : 1,
+      $r('app.color.card_border'),
+      new NGFHdsShadowOptions(pressed ? 7 : 4, $r('app.color.card_shadow_light'), 0, pressed ? 2 : 3),
+      new NGFHdsScaleOptions(1),
+      new NGFHdsTranslateOptions(0)
+    );
+  }
+
   static buildMaterialSurfacePreset(level: hdsMaterial.MaterialLevel, pressed: boolean): NGFHdsMaterialSurfacePreset {
     if (level === hdsMaterial.MaterialLevel.GENTLE) {
       const pointLight = new NGFHdsPointLightPresetSpec(

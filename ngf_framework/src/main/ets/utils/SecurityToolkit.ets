@@ -65,6 +65,21 @@ class SecurityToolkit {
     }
   }
 
+  async shaHashBytes(input: ArrayBuffer, algorithm: NGFHashAlgorithm = NGFHashAlgorithm.SHA256): Promise<string> {
+    try {
+      const algoName = this.mapHashAlgorithm(algorithm);
+      const md = cryptoFramework.createMd(algoName);
+      const inputBlob: cryptoFramework.DataBlob = { data: new Uint8Array(input) };
+      await md.update(inputBlob);
+      const digest = await md.digest();
+      return this.arrayBufferToHex(digest.data);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.error(TAG, 'SHA 字节哈希失败: ' + message);
+      throw new Error('SHA bytes hash failed: ' + message);
+    }
+  }
+
   /**
    * AES-GCM 加密
    * @param plainText 明文
@@ -174,6 +189,31 @@ class SecurityToolkit {
       const message = error instanceof Error ? error.message : String(error);
       logger.error(TAG, '生成随机数失败: ' + message);
       return '';
+    }
+  }
+
+  /**
+   * Verify a bridge ECDSA P-256/SHA256 connection proof.
+   */
+  verifyEcdsaP256Sha256(publicKeyPem: string, material: string, signatureBase64: string): boolean {
+    if (publicKeyPem.length === 0 || material.length === 0 || signatureBase64.length === 0) {
+      logger.warn(TAG, 'ECDSA 验签参数为空');
+      return false;
+    }
+    try {
+      const keyGenerator = cryptoFramework.createAsyKeyGenerator('ECC256');
+      const keyPair = keyGenerator.convertPemKeySync(publicKeyPem, null);
+      const verifier = cryptoFramework.createVerify('ECC256|SHA256');
+      verifier.initSync(keyPair.pubKey);
+      const materialBlob: cryptoFramework.DataBlob = { data: this.stringToUint8Array(material) };
+      const signatureBlob: cryptoFramework.DataBlob = {
+        data: this.base64Helper.decodeSync(signatureBase64, util.Type.BASIC)
+      };
+      return verifier.verifySync(materialBlob, signatureBlob);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      logger.warn(TAG, 'ECDSA P-256 验签失败: ' + message);
+      return false;
     }
   }
 

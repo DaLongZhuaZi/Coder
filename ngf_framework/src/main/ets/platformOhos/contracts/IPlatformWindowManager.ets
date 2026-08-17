@@ -258,6 +258,10 @@ export interface IPlatformWindowSnapshotObserver {
   onWindowSnapshotChanged(snapshot: NGFWindowRuntimeSnapshot): void;
 }
 
+export interface IPlatformSubWindowLifecycleObserver {
+  onSubWindowDestroyed(windowName: string): void;
+}
+
 export interface IPlatformWindowManager {
   bindWindowStage(windowStage: window.WindowStage): void;
   clearWindowStage(): void;
@@ -278,5 +282,8 @@ export interface IPlatformWindowManager {
   setWindowFullScreen(isFullScreen: boolean): Promise<void>;
   setWindowMode(mode: number): Promise<void>;
   createSubWindow(name: string): Promise<window.Window>;
+  focusSubWindow(name: string): Promise<boolean>;
   destroySubWindow(name: string): Promise<void>;
+  subscribeSubWindowLifecycle(listenerId: string, observer: IPlatformSubWindowLifecycleObserver): void;
+  unsubscribeSubWindowLifecycle(listenerId: string): void;
 }

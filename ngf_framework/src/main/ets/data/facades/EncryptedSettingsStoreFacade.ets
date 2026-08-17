@@ -1,44 +1,109 @@
 import { logger } from '../../utils/Logger';
 import { securityToolkit } from '../../utils/SecurityToolkit';
+import { ngfKeyStoreManagerFacade } from '../../security';
 
 const TAG: string = 'NGFEncryptedSettingsStoreFacade';
+
+export class NGFEncryptedSettingsStoreStatus {
+  readonly ready: boolean;
+  readonly storage: string;
+  readonly failureCategory: string;
+
+  constructor(ready: boolean, storage: string, failureCategory: string) {
+    this.ready = ready;
+    this.storage = storage;
+    this.failureCategory = failureCategory;
+  }
+}
 
 /**
  * 透明加密 Preferences 门面
  * 值在存储前自动加密，读取后自动解密。
- * 使用固定主密钥派生机制（基于字段 key 生成）；正式生产场景建议接入 Keystore 托管。
+ * 主密钥由 AssetStoreKit 托管；旧版本 AppStorage 密钥仅在首次启动时迁移。
  */
 class EncryptedSettingsStoreFacade {
   private static instance: EncryptedSettingsStoreFacade | null = null;
-  private readonly masterKeyBase64: string;
+  private masterKeyBase64: string = '';
+  private storage: string = '';
+  private initializationFailure: string = '';
+  private readonly initialization: Promise<void>;
   private readonly cache: Map<string, string> = new Map<string, string>();
 
-  // master key 在 AppStorage 中的持久化键名
+  // 仅用于迁移旧版本；新密钥只写入 AssetStoreKit。
   private static readonly MASTER_KEY_STORAGE: string = 'ngf_encrypted_master_key';
-  // 生产环境应使用 HarmonyOS Keystore (HUKS) 托管密钥，此处为框架级降级方案
-  private static readonly FALLBACK_STATIC_KEY: string = 'TkdGRW5jcnlwdGVkIQ=='; // "NGFEncrypted!"
+  private static readonly MASTER_KEY_ALIAS: string = 'ngf.encrypted.settings.master.v1';
 
   private constructor() {
-    // 优先从持久化存储加载已有密钥，确保重启后能解密历史数据
-    const stored = AppStorage.get<string>(EncryptedSettingsStoreFacade.MASTER_KEY_STORAGE);
-    if (stored !== undefined && stored !== null && stored.length > 0) {
-      this.masterKeyBase64 = stored;
-    } else {
-      // 尝试使用安全随机数生成新密钥
-      const generated = securityToolkit.generateRandomBase64(16);
-      if (generated.length > 0) {
-        this.masterKeyBase64 = generated;
-        // 持久化生成的密钥，避免重启后无法解密
-        AppStorage.setOrCreate<string>(EncryptedSettingsStoreFacade.MASTER_KEY_STORAGE, generated);
-        logger.info(TAG, '已生成新的加密主密钥并持久化');
-      } else {
-        // 随机数生成失败时使用静态降级密钥（仅用于开发/测试）
-        this.masterKeyBase64 = EncryptedSettingsStoreFacade.FALLBACK_STATIC_KEY;
-        logger.warn(TAG, '随机密钥生成失败，使用静态降级密钥（仅限开发环境）');
+    this.initialization = this.initializeMasterKey();
+  }
+
+  private async initializeMasterKey(): Promise<void> {
+    try {
+      const secureKey = await ngfKeyStoreManagerFacade.querySecret(
+        EncryptedSettingsStoreFacade.MASTER_KEY_ALIAS
+      );
+      if (secureKey !== null && secureKey.length > 0) {
+        this.masterKeyBase64 = secureKey;
+        this.storage = 'asset_store';
+        this.clearLegacyMasterKey();
+        return;
       }
+
+      const legacyKey = AppStorage.get<string>(EncryptedSettingsStoreFacade.MASTER_KEY_STORAGE);
+      if (legacyKey !== undefined && legacyKey !== null && legacyKey.length > 0) {
+        const migrated = await ngfKeyStoreManagerFacade.addSecret(
+          EncryptedSettingsStoreFacade.MASTER_KEY_ALIAS,
+          legacyKey
+        );
+        if (migrated) {
+          this.masterKeyBase64 = legacyKey;
+          this.storage = 'asset_store';
+          this.clearLegacyMasterKey();
+          logger.info(TAG, '旧加密主密钥已迁移到安全存储');
+          return;
+        }
+        this.markUnavailable();
+        return;
+      }
+
+      const generated = securityToolkit.generateRandomBase64(16);
+      if (generated.length === 0) {
+        this.markUnavailable();
+        return;
+      }
+      const stored = await ngfKeyStoreManagerFacade.addSecret(
+        EncryptedSettingsStoreFacade.MASTER_KEY_ALIAS,
+        generated
+      );
+      if (!stored) {
+        this.markUnavailable();
+        return;
+      }
+      this.masterKeyBase64 = generated;
+      this.storage = 'asset_store';
+      logger.info(TAG, '新的加密主密钥已写入安全存储');
+    } catch (error) {
+      this.markUnavailable();
     }
-    // TODO: 生产环境应接入 HarmonyOS Keystore (HUKS) 进行密钥托管，
-    //       避免密钥明文存储在 AppStorage 中。
+  }
+
+  private clearLegacyMasterKey(): void {
+    AppStorage.setOrCreate<string>(EncryptedSettingsStoreFacade.MASTER_KEY_STORAGE, '');
+  }
+
+  private markUnavailable(): void {
+    this.masterKeyBase64 = '';
+    this.storage = '';
+    this.initializationFailure = 'secure_storage_unavailable';
+    logger.warn(TAG, '加密设置不可用：安全存储不可用');
+  }
+
+  private async ensureReady(): Promise<boolean> {
+    await this.initialization;
+    if (this.masterKeyBase64.length > 0) {
+      return true;
+    }
+    return false;
   }
 
   static getInstance(): EncryptedSettingsStoreFacade {
@@ -48,10 +113,18 @@ class EncryptedSettingsStoreFacade {
     return EncryptedSettingsStoreFacade.instance;
   }
 
+  async getStatus(): Promise<NGFEncryptedSettingsStoreStatus> {
+    const ready = await this.ensureReady();
+    return new NGFEncryptedSettingsStoreStatus(ready, this.storage, this.initializationFailure);
+  }
+
   async getString(key: string, defaultValue: string = ''): Promise<string> {
     const cached = this.cache.get(key);
     if (cached !== undefined) {
       return cached;
+    }
+    if (!(await this.ensureReady())) {
+      return defaultValue;
     }
     const raw = AppStorage.get<string>('enc_' + key);
     if (raw === undefined || raw === null || raw.length === 0) {
@@ -72,6 +145,10 @@ class EncryptedSettingsStoreFacade {
   }
 
   async setString(key: string, value: string): Promise<void> {
+    if (!(await this.ensureReady())) {
+      logger.warn(TAG, '安全存储不可用，跳过加密写入: key=' + key);
+      return;
+    }
     try {
       const encrypted = await securityToolkit.aesEncrypt(value, this.masterKeyBase64, '');
       if (encrypted.success) {
@@ -123,6 +200,9 @@ class EncryptedSettingsStoreFacade {
   }
 
   async contains(key: string): Promise<boolean> {
+    if (!(await this.ensureReady())) {
+      return false;
+    }
     const raw = AppStorage.get<string>('enc_' + key);
     return raw !== undefined && raw !== null && raw.length > 0;
   }

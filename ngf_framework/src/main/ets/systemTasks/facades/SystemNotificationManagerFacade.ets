@@ -1,10 +1,16 @@
 import { notificationManager } from '@kit.NotificationKit';
-import { wantAgent, WantAgent } from '@kit.AbilityKit';
+import { wantAgent, Want, WantAgent } from '@kit.AbilityKit';
 import { uiContextManager } from '../../platformOhos/UIContextManager';
 import { ISystemNotificationManager, NGFNotificationRequest, NGFNotificationType } from '../contracts/ISystemNotificationManager';
 import { logger } from '../../utils/Logger';
 
 const TAG: string = 'SystemNotificationManagerFacade';
+
+interface NGFNotificationTapWantParameters extends Record<string, Object> {
+  ngfNotificationTapAction: Object;
+  ngfNotificationTapPayloadJson: Object;
+  ngfNotificationTapNotificationId: Object;
+}
 
 class SystemNotificationManagerFacade implements ISystemNotificationManager {
   async requestPermission(): Promise<boolean> {
@@ -36,7 +42,8 @@ class SystemNotificationManagerFacade implements ISystemNotificationManager {
               text: request.content,
               longText: request.longText || request.content,
               briefText: request.content,
-              expandedTitle: request.title
+              expandedTitle: request.title,
+              additionalText: request.additionalText
             }
           };
           break;
@@ -48,7 +55,8 @@ class SystemNotificationManagerFacade implements ISystemNotificationManager {
               text: request.content,
               briefText: request.content,
               longTitle: request.title,
-              lines: request.lines || [request.content]
+              lines: request.lines || [request.content],
+              additionalText: request.additionalText
             }
           };
           break;
@@ -66,7 +74,8 @@ class SystemNotificationManagerFacade implements ISystemNotificationManager {
             notificationContentType: notificationManager.ContentType.NOTIFICATION_CONTENT_BASIC_TEXT,
             normal: {
               title: request.title,
-              text: displayText
+              text: displayText,
+              additionalText: request.additionalText
             }
           };
           break;
@@ -78,10 +87,19 @@ class SystemNotificationManagerFacade implements ISystemNotificationManager {
         isOngoing: request.isOngoing,
         isAlertOnce: request.isAlertOnce
       };
-      const notificationWantAgent: WantAgent | null = await this.buildDefaultWantAgent();
+      const notificationWantAgent: WantAgent | null = await this.buildDefaultWantAgent(request);
       if (notificationWantAgent !== null) {
         req.wantAgent = notificationWantAgent;
         req.tapDismissed = !request.isOngoing;
+      }
+      if (request.appMessageId.length > 0) {
+        req.appMessageId = request.appMessageId;
+      }
+      if (request.badgeNumber >= 0) {
+        req.badgeNumber = request.badgeNumber;
+      }
+      if (request.autoDeletedTime > 0) {
+        req.autoDeletedTime = request.autoDeletedTime;
       }
 
       if (request.type === NGFNotificationType.PROGRESS) {
@@ -112,20 +130,39 @@ class SystemNotificationManagerFacade implements ISystemNotificationManager {
     }
   }
 
-  private async buildDefaultWantAgent(): Promise<WantAgent | null> {
+  async setBadgeNumber(count: number): Promise<boolean> {
+    const safeCount = Math.max(0, Math.floor(count));
+    try {
+      await notificationManager.setBadgeNumber(safeCount);
+      logger.debug(TAG, '更新通知角标成功: count=' + String(safeCount));
+      return true;
+    } catch (e) {
+      logger.warn(TAG, '更新通知角标失败: ' + e);
+      return false;
+    }
+  }
+
+  private async buildDefaultWantAgent(request: NGFNotificationRequest): Promise<WantAgent | null> {
     const context = uiContextManager.getFullAbilityContext();
     if (!context) {
       return null;
     }
+    const targetWant: Want = {
+      bundleName: context.abilityInfo.bundleName,
+      abilityName: context.abilityInfo.name
+    };
+    if (request.tapAction.length > 0) {
+      const parameters: NGFNotificationTapWantParameters = {
+        ngfNotificationTapAction: request.tapAction as Object,
+        ngfNotificationTapPayloadJson: request.tapPayloadJson as Object,
+        ngfNotificationTapNotificationId: request.id as Object
+      };
+      targetWant.parameters = parameters;
+    }
     const wantAgentInfo: wantAgent.WantAgentInfo = {
-      wants: [
-        {
-          bundleName: context.abilityInfo.bundleName,
-          abilityName: context.abilityInfo.name
-        }
-      ],
+      wants: [targetWant],
       actionType: wantAgent.OperationType.START_ABILITY,
-      requestCode: 0,
+      requestCode: request.id,
       wantAgentFlags: [wantAgent.WantAgentFlags.UPDATE_PRESENT_FLAG]
     };
     try {

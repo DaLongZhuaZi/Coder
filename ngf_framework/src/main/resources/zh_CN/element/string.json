@@ -5079,6 +5079,130 @@
     {
       "name": "about_copyright_text",
       "value": "© 2025 DaLongzhuazi. All rights reserved."
+    },
+    {
+      "name": "ngf_about_sheet_title",
+      "value": "关于应用"
+    },
+    {
+      "name": "ngf_about_section_basic",
+      "value": "基本信息"
+    },
+    {
+      "name": "ngf_about_section_tech",
+      "value": "技术信息"
+    },
+    {
+      "name": "ngf_about_section_modules",
+      "value": "框架能力"
+    },
+    {
+      "name": "ngf_about_section_developer",
+      "value": "开发者信息"
+    },
+    {
+      "name": "ngf_about_app_name",
+      "value": "应用名称"
+    },
+    {
+      "name": "ngf_about_bundle_name",
+      "value": "包名"
+    },
+    {
+      "name": "ngf_about_version_name",
+      "value": "版本号"
+    },
+    {
+      "name": "ngf_about_version_code",
+      "value": "版本代码"
+    },
+    {
+      "name": "ngf_about_build_version",
+      "value": "构建版本"
+    },
+    {
+      "name": "ngf_about_sdk_api",
+      "value": "SDK API 版本"
+    },
+    {
+      "name": "ngf_about_device_model",
+      "value": "设备型号"
+    },
+    {
+      "name": "ngf_about_os_version",
+      "value": "系统版本"
+    },
+    {
+      "name": "ngf_about_ide_version",
+      "value": "DevEco 版本"
+    },
+    {
+      "name": "ngf_about_vendor",
+      "value": "开发者"
+    },
+    {
+      "name": "ngf_about_copyright",
+      "value": "版权信息"
+    },
+    {
+      "name": "ngf_about_copyright_text",
+      "value": "© 2025 DaLongzhuazi. All rights reserved."
+    },
+    {
+      "name": "ngf_about_module_core",
+      "value": "Core 核心"
+    },
+    {
+      "name": "ngf_about_module_data",
+      "value": "Data 数据层"
+    },
+    {
+      "name": "ngf_about_module_platform",
+      "value": "Platform 平台层"
+    },
+    {
+      "name": "ngf_about_module_workflow",
+      "value": "Workflow 工作流"
+    },
+    {
+      "name": "ngf_about_module_source",
+      "value": "Source 内容源"
+    },
+    {
+      "name": "ngf_about_module_uishell",
+      "value": "UI Shell 界面层"
+    },
+    {
+      "name": "ngf_about_module_i18n",
+      "value": "I18n 国际化"
+    },
+    {
+      "name": "ngf_about_module_theme",
+      "value": "Theme 主题引擎"
+    },
+    {
+      "name": "ngf_about_module_device",
+      "value": "Device 设备感知"
+    },
+    {
+      "name": "ngf_about_module_security",
+      "value": "Security 安全"
+    },
+    {
+      "name": "ngf_about_status_active",
+      "value": "已激活"
+    },
+    {
+      "name": "ngf_about_status_available",
+      "value": "可用"
+    },
+    {
+      "name": "ngf_about_tap_to_detail",
+      "value": "点击查看详情"
+    },
+    {
+      "name": "ngf_about_section_opensource",
+      "value": "开源信息"
     }
   ]
 }

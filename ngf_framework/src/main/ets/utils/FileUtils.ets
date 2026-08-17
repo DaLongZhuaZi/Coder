@@ -155,6 +155,28 @@ export class FileUtils {
     }
   }
 
+  static appendBytes(filePath: string, data: ArrayBuffer): boolean {
+    const resolved: string = FileUtils.resolvePath(filePath);
+    let file: fs.File | null = null;
+    try {
+      file = fs.openSync(resolved, fs.OpenMode.CREATE | fs.OpenMode.WRITE_ONLY | fs.OpenMode.APPEND);
+      fs.writeSync(file.fd, data);
+      return true;
+    } catch (error) {
+      const message: string = error instanceof Error ? error.message : String(error);
+      logger.error(TAG, 'appendBytes 失败: path=' + filePath + ', error=' + message);
+      return false;
+    } finally {
+      if (file !== null) {
+        try {
+          fs.closeSync(file);
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
+
   static exists(filePath: string): boolean {
     const resolved: string = FileUtils.resolvePath(filePath);
     try {

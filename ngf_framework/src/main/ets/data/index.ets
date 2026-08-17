@@ -19,6 +19,9 @@ export { DbMigratorFacade, ngfDbMigratorFacade } from './facades/DbMigratorFacad
 export { RelationalStoreFacade, ngfRelationalStoreFacade } from './facades/RelationalStoreFacade';
 export { SyncManagerFacade, ngfSyncManagerFacade } from './facades/SyncManagerFacade';
 export { NGFDataIntegrationFacade, ngfDataIntegrationFacade } from './facades/NGFDataIntegrationFacade';
-export { ngfEncryptedSettingsStore } from './facades/EncryptedSettingsStoreFacade';
+export {
+  NGFEncryptedSettingsStoreStatus,
+  ngfEncryptedSettingsStore
+} from './facades/EncryptedSettingsStoreFacade';
 export { NGFRdbCell, NGFRdbConfig, NGFRdbRow } from './rdb/contracts/IRelationalStore';
 export { ngfRdbManager } from './rdb/facades/RdbManagerFacade';

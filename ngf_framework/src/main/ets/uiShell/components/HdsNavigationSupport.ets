@@ -233,11 +233,11 @@ export class NGFHdsTitleBarOptionsFactory {
     const scrollTitleStyle = new NGFHdsNavigationTitleStyle($r('app.color.text_white'), $r('app.color.text_white_medium'));
     const originalContentStyle = new NGFHdsTitleBarContentStyle(originalTitleStyle);
     const scrollContentStyle = new NGFHdsTitleBarContentStyle(scrollTitleStyle);
-    const originalBackgroundStyle = new NGFHdsNavigationBackgroundStyle(backgroundColor, 18);
-    const scrollBackgroundStyle = new NGFHdsNavigationBackgroundStyle(backgroundColor, 28);
+    const originalBackgroundStyle = new NGFHdsNavigationBackgroundStyle(backgroundColor, 10);
+    const scrollBackgroundStyle = new NGFHdsNavigationBackgroundStyle(backgroundColor, 14);
     const originalBarStyle = new NGFHdsNavigationTitleBarStyle(originalBackgroundStyle, originalContentStyle);
     const scrollBarStyle = new NGFHdsNavigationTitleBarStyle(scrollBackgroundStyle, scrollContentStyle);
-    const materialParams = NGFHdsEffectPresetFactory.buildSystemMaterialParams(hdsMaterial.MaterialType.IMMERSIVE, materialLevel);
+    const materialParams = NGFHdsEffectPresetFactory.buildSystemMaterialParams(hdsMaterial.MaterialType.ADAPTIVE, materialLevel);
     const content = new NGFHdsTitleBarContentOptions(new NGFHdsNavigationTitle(mainTitle, subTitle));
     const style = new NGFHdsTitleBarStyleOptions(originalBarStyle, scrollBarStyle, materialParams);
     return new NGFHdsNavigationTitleBarOptions(content, style, avoidLayoutSafeArea, enableComponentSafeArea);
@@ -254,11 +254,11 @@ export class NGFHdsTitleBarOptionsFactory {
     const scrollTitleStyle = new NGFHdsNavigationTitleStyle($r('app.color.text_body'), $r('app.color.text_secondary'));
     const originalContentStyle = new NGFHdsTitleBarContentStyle(originalTitleStyle);
     const scrollContentStyle = new NGFHdsTitleBarContentStyle(scrollTitleStyle);
-    const originalBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 18);
-    const scrollBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 28);
+    const originalBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 6);
+    const scrollBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 10);
     const originalBarStyle = new NGFHdsNavigationTitleBarStyle(originalBackgroundStyle, originalContentStyle);
     const scrollBarStyle = new NGFHdsNavigationTitleBarStyle(scrollBackgroundStyle, scrollContentStyle);
-    const materialParams = NGFHdsEffectPresetFactory.buildSystemMaterialParams(hdsMaterial.MaterialType.IMMERSIVE, materialLevel);
+    const materialParams = NGFHdsEffectPresetFactory.buildSystemMaterialParams(hdsMaterial.MaterialType.ADAPTIVE, materialLevel);
     const content = new NGFHdsTitleBarContentOptions(new NGFHdsNavigationTitle(mainTitle, subTitle));
     const style = new NGFHdsTitleBarStyleOptions(
       originalBarStyle,
@@ -330,11 +330,11 @@ export class NGFHdsTitleBarOptionsFactory {
     const scrollMenuStyle = new NGFHdsNavigationIconItemStyle(mainTitleColor);
     const originalContentStyle = new NGFHdsTitleBarContentStyle(originalTitleStyle, originalMenuStyle);
     const scrollContentStyle = new NGFHdsTitleBarContentStyle(scrollTitleStyle, scrollMenuStyle);
-    const originalBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 18);
-    const scrollBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 28);
+    const originalBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 6);
+    const scrollBackgroundStyle = new NGFHdsNavigationBackgroundStyle('#00000000', 10);
     const originalBarStyle = new NGFHdsNavigationTitleBarStyle(originalBackgroundStyle, originalContentStyle);
     const scrollBarStyle = new NGFHdsNavigationTitleBarStyle(scrollBackgroundStyle, scrollContentStyle);
-    const materialParams = NGFHdsEffectPresetFactory.buildSystemMaterialParams(hdsMaterial.MaterialType.IMMERSIVE, materialLevel);
+    const materialParams = NGFHdsEffectPresetFactory.buildSystemMaterialParams(hdsMaterial.MaterialType.ADAPTIVE, materialLevel);
     const menu = NGFHdsTitleBarOptionsFactory.buildMenuContent(menuActions, maxMenuCount);
     const content = new NGFHdsTitleBarContentOptions(new NGFHdsNavigationTitle(mainTitle, subTitle), menu);
     const style = new NGFHdsTitleBarStyleOptions(

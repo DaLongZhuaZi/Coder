@@ -17,6 +17,12 @@ export class NGFNotificationRequest {
   progressMax: number;
   isOngoing: boolean;
   isAlertOnce: boolean;
+  tapAction: string;
+  tapPayloadJson: string;
+  appMessageId: string;
+  additionalText: string;
+  badgeNumber: number;
+  autoDeletedTime: number;
 
   // 扩展属性
   longText?: string;
@@ -42,11 +48,18 @@ export class NGFNotificationRequest {
     this.progressMax = progressMax;
     this.isOngoing = isOngoing;
     this.isAlertOnce = isAlertOnce;
+    this.tapAction = '';
+    this.tapPayloadJson = '';
+    this.appMessageId = '';
+    this.additionalText = '';
+    this.badgeNumber = -1;
+    this.autoDeletedTime = 0;
   }
 }
 
 export interface ISystemNotificationManager {
   requestPermission(): Promise<boolean>;
   publish(request: NGFNotificationRequest): Promise<void>;
+  setBadgeNumber(count: number): Promise<boolean>;
   cancel(id: number): Promise<void>;
 }

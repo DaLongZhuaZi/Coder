@@ -3,6 +3,7 @@ export { IPageWindowPolicyResolver, NGFPageWindowPolicy, NGFPageWindowSpec } fro
 export { IOhosContextBridge } from './contracts/IOhosContextBridge';
 export {
   IPlatformWindowManager,
+  IPlatformSubWindowLifecycleObserver,
   IPlatformWindowSnapshotObserver,
   NGFPageWindowProfile,
   NGFWindowAvoidAreaSnapshot,

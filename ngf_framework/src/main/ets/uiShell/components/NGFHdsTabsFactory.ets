@@ -32,11 +32,11 @@ export struct NGFHdsImmersiveTabs {
     .barFloatingStyle({
       adaptToHandedness: true,
       systemMaterialEffect: {
-        materialType: hdsMaterial.MaterialType.IMMERSIVE,
+        materialType: hdsMaterial.MaterialType.ADAPTIVE,
         materialLevel: hdsMaterial.MaterialLevel.ADAPTIVE
       },
       thermoCtrl: true,
-      barOpacity: 0.92
+      barOpacity: 0.96
     })
     .onChange((index: number): void => {
       this.onChangeCallback(index);

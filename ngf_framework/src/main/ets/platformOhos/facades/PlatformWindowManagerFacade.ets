@@ -5,6 +5,7 @@ import { NGFEventPayload } from '../../core/contracts/IEventBus';
 import { NGFDisplayMode } from '../contracts/IPlatformWindowController';
 import {
   IPlatformWindowManager,
+  IPlatformSubWindowLifecycleObserver,
   IPlatformWindowSnapshotObserver,
   NGFPageWindowProfile,
   NGFWindowAvoidAreaSnapshot,
@@ -51,6 +52,10 @@ export class PlatformWindowManagerFacade implements IPlatformWindowManager {
   private activeMode: NGFDisplayMode = NGFDisplayMode.DEFAULT;
   private pageProfiles: Map<string, NGFPageWindowProfile> = new Map<string, NGFPageWindowProfile>();
   private subWindows: Map<string, window.Window> = new Map<string, window.Window>();
+  private subWindowEventCallbacks: Map<string, Callback<window.WindowEventType>> =
+    new Map<string, Callback<window.WindowEventType>>();
+  private subWindowLifecycleObservers: Map<string, IPlatformSubWindowLifecycleObserver> =
+    new Map<string, IPlatformSubWindowLifecycleObserver>();
   private observers: Map<string, IPlatformWindowSnapshotObserver> = new Map<string, IPlatformWindowSnapshotObserver>();
   private snapshot: NGFWindowRuntimeSnapshot = new NGFWindowRuntimeSnapshot();
   private readonly windowSizeChangeCallback: Callback<window.Size> = (_size: window.Size): void => {
@@ -102,13 +107,16 @@ export class PlatformWindowManagerFacade implements IPlatformWindowManager {
     // 清理所有子窗口
     this.subWindows.forEach((subWindow, name) => {
       try {
+        this.unregisterSubWindowLifecycle(name, subWindow);
         subWindow.destroyWindow();
+        this.notifySubWindowDestroyed(name);
         logger.info(TAG, '清空窗口阶段时自动销毁子窗口: name=' + name);
       } catch (error) {
         logger.warn(TAG, '自动销毁子窗口失败: name=' + name + ', error=' + this.errorToString(error as Object | string | number | boolean));
       }
     });
     this.subWindows.clear();
+    this.subWindowEventCallbacks.clear();
 
     this.snapshot = new NGFWindowRuntimeSnapshot();
     this.snapshot.reason = 'clear_window_stage';
@@ -301,11 +309,32 @@ export class PlatformWindowManagerFacade implements IPlatformWindowManager {
     try {
       const subWindow = await this.windowStage.createSubWindow(name);
       this.subWindows.set(name, subWindow);
+      this.registerSubWindowLifecycle(name, subWindow);
       logger.info(TAG, '创建子窗口成功: name=' + name);
       return subWindow;
     } catch (error) {
       logger.error(TAG, '创建子窗口失败: name=' + name + ', error=' + this.errorToString(error as Object | string | number | boolean));
       throw error as Error;
+    }
+  }
+
+  async focusSubWindow(name: string): Promise<boolean> {
+    const subWindow = this.subWindows.get(name);
+    if (!subWindow) {
+      logger.warn(TAG, '聚焦子窗口失败: 未找到窗口, name=' + name);
+      return false;
+    }
+    try {
+      await subWindow.showWindow();
+      logger.info(TAG, '聚焦子窗口成功: name=' + name);
+      return true;
+    } catch (error) {
+      logger.warn(
+        TAG,
+        '聚焦子窗口失败: name=' + name + ', error=' +
+          this.errorToString(error as Object | string | number | boolean)
+      );
+      return false;
     }
   }
 
@@ -318,14 +347,92 @@ export class PlatformWindowManagerFacade implements IPlatformWindowManager {
     const subWindow = this.subWindows.get(name);
     try {
       if (subWindow) {
+        this.unregisterSubWindowLifecycle(name, subWindow);
         await subWindow.destroyWindow();
       }
       this.subWindows.delete(name);
+      this.subWindowEventCallbacks.delete(name);
+      this.notifySubWindowDestroyed(name);
       logger.info(TAG, '销毁子窗口成功: name=' + name);
     } catch (error) {
+      if (subWindow) {
+        this.registerSubWindowLifecycle(name, subWindow);
+      }
       logger.error(TAG, '销毁子窗口失败: name=' + name + ', error=' + this.errorToString(error as Object | string | number | boolean));
       throw error as Error;
     }
+  }
+
+  subscribeSubWindowLifecycle(listenerId: string, observer: IPlatformSubWindowLifecycleObserver): void {
+    if (listenerId.length === 0) {
+      return;
+    }
+    this.subWindowLifecycleObservers.set(listenerId, observer);
+  }
+
+  unsubscribeSubWindowLifecycle(listenerId: string): void {
+    this.subWindowLifecycleObservers.delete(listenerId);
+  }
+
+  private registerSubWindowLifecycle(name: string, subWindow: window.Window): void {
+    this.unregisterSubWindowLifecycle(name, subWindow);
+    const callback: Callback<window.WindowEventType> = (eventType: window.WindowEventType): void => {
+      if (eventType !== window.WindowEventType.WINDOW_DESTROYED) {
+        return;
+      }
+      const trackedWindow = this.subWindows.get(name);
+      if (trackedWindow !== subWindow) {
+        return;
+      }
+      this.unregisterSubWindowLifecycle(name, subWindow);
+      this.subWindows.delete(name);
+      this.notifySubWindowDestroyed(name);
+      this.publishWindowEvent('ngf.window.subwindow.destroyed', { 'windowName': name });
+      logger.info(TAG, '检测到用户关闭子窗口并清理记录: name=' + name);
+    };
+    try {
+      subWindow.on('windowEvent', callback);
+      this.subWindowEventCallbacks.set(name, callback);
+    } catch (error) {
+      logger.warn(
+        TAG,
+        '注册子窗口生命周期监听失败: name=' + name + ', error=' +
+          this.errorToString(error as Object | string | number | boolean)
+      );
+    }
+  }
+
+  private unregisterSubWindowLifecycle(name: string, subWindow: window.Window): void {
+    const callback = this.subWindowEventCallbacks.get(name);
+    if (!callback) {
+      return;
+    }
+    try {
+      subWindow.off('windowEvent', callback);
+    } catch (error) {
+      logger.warn(
+        TAG,
+        '注销子窗口生命周期监听失败: name=' + name + ', error=' +
+          this.errorToString(error as Object | string | number | boolean)
+      );
+    }
+    this.subWindowEventCallbacks.delete(name);
+  }
+
+  private notifySubWindowDestroyed(windowName: string): void {
+    this.subWindowLifecycleObservers.forEach(
+      (observer: IPlatformSubWindowLifecycleObserver, listenerId: string): void => {
+        try {
+          observer.onSubWindowDestroyed(windowName);
+        } catch (error) {
+          logger.warn(
+            TAG,
+            '通知子窗口销毁失败: listenerId=' + listenerId + ', error=' +
+              this.errorToString(error as Object | string | number | boolean)
+          );
+        }
+      }
+    );
   }
 
   private applyResolvedProfile(pageName: string, reason: string): void {

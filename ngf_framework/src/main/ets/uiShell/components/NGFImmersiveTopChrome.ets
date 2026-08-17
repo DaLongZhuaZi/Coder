@@ -98,7 +98,7 @@ class NGFImmersiveTopChromeBackgroundEffectOptions implements BackgroundEffectOp
 
 class NGFImmersiveTopChromeEffectFactory {
   static build(spec: NGFImmersiveTopChromeSpec): VisualEffect {
-    const pointLightOptions = new NGFImmersiveTopChromePointLightOptions($r('app.color.point_light_color'), 0.32, 30, 0.22);
+    const pointLightOptions = new NGFImmersiveTopChromePointLightOptions($r('app.color.point_light_color'), 0.12, 22, 0.08);
     const pointLightEffect = new NGFImmersiveTopChromePointLightEffect(
       hdsEffect.PointLightSourceType.SOFT,
       hdsEffect.PointLightIlluminatedType.BORDER_CONTENT,
@@ -129,9 +129,9 @@ export class NGFImmersiveTopChromePresetFactory {
       secondaryGlowColor,
       $r('app.color.glass_divider'),
       $r('app.color.glass_bg_effect_light'),
-      38,
-      1.22,
-      1.04
+      18,
+      1.08,
+      1.01
     );
   }
 }
@@ -165,24 +165,24 @@ export struct NGFImmersiveTopChromeUnderlay {
         .height(176)
         .borderRadius(176)
         .backgroundColor(this.spec.primaryGlowColor)
-        .opacity(0.22)
+        .opacity(0.08)
         .margin({ left: 192, top: 12 })
-        .shadow({ radius: 82, color: $r('app.color.glow_circle_blue_shadow'), offsetX: 10, offsetY: 6 })
+        .shadow({ radius: 44, color: $r('app.color.glow_circle_blue_shadow'), offsetX: 6, offsetY: 4 })
 
       Column() {}
         .width(148)
         .height(148)
         .borderRadius(148)
         .backgroundColor(this.spec.secondaryGlowColor)
-        .opacity(0.18)
+        .opacity(0.06)
         .margin({ left: 18, top: 28 })
-        .shadow({ radius: 74, color: $r('app.color.glow_circle_cyan_shadow'), offsetX: -8, offsetY: 8 })
+        .shadow({ radius: 38, color: $r('app.color.glow_circle_cyan_shadow'), offsetX: -4, offsetY: 4 })
 
       Column() {}
         .width('86%')
         .height(1)
         .backgroundColor(this.spec.lineColor)
-        .opacity(0.52)
+        .opacity(0.24)
         .margin({ left: 16, top: 94 })
 
       Column() {}
