@@ -14,8 +14,13 @@ import { ngfVisualEffectsFacade } from 'ngf_framework';
 import { logger } from 'ngf_framework';
 import { crashAnalytics } from 'ngf_framework';
 import { ngfContinuationManagerFacade } from 'ngf_framework';
+import { ngfPushManagerFacade } from 'ngf_framework';
+import { ngfVoicePlatformFacade } from 'ngf_framework';
 
 const TAG: string = 'EntryAbility';
+const NGF_NOTIFICATION_TAP_ACTION_STORAGE_KEY: string = 'ngf_notification_tap_action';
+const NGF_NOTIFICATION_TAP_PAYLOAD_STORAGE_KEY: string = 'ngf_notification_tap_payload_json';
+const NGF_NOTIFICATION_TAP_SEQUENCE_STORAGE_KEY: string = 'ngf_notification_tap_sequence';
 
 export default class EntryAbility extends UIAbility {
   onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
@@ -25,6 +30,7 @@ export default class EntryAbility extends UIAbility {
     const bootstrapResult = ngfStarterKernel.bootstrap();
     crashAnalytics.initialize();
     logger.startup(TAG, 'NGF 引导启动完成', '成功=' + bootstrapResult);
+    this.captureNotificationTapRoute(want);
 
     // 解析流转数据
     if (want.parameters) {
@@ -43,15 +49,46 @@ export default class EntryAbility extends UIAbility {
     ngfI18nManagerFacade.initializeDefaults();
     void ngfHoldingAwarenessFacade.initialize();
     void ngfVisualEffectsFacade.initialize();
+    ngfPushManagerFacade.initialize(this).then((): void => {
+      logger.info(TAG, 'Push Kit 生命周期初始化完成');
+    }).catch((error: Error): void => {
+      logger.warn(TAG, 'Push Kit 生命周期初始化失败: ' + error.message);
+    });
 
     logger.lifecycle(TAG, '生命周期: onCreate');
   }
 
   onNewWant(want: Want, launchParam: AbilityConstant.LaunchParam): void {
     logger.lifecycle(TAG, '生命周期: onNewWant');
+    this.captureNotificationTapRoute(want);
     if (want.parameters) {
       ngfContinuationManagerFacade.receiveContinuationData(want.parameters as Record<string, Object>);
     }
+  }
+
+  private captureNotificationTapRoute(want: Want): void {
+    const parameters = want.parameters;
+    if (parameters === undefined || parameters === null) {
+      return;
+    }
+    const actionValue: Object | undefined = parameters.ngfNotificationTapAction;
+    if (actionValue === undefined || actionValue === null) {
+      return;
+    }
+    const action = String(actionValue);
+    if (action.length === 0) {
+      return;
+    }
+    const payloadValue: Object | undefined = parameters.ngfNotificationTapPayloadJson;
+    const payloadJson = payloadValue === undefined || payloadValue === null ? '' : String(payloadValue);
+    const currentSequence = AppStorage.get<number>(NGF_NOTIFICATION_TAP_SEQUENCE_STORAGE_KEY);
+    const nextSequence = currentSequence === undefined || currentSequence === null ?
+      Date.now() :
+      Math.max(Date.now(), currentSequence + 1);
+    AppStorage.setOrCreate<string>(NGF_NOTIFICATION_TAP_ACTION_STORAGE_KEY, action);
+    AppStorage.setOrCreate<string>(NGF_NOTIFICATION_TAP_PAYLOAD_STORAGE_KEY, payloadJson);
+    AppStorage.setOrCreate<number>(NGF_NOTIFICATION_TAP_SEQUENCE_STORAGE_KEY, nextSequence);
+    logger.info(TAG, '已接收通知点击路由: action=' + action + ', sequence=' + String(nextSequence));
   }
 
   onContinue(wantParam: Record<string, Object>): AbilityConstant.OnContinueResult {
@@ -66,6 +103,8 @@ export default class EntryAbility extends UIAbility {
   }
 
   onDestroy(): void {
+    void ngfVoicePlatformFacade.release();
+    ngfPushManagerFacade.destroy();
     ngfHoldingAwarenessFacade.destroy();
     uiContextManager.clearAbilityContext();
     clearContext();
@@ -97,10 +136,12 @@ export default class EntryAbility extends UIAbility {
     logger.lifecycle(TAG, '生命周期: onForeground');
     ngfDeviceAdaptationFacade.refresh('ability_foreground');
     void ngfHoldingAwarenessFacade.resume();
+    ngfVoicePlatformFacade.handleForeground();
   }
 
   onBackground(): void {
     logger.lifecycle(TAG, '生命周期: onBackground');
+    void ngfVoicePlatformFacade.handleBackground();
   }
 
   onConfigurationUpdate(config: Configuration): void {

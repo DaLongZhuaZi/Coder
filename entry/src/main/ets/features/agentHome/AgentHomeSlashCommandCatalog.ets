@@ -5,12 +5,32 @@ export class AgentHomeSlashCommandOption {
   command: string;
   description: string;
   source: string;
+  available: boolean;
+  warning: string;
+  category: string;
+  requiresConfirmation: boolean;
+  aliases: Array<string>;
 
-  constructor(providerId: string, command: string, description: string, source: string) {
+  constructor(
+    providerId: string,
+    command: string,
+    description: string,
+    source: string,
+    available: boolean = true,
+    warning: string = '',
+    category: string = '',
+    requiresConfirmation: boolean = false,
+    aliases: Array<string> = []
+  ) {
     this.providerId = providerId;
     this.command = command;
     this.description = description;
     this.source = source;
+    this.available = available;
+    this.warning = warning;
+    this.category = category;
+    this.requiresConfirmation = requiresConfirmation;
+    this.aliases = aliases;
   }
 }
 

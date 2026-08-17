@@ -53,6 +53,22 @@
       "value": "OpenCode"
     },
     {
+      "name": "agent_bridge_provider_openclaw",
+      "value": "OpenClaw"
+    },
+    {
+      "name": "agent_bridge_provider_openclaw_gateway",
+      "value": "OpenClaw Gateway"
+    },
+    {
+      "name": "agent_bridge_provider_hermes",
+      "value": "Hermes"
+    },
+    {
+      "name": "agent_bridge_provider_hermes_studio",
+      "value": "Hermes Studio"
+    },
+    {
       "name": "agent_bridge_token_label",
       "value": "Access Token"
     },
@@ -82,7 +98,7 @@
     },
     {
       "name": "agent_home_app_title",
-      "value": "Coder"
+      "value": "NGFCoder"
     },
     {
       "name": "agent_home_attachment_empty",
@@ -1455,6 +1471,4158 @@
     {
       "name": "agent_home_onboarding_md_demo_content",
       "value": "## Complex Markdown Rendering Check\n\nThis block uses **bold text**, *italic text*, `inline code`, a [link](https://afdian.com/a/dalongzz), and an image to confirm that the bottom of the startup guide triggers the full Markdown renderer.\n\n![App icon startIcon]({{startIcon}})\n\n> This area uses its own loading state, so it does not block the startup steps or connection status above.\n\n- The image comes from the app resource `startIcon`\n- Link taps go through the existing rich-content link handler\n- Tables, code blocks, and lists should render together\n\n| Capability | Expected Result |\n| --- | --- |\n| Markdown | Headings, lists, quotes, and tables render correctly |\n| Image | The app icon is shown correctly |\n| Partitioned Loading | Only this rich-text region is affected |\n\n```ts\nconst renderer = \"NGFRichContentRenderer\";\nconst mode = \"partitioned-loading\";\n```"
+    },
+    {
+      "name": "agent_home_bridge_legacy_limited",
+      "value": "This desktop bridge is older. Connected in compatibility mode; device cache migration is paused."
+    },
+    {
+      "name": "agent_home_bridge_untrusted_device",
+      "value": "Device identity check failed. Pair the desktop bridge again."
+    },
+    {
+      "name": "agent_home_bridge_trusted_device_applied",
+      "value": "Trusted computer: "
+    },
+    {
+      "name": "agent_home_trusted_device_title",
+      "value": "Trusted Device"
+    },
+    {
+      "name": "agent_home_trusted_device_desc",
+      "value": "Identifies the same computer across networks and isolates sessions and file cache."
+    },
+    {
+      "name": "agent_home_trusted_device_name",
+      "value": "Device"
+    },
+    {
+      "name": "agent_home_trusted_device_state",
+      "value": "State"
+    },
+    {
+      "name": "agent_home_trusted_device_fingerprint",
+      "value": "Fingerprint"
+    },
+    {
+      "name": "agent_home_trusted_device_endpoint",
+      "value": "Endpoint"
+    },
+    {
+      "name": "agent_home_trusted_device_remove",
+      "value": "Remove Trust"
+    },
+    {
+      "name": "agent_home_trusted_device_removed",
+      "value": "Device trust removed."
+    },
+    {
+      "name": "agent_home_trusted_device_state_trusted",
+      "value": "Trusted"
+    },
+    {
+      "name": "agent_home_trusted_device_state_legacy",
+      "value": "Compatibility Mode"
+    },
+    {
+      "name": "agent_home_trusted_device_state_untrusted",
+      "value": "Untrusted"
+    },
+    {
+      "name": "agent_home_trusted_device_state_unknown",
+      "value": "Pending"
+    },
+    {
+      "name": "agent_home_runtime_terminal_title",
+      "value": "Terminal"
+    },
+    {
+      "name": "agent_home_runtime_terminal_empty",
+      "value": "No Terminal Sessions"
+    },
+    {
+      "name": "agent_home_runtime_terminal_create",
+      "value": "New Terminal"
+    },
+    {
+      "name": "agent_home_runtime_terminal_refresh",
+      "value": "Refresh Terminals"
+    },
+    {
+      "name": "agent_home_runtime_terminal_stop",
+      "value": "Stop Terminal"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture",
+      "value": "Capture Output"
+    },
+    {
+      "name": "agent_home_runtime_terminal_input_placeholder",
+      "value": "Enter Command"
+    },
+    {
+      "name": "agent_home_runtime_terminal_send",
+      "value": "Send"
+    },
+    {
+      "name": "agent_home_runtime_terminal_unavailable",
+      "value": "Terminal binary channel is not enabled on this Bridge"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_title",
+      "value": "File Transfer"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_empty",
+      "value": "No File Transfers"
+    },
+    {
+      "name": "agent_home_runtime_terminal_desc",
+      "value": "Live terminal input and output for the trusted Bridge"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_desc",
+      "value": "Binary chunked file transfer"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_size_mismatch",
+      "value": "Download Size Check Failed"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_sha_mismatch",
+      "value": "Download Checksum Failed"
+    },
+    {
+      "name": "agent_home_agent_fork",
+      "value": "Fork Agent"
+    },
+    {
+      "name": "agent_home_agent_detach",
+      "value": "Detach Agent"
+    },
+    {
+      "name": "agent_home_checkpoint_create",
+      "value": "Create Checkpoint"
+    },
+    {
+      "name": "agent_home_checkpoint_restore",
+      "value": "Restore Checkpoint"
+    },
+    {
+      "name": "agent_home_agent_fork_suffix",
+      "value": "Fork"
+    },
+    {
+      "name": "agent_home_feature_unavailable",
+      "value": "This Bridge does not support this feature"
+    },
+    {
+      "name": "agent_home_agent_required",
+      "value": "Connect a Bridge Agent first"
+    },
+    {
+      "name": "agent_home_agent_fork_requested",
+      "value": "Agent fork requested"
+    },
+    {
+      "name": "agent_home_agent_detach_requested",
+      "value": "Agent detach requested"
+    },
+    {
+      "name": "agent_home_checkpoint_create_requested",
+      "value": "Checkpoint creation requested"
+    },
+    {
+      "name": "agent_home_checkpoint_created_status",
+      "value": "Checkpoint created"
+    },
+    {
+      "name": "agent_home_checkpoint_list_requested",
+      "value": "Checkpoint list refreshed. Choose restore again"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_title",
+      "value": "Restore Checkpoint"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_message",
+      "value": "Only the conversation will be restored; files will not be restored. Continue?"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_conversation_only",
+      "value": "Conversation restored; files were not restored"
+    },
+    {
+      "name": "agent_home_git_advanced_title",
+      "value": "Advanced Git"
+    },
+    {
+      "name": "agent_home_git_pull",
+      "value": "Pull"
+    },
+    {
+      "name": "agent_home_git_push",
+      "value": "Push"
+    },
+    {
+      "name": "agent_home_git_branch_placeholder",
+      "value": "Branch Name"
+    },
+    {
+      "name": "agent_home_git_branch_list",
+      "value": "List"
+    },
+    {
+      "name": "agent_home_git_branch_create",
+      "value": "Create"
+    },
+    {
+      "name": "agent_home_git_merge_placeholder",
+      "value": "Merge Ref"
+    },
+    {
+      "name": "agent_home_git_stash",
+      "value": "Stash"
+    },
+    {
+      "name": "agent_home_git_merge",
+      "value": "Merge"
+    },
+    {
+      "name": "agent_home_git_pull_requested",
+      "value": "git pull --ff-only requested"
+    },
+    {
+      "name": "agent_home_git_push_requested",
+      "value": "git push requested"
+    },
+    {
+      "name": "agent_home_git_branch_list_requested",
+      "value": "Branch list requested"
+    },
+    {
+      "name": "agent_home_git_branch_required",
+      "value": "Enter a branch name"
+    },
+    {
+      "name": "agent_home_git_branch_create_requested",
+      "value": "Branch creation requested"
+    },
+    {
+      "name": "agent_home_git_stash_requested",
+      "value": "Stash requested, including untracked files"
+    },
+    {
+      "name": "agent_home_git_merge_ref_required",
+      "value": "Enter a merge ref"
+    },
+    {
+      "name": "agent_home_git_merge_requested",
+      "value": "Merge requested"
+    },
+    {
+      "name": "agent_home_worktree_title",
+      "value": "Git Worktree"
+    },
+    {
+      "name": "agent_home_worktree_list",
+      "value": "Refresh"
+    },
+    {
+      "name": "agent_home_worktree_path_placeholder",
+      "value": "Worktree Absolute Path"
+    },
+    {
+      "name": "agent_home_worktree_branch_placeholder",
+      "value": "New Branch (Optional)"
+    },
+    {
+      "name": "agent_home_worktree_create",
+      "value": "Create"
+    },
+    {
+      "name": "agent_home_worktree_empty",
+      "value": "No worktrees"
+    },
+    {
+      "name": "agent_home_worktree_detached",
+      "value": "Detached"
+    },
+    {
+      "name": "agent_home_worktree_archive",
+      "value": "Archive"
+    },
+    {
+      "name": "agent_home_worktree_list_requested",
+      "value": "Worktree list requested"
+    },
+    {
+      "name": "agent_home_worktree_path_required",
+      "value": "Enter an absolute worktree path"
+    },
+    {
+      "name": "agent_home_worktree_create_requested",
+      "value": "Worktree creation requested"
+    },
+    {
+      "name": "agent_home_worktree_archive_title",
+      "value": "Archive Worktree"
+    },
+    {
+      "name": "agent_home_worktree_archive_message",
+      "value": "Only the Git-registered worktree will be removed. Continue?"
+    },
+    {
+      "name": "agent_home_runtime_terminal_rename_placeholder",
+      "value": "Terminal Name"
+    },
+    {
+      "name": "agent_home_runtime_terminal_rename",
+      "value": "Rename"
+    },
+    {
+      "name": "agent_home_runtime_terminal_rows",
+      "value": "Rows"
+    },
+    {
+      "name": "agent_home_runtime_terminal_cols",
+      "value": "Columns"
+    },
+    {
+      "name": "agent_home_runtime_terminal_resize",
+      "value": "Resize"
+    },
+    {
+      "name": "agent_home_runtime_terminal_shortcut_ctrl_c",
+      "value": "Ctrl+C"
+    },
+    {
+      "name": "agent_home_runtime_terminal_shortcut_esc",
+      "value": "Esc"
+    },
+    {
+      "name": "agent_home_runtime_terminal_shortcut_tab",
+      "value": "Tab"
+    },
+    {
+      "name": "agent_home_runtime_terminal_shortcut_clear",
+      "value": "Clear"
+    },
+    {
+      "name": "agent_home_runtime_terminal_rename_required",
+      "value": "Enter a terminal name"
+    },
+    {
+      "name": "agent_home_runtime_terminal_resize_invalid",
+      "value": "Enter valid terminal rows and columns"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_source_placeholder",
+      "value": "Local File Path or URI"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_pick",
+      "value": "Pick"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_target_placeholder",
+      "value": "Workspace Target Path"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_upload",
+      "value": "Upload"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_unavailable",
+      "value": "This Bridge does not support binary file transfer"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_cancel",
+      "value": "Cancel"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_retry",
+      "value": "Retry"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_retry_unavailable",
+      "value": "No retryable upload path"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_path_required",
+      "value": "Pick a local file and enter a target path"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_read_failed",
+      "value": "Failed to read local file"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_send_failed",
+      "value": "Failed to send file data"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_upload_requested",
+      "value": "File upload started"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_cancelled",
+      "value": "File transfer cancelled"
+    },
+    {
+      "name": "agent_home_provider_profiles_title",
+      "value": "Provider Profiles"
+    },
+    {
+      "name": "agent_home_provider_profiles_desc",
+      "value": "Manage custom provider configs; saved profiles can launch after dynamic runtime wiring lands."
+    },
+    {
+      "name": "agent_home_provider_profile_name_placeholder",
+      "value": "Profile Name"
+    },
+    {
+      "name": "agent_home_provider_profile_provider_placeholder",
+      "value": "Provider ID"
+    },
+    {
+      "name": "agent_home_provider_profile_endpoint_placeholder",
+      "value": "Custom Endpoint (Optional)"
+    },
+    {
+      "name": "agent_home_provider_profile_binary_placeholder",
+      "value": "Binary Path (Optional)"
+    },
+    {
+      "name": "agent_home_provider_profile_args_placeholder",
+      "value": "Args (Optional)"
+    },
+    {
+      "name": "agent_home_provider_profile_cwd_placeholder",
+      "value": "Working Directory (Optional)"
+    },
+    {
+      "name": "agent_home_provider_profiles_refresh",
+      "value": "Refresh"
+    },
+    {
+      "name": "agent_home_provider_profiles_save",
+      "value": "Save"
+    },
+    {
+      "name": "agent_home_provider_profiles_empty",
+      "value": "No provider profiles"
+    },
+    {
+      "name": "agent_home_provider_profiles_delete",
+      "value": "Delete"
+    },
+    {
+      "name": "agent_home_provider_profile_required",
+      "value": "Enter a profile name and provider ID"
+    },
+    {
+      "name": "agent_home_provider_profile_saved_runtime_pending",
+      "value": "Saved; launch requires the upcoming dynamic runtime wiring"
+    },
+    {
+      "name": "agent_home_daemon_diagnostics_title",
+      "value": "Daemon Diagnostics"
+    },
+    {
+      "name": "agent_home_daemon_diagnostics_desc",
+      "value": "View background status and the latest 64 KB of logs."
+    },
+    {
+      "name": "agent_home_daemon_status_refresh",
+      "value": "Refresh Status"
+    },
+    {
+      "name": "agent_home_daemon_logs_refresh",
+      "value": "Refresh Logs"
+    },
+    {
+      "name": "agent_home_daemon_server_id",
+      "value": "Server ID"
+    },
+    {
+      "name": "agent_home_daemon_uptime",
+      "value": "Uptime"
+    },
+    {
+      "name": "agent_home_daemon_connections",
+      "value": "Connections"
+    },
+    {
+      "name": "agent_home_daemon_log_path",
+      "value": "Log Path"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_status",
+      "value": "Hook Status"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_install",
+      "value": "Install Hook"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_preview",
+      "value": "Preview Hook"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_uninstall",
+      "value": "Uninstall Hook"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_install_confirm",
+      "value": "This will write to your shell profile after creating a .bak backup. Restart terminals to use it."
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_uninstall_confirm",
+      "value": "This will remove the managed hook block from your shell profile after creating a .bak backup."
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_profile_installed",
+      "value": "Profile installed"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_script_ready",
+      "value": "Script ready"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_not_installed",
+      "value": "Not installed"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_persisted",
+      "value": "Persisted"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_memory",
+      "value": "In Memory"
+    },
+    {
+      "name": "agent_home_provider_acp_path_placeholder",
+      "value": "ACP Catalog File Or Folder"
+    },
+    {
+      "name": "agent_home_provider_acp_discover",
+      "value": "Discover ACP"
+    },
+    {
+      "name": "agent_home_provider_acp_import",
+      "value": "Import ACP"
+    },
+    {
+      "name": "agent_home_provider_profile_runtime_ready",
+      "value": "Runtime Registered"
+    },
+    {
+      "name": "agent_home_provider_profile_runtime_unavailable",
+      "value": "Runtime Unavailable"
+    },
+    {
+      "name": "agent_home_daemon_autostart_enable",
+      "value": "Enable Autostart"
+    },
+    {
+      "name": "agent_home_daemon_autostart_disable",
+      "value": "Disable Autostart"
+    },
+    {
+      "name": "agent_home_daemon_autostart",
+      "value": "Autostart"
+    },
+    {
+      "name": "agent_home_security_devices_refresh",
+      "value": "Refresh Devices"
+    },
+    {
+      "name": "agent_home_security_device_trust",
+      "value": "Trust This Device"
+    },
+    {
+      "name": "agent_home_security_device_revoke",
+      "value": "Revoke This Device"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_start",
+      "value": "Start Auto Refresh"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_stop",
+      "value": "Stop Auto Refresh"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_on",
+      "value": "Git Auto Refresh On"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_off",
+      "value": "Git Auto Refresh Off"
+    },
+    {
+      "name": "agent_home_checkpoint_include_files",
+      "value": "Include File Snapshot"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_message",
+      "value": "This checkpoint includes a file snapshot. Restore files as well? A dry-run conflict check is recommended first."
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_dry_run",
+      "value": "Check Conflicts"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_confirm",
+      "value": "Restore Files"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_dry_run_done",
+      "value": "File Restore Dry-Run Returned"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_conflicts_title",
+      "value": "File Conflicts Found"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_conflicts_message",
+      "value": "Some files changed. A normal restore will not overwrite them. Force restore creates a pre-restore snapshot first."
+    },
+    {
+      "name": "agent_home_checkpoint_restore_conflicts_count",
+      "value": "Conflicting Files"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_force",
+      "value": "Force Restore"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_ready_title",
+      "value": "Ready to Restore Files"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_ready_message",
+      "value": "No file conflicts were found. Restoring will recover the conversation and files."
+    },
+    {
+      "name": "agent_home_provider_profile_runtime_mode_placeholder",
+      "value": "Runtime Mode: oneshot or stdio"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_source",
+      "value": "Source"
+    },
+    {
+      "name": "agent_home_agent_archive_cascade_title",
+      "value": "Archive Child Agents?"
+    },
+    {
+      "name": "agent_home_agent_archive_cascade_message",
+      "value": "This agent has child agents. Archive only the current agent or archive all child agents too."
+    },
+    {
+      "name": "agent_home_agent_archive_single",
+      "value": "Current Only"
+    },
+    {
+      "name": "agent_home_agent_archive_cascade",
+      "value": "Archive All"
+    },
+    {
+      "name": "agent_home_provider_profile_runtime_oneshot",
+      "value": "One-Shot"
+    },
+    {
+      "name": "agent_home_provider_profile_runtime_stdio",
+      "value": "Stdio"
+    },
+    {
+      "name": "agent_home_provider_profiles_test",
+      "value": "Test"
+    },
+    {
+      "name": "agent_home_provider_profile_test_requested",
+      "value": "Provider Profile Test Requested"
+    },
+    {
+      "name": "agent_home_provider_profile_test_ok",
+      "value": "Provider Profile Test Passed"
+    },
+    {
+      "name": "agent_home_provider_profile_test_failed",
+      "value": "Provider Profile Test Failed"
+    },
+    {
+      "name": "agent_home_git_action_ok",
+      "value": "Git Action Completed"
+    },
+    {
+      "name": "agent_home_git_action_failed",
+      "value": "Git Action Failed"
+    },
+    {
+      "name": "agent_home_daemon_doctor_summary",
+      "value": "Doctor"
+    },
+    {
+      "name": "agent_home_daemon_doctor_ok",
+      "value": "OK"
+    },
+    {
+      "name": "agent_home_daemon_doctor_errors",
+      "value": "Errors"
+    },
+    {
+      "name": "agent_home_daemon_doctor_warnings",
+      "value": "Warnings"
+    },
+    {
+      "name": "agent_home_daemon_doctor_generated",
+      "value": "Generated"
+    },
+    {
+      "name": "agent_home_daemon_doctor_empty",
+      "value": "No diagnostics yet"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_verify_summary",
+      "value": "Verification"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_manifest_failed",
+      "value": "Snapshot verification failed, so restore was blocked."
+    },
+    {
+      "name": "agent_home_checkpoint_restore_file_counts",
+      "value": "File Counts"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_restore_seq",
+      "value": "Restore Seq"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_truncated",
+      "value": "Truncated"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_restored",
+      "value": "Restored"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_verified",
+      "value": "Verified"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_skipped",
+      "value": "Skipped"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_verify_errors",
+      "value": "Verify Errors"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_pre_snapshot",
+      "value": "Pre-restore snapshot"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_pre_snapshot_title",
+      "value": "Rollback Available"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_pre_snapshot_message",
+      "value": "Bridge saved a file snapshot from before restore. Run a dry-run before rolling back."
+    },
+    {
+      "name": "agent_home_checkpoint_restore_pre_snapshot_dry_run",
+      "value": "Dry-run rollback"
+    },
+    {
+      "name": "agent_home_provider_profile_env_placeholder",
+      "value": "Env JSON, for example {\"KEY\":\"VALUE\"}"
+    },
+    {
+      "name": "agent_home_provider_profile_env_invalid",
+      "value": "Invalid Env JSON"
+    },
+    {
+      "name": "agent_home_provider_profiles_clone",
+      "value": "Clone"
+    },
+    {
+      "name": "agent_home_provider_profile_clone_requested",
+      "value": "Profile clone requested"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_pause",
+      "value": "Pause"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_resume",
+      "value": "Resume"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_status",
+      "value": "Subscription status"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_status_unknown",
+      "value": "Unknown"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_paused",
+      "value": "Paused"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_changes",
+      "value": "Changes/Files"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_last_success",
+      "value": "Last Success"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_backoff",
+      "value": "Backoff"
+    },
+    {
+      "name": "agent_home_git_diff_mode_unified",
+      "value": "Unified"
+    },
+    {
+      "name": "agent_home_git_diff_mode_stat",
+      "value": "Stat"
+    },
+    {
+      "name": "agent_home_git_diff_mode_files",
+      "value": "Files"
+    },
+    {
+      "name": "agent_home_git_diff_stat_file",
+      "value": "File"
+    },
+    {
+      "name": "agent_home_git_diff_stat_status",
+      "value": "Status"
+    },
+    {
+      "name": "agent_home_git_diff_stat_added",
+      "value": "Added Lines"
+    },
+    {
+      "name": "agent_home_git_diff_stat_deleted",
+      "value": "Deleted Lines"
+    },
+    {
+      "name": "agent_home_git_diff_stat_files",
+      "value": "Files"
+    },
+    {
+      "name": "agent_home_git_action_exit_code",
+      "value": "Exit Code"
+    },
+    {
+      "name": "agent_home_git_action_remote",
+      "value": "Remote"
+    },
+    {
+      "name": "agent_home_git_action_changed_files",
+      "value": "Changed Files"
+    },
+    {
+      "name": "agent_home_git_action_failure_category",
+      "value": "Failure Category"
+    },
+    {
+      "name": "agent_home_git_action_conflict",
+      "value": "Conflict"
+    },
+    {
+      "name": "agent_home_git_action_conflicts",
+      "value": "Conflicting Files"
+    },
+    {
+      "name": "agent_home_git_action_remediation",
+      "value": "Remediation"
+    },
+    {
+      "name": "agent_home_workspace_open",
+      "value": "Open Folder"
+    },
+    {
+      "name": "agent_home_workspace_open_requested",
+      "value": "Workspace folder open requested"
+    },
+    {
+      "name": "agent_home_runtime_cli_session_title",
+      "value": "Interactive CLI Session"
+    },
+    {
+      "name": "agent_home_runtime_cli_session_desc",
+      "value": "Long-running session status is shown only for stdio providers."
+    },
+    {
+      "name": "agent_home_runtime_cli_refresh",
+      "value": "Refresh Status"
+    },
+    {
+      "name": "agent_home_runtime_cli_attach",
+      "value": "Attach Session"
+    },
+    {
+      "name": "agent_home_runtime_cli_mode",
+      "value": "Runtime Mode"
+    },
+    {
+      "name": "agent_home_runtime_cli_state",
+      "value": "Session State"
+    },
+    {
+      "name": "agent_home_runtime_cli_ready",
+      "value": "Interactive Ready"
+    },
+    {
+      "name": "agent_home_runtime_cli_pid",
+      "value": "Process PID"
+    },
+    {
+      "name": "agent_home_runtime_cli_started_at",
+      "value": "Started At"
+    },
+    {
+      "name": "agent_home_runtime_cli_last_activity",
+      "value": "Last Activity"
+    },
+    {
+      "name": "agent_home_runtime_cli_exit_code",
+      "value": "Exit Code"
+    },
+    {
+      "name": "agent_home_runtime_cli_last_error",
+      "value": "Last Error"
+    },
+    {
+      "name": "agent_home_runtime_cli_recent_output",
+      "value": "Recent Output"
+    },
+    {
+      "name": "agent_home_runtime_cli_attach_requested",
+      "value": "Interactive session attach requested"
+    },
+    {
+      "name": "agent_home_runtime_cli_status_requested",
+      "value": "Interactive session status refresh requested"
+    },
+    {
+      "name": "agent_home_runtime_cli_ready_yes",
+      "value": "Ready"
+    },
+    {
+      "name": "agent_home_runtime_cli_ready_no",
+      "value": "Not Ready"
+    },
+    {
+      "name": "agent_home_checkpoint_manifest_summary",
+      "value": "Manifest Summary"
+    },
+    {
+      "name": "agent_home_checkpoint_workspace_root",
+      "value": "Workspace"
+    },
+    {
+      "name": "agent_home_checkpoint_file_policy",
+      "value": "File Policy"
+    },
+    {
+      "name": "agent_home_checkpoint_skipped_reasons",
+      "value": "Skipped Reasons"
+    },
+    {
+      "name": "agent_home_checkpoint_runtime_not_restored",
+      "value": "Runtime Not Rewound"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_plan",
+      "value": "Restore Plan"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_blocked",
+      "value": "Restore Blocked"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_status",
+      "value": "Status"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_snapshot_bytes",
+      "value": "Snapshot Bytes"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_persisted_bytes",
+      "value": "Persisted Bytes"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_warning",
+      "value": "Capture Warning"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_path",
+      "value": "Capture Log"
+    },
+    {
+      "name": "agent_home_runtime_terminal_activity",
+      "value": "Activity"
+    },
+    {
+      "name": "agent_home_runtime_terminal_attention",
+      "value": "Attention"
+    },
+    {
+      "name": "agent_home_runtime_terminal_snapshot_restored",
+      "value": "Terminal Restored"
+    },
+    {
+      "name": "agent_home_runtime_terminal_input_error",
+      "value": "Input"
+    },
+    {
+      "name": "agent_home_runtime_terminal_resize_error",
+      "value": "Resize"
+    },
+    {
+      "name": "agent_home_runtime_terminal_attention_required",
+      "value": "Attention Required"
+    },
+    {
+      "name": "agent_home_runtime_terminal_copy",
+      "value": "Copy Terminal"
+    },
+    {
+      "name": "agent_home_runtime_terminal_copied",
+      "value": "Terminal Copied"
+    },
+    {
+      "name": "agent_home_runtime_terminal_copy_empty",
+      "value": "No Terminal Text"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_title",
+      "value": "Mouse"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_off",
+      "value": "Off"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_click",
+      "value": "Click"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_drag",
+      "value": "Drag"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_all",
+      "value": "All"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_sgr",
+      "value": "SGR"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_unavailable",
+      "value": "Mouse Unavailable"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_mode_applied",
+      "value": "Mouse Mode Updated"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_status",
+      "value": "Mouse Mode"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_error",
+      "value": "Mouse Error"
+    },
+    {
+      "name": "agent_home_runtime_terminal_ansi_status",
+      "value": "ANSI Normalized"
+    },
+    {
+      "name": "agent_home_status_detail_relationship",
+      "value": "Agent Relationship"
+    },
+    {
+      "name": "agent_home_relationship_status",
+      "value": "Relationship Status"
+    },
+    {
+      "name": "agent_home_relationship_parent",
+      "value": "Parent Agent"
+    },
+    {
+      "name": "agent_home_relationship_root",
+      "value": "Root Agent"
+    },
+    {
+      "name": "agent_home_relationship_children",
+      "value": "Child Agents"
+    },
+    {
+      "name": "agent_home_relationship_depth",
+      "value": "Tree Depth"
+    },
+    {
+      "name": "agent_home_relationship_detached",
+      "value": "Detached"
+    },
+    {
+      "name": "agent_home_relationship_fork_source",
+      "value": "Fork Source"
+    },
+    {
+      "name": "agent_home_relationship_checkpoint",
+      "value": "Fork Checkpoint"
+    },
+    {
+      "name": "agent_home_relationship_updated_at",
+      "value": "Relationship Updated"
+    },
+    {
+      "name": "agent_home_relationship_warnings",
+      "value": "Warnings"
+    },
+    {
+      "name": "agent_home_relationship_no_warnings",
+      "value": "None"
+    },
+    {
+      "name": "agent_home_relationship_warnings_count_suffix",
+      "value": " issue(s)"
+    },
+    {
+      "name": "agent_home_relationship_group_title",
+      "value": "Related Agents"
+    },
+    {
+      "name": "agent_home_relationship_group_root",
+      "value": "Root"
+    },
+    {
+      "name": "agent_home_relationship_group_parent",
+      "value": "Parent"
+    },
+    {
+      "name": "agent_home_relationship_group_child",
+      "value": "Child"
+    },
+    {
+      "name": "agent_home_relationship_group_detached",
+      "value": "Detached"
+    },
+    {
+      "name": "agent_home_relationship_yes",
+      "value": "Yes"
+    },
+    {
+      "name": "agent_home_relationship_no",
+      "value": "No"
+    },
+    {
+      "name": "agent_home_discovery_label",
+      "value": "Discovery"
+    },
+    {
+      "name": "agent_home_discovery_warnings",
+      "value": "Warnings"
+    },
+    {
+      "name": "agent_home_discovery_unavailable",
+      "value": "Unavailable"
+    },
+    {
+      "name": "agent_home_discovery_source_runtime",
+      "value": "Runtime"
+    },
+    {
+      "name": "agent_home_discovery_source_profile",
+      "value": "Profile"
+    },
+    {
+      "name": "agent_home_discovery_source_cache",
+      "value": "Cache"
+    },
+    {
+      "name": "agent_home_discovery_source_fallback",
+      "value": "Fallback"
+    },
+    {
+      "name": "agent_home_discovery_status_ready",
+      "value": "Ready"
+    },
+    {
+      "name": "agent_home_discovery_status_degraded",
+      "value": "Degraded"
+    },
+    {
+      "name": "agent_home_discovery_status_unavailable",
+      "value": "Unavailable"
+    },
+    {
+      "name": "agent_home_discovery_status_unknown",
+      "value": "Unknown"
+    },
+    {
+      "name": "agent_home_slash_commands_requires_confirmation",
+      "value": "Requires Confirmation"
+    },
+    {
+      "name": "agent_home_provider_acp_preview_title",
+      "value": "ACP Import Preview"
+    },
+    {
+      "name": "agent_home_provider_acp_preview_empty",
+      "value": "No ACP preview yet"
+    },
+    {
+      "name": "agent_home_provider_acp_confirm_import",
+      "value": "Confirm Import"
+    },
+    {
+      "name": "agent_home_provider_acp_replace_duplicates",
+      "value": "Replace Duplicates"
+    },
+    {
+      "name": "agent_home_provider_acp_skip_duplicates",
+      "value": "Skip Duplicates"
+    },
+    {
+      "name": "agent_home_provider_acp_confirm_title",
+      "value": "Import ACP Providers?"
+    },
+    {
+      "name": "agent_home_provider_acp_confirm_message",
+      "value": "Available providers from the preview will be imported. Duplicates follow the selected policy."
+    },
+    {
+      "name": "agent_home_provider_acp_preview_requested",
+      "value": "ACP Preview Requested"
+    },
+    {
+      "name": "agent_home_provider_acp_import_requested",
+      "value": "ACP Import Requested"
+    },
+    {
+      "name": "agent_home_provider_acp_import_done",
+      "value": "ACP Import Complete"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_scanned",
+      "value": "Scanned"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_accepted",
+      "value": "Accepted"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_rejected",
+      "value": "Rejected"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_duplicates",
+      "value": "Duplicates"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_imported",
+      "value": "Imported"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_skipped",
+      "value": "Skipped"
+    },
+    {
+      "name": "agent_home_provider_profile_disabled",
+      "value": "Disabled"
+    },
+    {
+      "name": "agent_home_provider_profile_enable",
+      "value": "Enable"
+    },
+    {
+      "name": "agent_home_provider_profile_disable",
+      "value": "Disable"
+    },
+    {
+      "name": "agent_home_provider_profile_source",
+      "value": "Source"
+    },
+    {
+      "name": "agent_home_provider_profile_validation",
+      "value": "Validation"
+    },
+    {
+      "name": "agent_home_worktree_preview",
+      "value": "Preview"
+    },
+    {
+      "name": "agent_home_worktree_preview_requested",
+      "value": "Worktree preview requested"
+    },
+    {
+      "name": "agent_home_worktree_preview_ready",
+      "value": "Worktree Preview Ready"
+    },
+    {
+      "name": "agent_home_worktree_action_ok",
+      "value": "Worktree Action Complete"
+    },
+    {
+      "name": "agent_home_worktree_action_failed",
+      "value": "Worktree Action Failed"
+    },
+    {
+      "name": "agent_home_worktree_path",
+      "value": "Path"
+    },
+    {
+      "name": "agent_home_worktree_confirmed",
+      "value": "Confirmed"
+    },
+    {
+      "name": "agent_home_worktree_registry_linked",
+      "value": "Registry Linked"
+    },
+    {
+      "name": "agent_home_worktree_setup_status",
+      "value": "Setup Status"
+    },
+    {
+      "name": "agent_home_worktree_git_registered",
+      "value": "Git Registered"
+    },
+    {
+      "name": "agent_home_worktree_missing",
+      "value": "Missing"
+    },
+    {
+      "name": "agent_home_worktree_stale",
+      "value": "Stale"
+    },
+    {
+      "name": "agent_home_worktree_source",
+      "value": "Source Workspace"
+    },
+    {
+      "name": "agent_home_status_yes",
+      "value": "Yes"
+    },
+    {
+      "name": "agent_home_status_no",
+      "value": "No"
+    },
+    {
+      "name": "agent_home_worktree_create_title",
+      "value": "Create Worktree"
+    },
+    {
+      "name": "agent_home_worktree_create_message",
+      "value": "Preview passed. Confirm to create the Git worktree and register it as an isolated workspace."
+    },
+    {
+      "name": "agent_home_workspace_registry_preview_import",
+      "value": "Preview Import"
+    },
+    {
+      "name": "agent_home_workspace_registry_confirm_import",
+      "value": "Import"
+    },
+    {
+      "name": "agent_home_workspace_registry_preview_open",
+      "value": "Preview Open"
+    },
+    {
+      "name": "agent_home_workspace_registry_confirm_open",
+      "value": "Open Folder"
+    },
+    {
+      "name": "agent_home_workspace_registry_doctor",
+      "value": "Workspace Doctor"
+    },
+    {
+      "name": "agent_home_workspace_registry_refresh",
+      "value": "Refresh Registry"
+    },
+    {
+      "name": "agent_home_workspace_registry_suggestions",
+      "value": "Directory Suggestions"
+    },
+    {
+      "name": "agent_home_workspace_registry_status",
+      "value": "Registry Status"
+    },
+    {
+      "name": "agent_home_workspace_registry_validation",
+      "value": "Validation"
+    },
+    {
+      "name": "agent_home_workspace_registry_duplicate",
+      "value": "Duplicate Path Updates Existing Record"
+    },
+    {
+      "name": "agent_home_workspace_registry_restored_archived",
+      "value": "Archived Record Restored"
+    },
+    {
+      "name": "agent_home_workspace_registry_archive_title",
+      "value": "Archive Workspace"
+    },
+    {
+      "name": "agent_home_workspace_registry_archive_message",
+      "value": "This only archives the workspace from the list. Local files are not deleted."
+    },
+    {
+      "name": "agent_home_workspace_registry_import_title",
+      "value": "Import Workspace"
+    },
+    {
+      "name": "agent_home_workspace_registry_import_message",
+      "value": "The registry will be updated only after validation passes."
+    },
+    {
+      "name": "agent_home_workspace_registry_open_title",
+      "value": "Open Workspace"
+    },
+    {
+      "name": "agent_home_workspace_registry_open_message",
+      "value": "Bridge will use the local folder launcher and keep diagnostics if it fails."
+    },
+    {
+      "name": "agent_home_workspace_registry_missing",
+      "value": "Missing"
+    },
+    {
+      "name": "agent_home_workspace_registry_stale",
+      "value": "Stale"
+    },
+    {
+      "name": "agent_home_workspace_registry_archived",
+      "value": "Archived"
+    },
+    {
+      "name": "agent_home_workspace_registry_active",
+      "value": "Active"
+    },
+    {
+      "name": "agent_home_workspace_registry_projects",
+      "value": "Project Groups"
+    },
+    {
+      "name": "agent_home_workspace_registry_no_suggestions",
+      "value": "No directory suggestions"
+    },
+    {
+      "name": "agent_home_workspace_registry_unavailable",
+      "value": "Workspace Registry Requires New Bridge"
+    },
+    {
+      "name": "agent_home_workspace_registry_preview_requested",
+      "value": "Workspace preview requested"
+    },
+    {
+      "name": "agent_home_workspace_registry_confirm_requested",
+      "value": "Workspace confirmation requested"
+    },
+    {
+      "name": "agent_home_workspace_registry_archive_requested",
+      "value": "Archive preview requested"
+    },
+    {
+      "name": "agent_home_workspace_registry_done",
+      "value": "Workspace registry updated"
+    },
+    {
+      "name": "agent_home_workspace_registry_failed",
+      "value": "Workspace registry action failed"
+    },
+    {
+      "name": "agent_home_workspace_registry_open_preview_ready",
+      "value": "Open preview ready"
+    },
+    {
+      "name": "agent_home_workspace_registry_archive_preview_ready",
+      "value": "Archive preview ready"
+    },
+    {
+      "name": "agent_home_workspace_registry_projects_empty",
+      "value": "No project groups"
+    },
+    {
+      "name": "agent_home_workspace_registry_doctor_empty",
+      "value": "No doctor checks"
+    },
+    {
+      "name": "agent_home_workspace_registry_save_local",
+      "value": "Save Local"
+    },
+    {
+      "name": "agent_home_workspace_registry_kind",
+      "value": "Kind"
+    },
+    {
+      "name": "agent_home_workspace_registry_last_open",
+      "value": "Last Opened"
+    },
+    {
+      "name": "agent_home_workspace_registry_open_status",
+      "value": "Open Status"
+    },
+    {
+      "name": "agent_home_workspace_registry_confirm_archive",
+      "value": "Archive"
+    },
+    {
+      "name": "agent_home_daemon_health_refresh",
+      "value": "Check Health"
+    },
+    {
+      "name": "agent_home_daemon_start",
+      "value": "Start Daemon"
+    },
+    {
+      "name": "agent_home_daemon_stop",
+      "value": "Stop Daemon"
+    },
+    {
+      "name": "agent_home_daemon_restart",
+      "value": "Restart Daemon"
+    },
+    {
+      "name": "agent_home_daemon_autostart_preview",
+      "value": "Preview Autostart"
+    },
+    {
+      "name": "agent_home_daemon_status",
+      "value": "Status"
+    },
+    {
+      "name": "agent_home_daemon_pid",
+      "value": "PID"
+    },
+    {
+      "name": "agent_home_daemon_started_at",
+      "value": "Started At"
+    },
+    {
+      "name": "agent_home_daemon_heartbeat",
+      "value": "Last Heartbeat"
+    },
+    {
+      "name": "agent_home_daemon_restart_count",
+      "value": "Restart Count"
+    },
+    {
+      "name": "agent_home_daemon_last_error",
+      "value": "Last Error"
+    },
+    {
+      "name": "agent_home_daemon_message",
+      "value": "Daemon Message"
+    },
+    {
+      "name": "agent_home_daemon_log_warnings",
+      "value": "Log Warnings"
+    },
+    {
+      "name": "agent_home_daemon_lifecycle_requested",
+      "value": "Daemon Action Requested"
+    },
+    {
+      "name": "agent_home_daemon_autostart_preview_requested",
+      "value": "Autostart Preview Requested"
+    },
+    {
+      "name": "agent_home_github_title",
+      "value": "GitHub PR"
+    },
+    {
+      "name": "agent_home_github_pr_number_placeholder",
+      "value": "PR Number"
+    },
+    {
+      "name": "agent_home_github_head_placeholder",
+      "value": "Head Branch"
+    },
+    {
+      "name": "agent_home_github_base_placeholder",
+      "value": "Base Branch"
+    },
+    {
+      "name": "agent_home_github_title_placeholder",
+      "value": "PR Title"
+    },
+    {
+      "name": "agent_home_github_create_pr",
+      "value": "Create PR"
+    },
+    {
+      "name": "agent_home_github_refresh_pr",
+      "value": "Refresh PR"
+    },
+    {
+      "name": "agent_home_github_refresh_checks",
+      "value": "Refresh Checks"
+    },
+    {
+      "name": "agent_home_github_merge_pr",
+      "value": "Merge PR"
+    },
+    {
+      "name": "agent_home_github_status_empty",
+      "value": "No GitHub PR Status Yet"
+    },
+    {
+      "name": "agent_home_github_checks_summary",
+      "value": "Checks"
+    },
+    {
+      "name": "agent_home_github_repo",
+      "value": "Repository"
+    },
+    {
+      "name": "agent_home_github_merge_confirm_title",
+      "value": "Merge PR?"
+    },
+    {
+      "name": "agent_home_github_merge_confirm_message",
+      "value": "Merging updates the remote repository and only runs after confirmation."
+    },
+    {
+      "name": "agent_home_github_merge_confirm",
+      "value": "Merge"
+    },
+    {
+      "name": "agent_home_github_requested",
+      "value": "GitHub Request Sent"
+    },
+    {
+      "name": "agent_home_github_failure_category",
+      "value": "Failure"
+    },
+    {
+      "name": "agent_home_github_remediation",
+      "value": "Remediation"
+    },
+    {
+      "name": "agent_home_github_checks_passed",
+      "value": "Passed"
+    },
+    {
+      "name": "agent_home_github_checks_failed",
+      "value": "Failed"
+    },
+    {
+      "name": "agent_home_github_checks_pending",
+      "value": "Pending"
+    },
+    {
+      "name": "agent_home_github_checks_cancelled",
+      "value": "Cancelled"
+    },
+    {
+      "name": "agent_home_github_pr_number_required",
+      "value": "Enter PR Number"
+    },
+    {
+      "name": "agent_home_github_create_required",
+      "value": "Enter Head, Base, and Title"
+    },
+    {
+      "name": "agent_home_push_title",
+      "value": "Push Kit Notifications"
+    },
+    {
+      "name": "agent_home_push_desc",
+      "value": "Register This Device's Push Token and Inspect Bridge Delivery"
+    },
+    {
+      "name": "agent_home_push_refresh",
+      "value": "Refresh Status"
+    },
+    {
+      "name": "agent_home_push_retry_token",
+      "value": "Retry Token"
+    },
+    {
+      "name": "agent_home_push_register",
+      "value": "Register Device"
+    },
+    {
+      "name": "agent_home_push_unregister",
+      "value": "Unregister Device"
+    },
+    {
+      "name": "agent_home_push_client_status",
+      "value": "Client Status"
+    },
+    {
+      "name": "agent_home_push_bridge_status",
+      "value": "Bridge Delivery"
+    },
+    {
+      "name": "agent_home_push_subscription_count",
+      "value": "Active Subscriptions"
+    },
+    {
+      "name": "agent_home_push_token_fingerprint",
+      "value": "Token Fingerprint"
+    },
+    {
+      "name": "agent_home_push_last_attempt",
+      "value": "Last Attempt"
+    },
+    {
+      "name": "agent_home_push_last_success",
+      "value": "Last Success"
+    },
+    {
+      "name": "agent_home_push_delivery_count",
+      "value": "Deliveries"
+    },
+    {
+      "name": "agent_home_push_last_failure",
+      "value": "Last Failure"
+    },
+    {
+      "name": "agent_home_push_message",
+      "value": "Bridge Message"
+    },
+    {
+      "name": "agent_home_push_remediation",
+      "value": "Bridge Remediation"
+    },
+    {
+      "name": "agent_home_push_register_requested",
+      "value": "Push Token Registration Requested"
+    },
+    {
+      "name": "agent_home_push_unregister_requested",
+      "value": "Push Token Unregistration Requested"
+    },
+    {
+      "name": "agent_home_push_client_ready",
+      "value": "Push Token Ready"
+    },
+    {
+      "name": "agent_home_push_client_unavailable",
+      "value": "Push Kit Unavailable"
+    },
+    {
+      "name": "agent_home_push_client_pending",
+      "value": "Waiting for Push Token"
+    },
+    {
+      "name": "agent_home_push_delivery_ready",
+      "value": "Offline Delivery Ready"
+    },
+    {
+      "name": "agent_home_push_delivery_waiting_subscription",
+      "value": "Configured, Waiting for Device Subscription"
+    },
+    {
+      "name": "agent_home_push_delivery_not_configured",
+      "value": "Bridge Offline Delivery Not Configured"
+    },
+    {
+      "name": "agent_home_push_client_message",
+      "value": "Client Message"
+    },
+    {
+      "name": "agent_home_push_client_remediation",
+      "value": "Client Remediation"
+    },
+    {
+      "name": "agent_home_daemon_autostart_install",
+      "value": "Install Autostart"
+    },
+    {
+      "name": "agent_home_daemon_autostart_uninstall",
+      "value": "Remove Autostart"
+    },
+    {
+      "name": "agent_home_daemon_autostart_install_confirm",
+      "value": "This installs a managed Agent Bridge entry in the current user's OS autostart configuration. No passwords or tokens are written. Continue?"
+    },
+    {
+      "name": "agent_home_daemon_autostart_uninstall_confirm",
+      "value": "This removes only the OS autostart entry created and marked as managed by Agent Bridge. Continue?"
+    },
+    {
+      "name": "agent_home_daemon_autostart_configured",
+      "value": "Installed"
+    },
+    {
+      "name": "agent_home_daemon_autostart_not_configured",
+      "value": "Not Installed"
+    },
+    {
+      "name": "agent_home_daemon_autostart_registration",
+      "value": "Registration"
+    },
+    {
+      "name": "agent_home_daemon_autostart_target",
+      "value": "Configuration Target"
+    },
+    {
+      "name": "agent_home_daemon_autostart_warning",
+      "value": "Autostart Warning"
+    },
+    {
+      "name": "agent_home_daemon_supervisor_pid",
+      "value": "Supervisor PID"
+    },
+    {
+      "name": "agent_home_daemon_worker_pid",
+      "value": "Worker PID"
+    },
+    {
+      "name": "agent_home_daemon_worker_generation",
+      "value": "Worker Generation"
+    },
+    {
+      "name": "agent_home_daemon_worker_ready",
+      "value": "Worker Ready"
+    },
+    {
+      "name": "agent_home_daemon_worker_heartbeat",
+      "value": "Worker Heartbeat"
+    },
+    {
+      "name": "agent_home_daemon_consecutive_crashes",
+      "value": "Consecutive Crashes"
+    },
+    {
+      "name": "agent_home_daemon_crash_window_count",
+      "value": "Crash Window Count"
+    },
+    {
+      "name": "agent_home_daemon_next_restart",
+      "value": "Next Restart"
+    },
+    {
+      "name": "agent_home_daemon_last_restart_reason",
+      "value": "Last Restart Reason"
+    },
+    {
+      "name": "agent_home_daemon_crash_loop",
+      "value": "Crash Loop"
+    },
+    {
+      "name": "agent_home_daemon_yes",
+      "value": "Yes"
+    },
+    {
+      "name": "agent_home_daemon_no",
+      "value": "No"
+    },
+    {
+      "name": "agent_home_daemon_update_status_refresh",
+      "value": "Update Status"
+    },
+    {
+      "name": "agent_home_daemon_update_check",
+      "value": "Check for Updates"
+    },
+    {
+      "name": "agent_home_daemon_update_preview",
+      "value": "Preview Update"
+    },
+    {
+      "name": "agent_home_daemon_update_install",
+      "value": "Install Update"
+    },
+    {
+      "name": "agent_home_daemon_update_rollback",
+      "value": "Roll Back Update"
+    },
+    {
+      "name": "agent_home_daemon_update_install_confirm",
+      "value": "The update will be downloaded and verified, the current version will be backed up, the global Bridge package will be changed, and the daemon will restart."
+    },
+    {
+      "name": "agent_home_daemon_update_rollback_confirm",
+      "value": "The previous version will be restored from the verified backup and the daemon will restart."
+    },
+    {
+      "name": "agent_home_daemon_update_current_version",
+      "value": "Current Version"
+    },
+    {
+      "name": "agent_home_daemon_update_target_version",
+      "value": "Target Version"
+    },
+    {
+      "name": "agent_home_daemon_update_state",
+      "value": "Update State"
+    },
+    {
+      "name": "agent_home_daemon_update_available",
+      "value": "Update Available"
+    },
+    {
+      "name": "agent_home_daemon_update_integrity",
+      "value": "Integrity Check"
+    },
+    {
+      "name": "agent_home_daemon_update_backup",
+      "value": "Rollback Backup"
+    },
+    {
+      "name": "agent_home_daemon_update_pending_restart",
+      "value": "Pending Restart"
+    },
+    {
+      "name": "agent_home_daemon_update_replacement",
+      "value": "Process Replacement"
+    },
+    {
+      "name": "agent_home_daemon_update_failure",
+      "value": "Failure Category"
+    },
+    {
+      "name": "agent_home_daemon_update_installation_kind",
+      "value": "Installation Type"
+    },
+    {
+      "name": "agent_home_daemon_update_check_requested",
+      "value": "Checking for a Bridge update"
+    },
+    {
+      "name": "agent_home_daemon_update_preview_requested",
+      "value": "Preparing the update preview"
+    },
+    {
+      "name": "agent_home_daemon_update_action_requested",
+      "value": "The update operation was submitted. The connection may briefly disconnect."
+    },
+    {
+      "name": "agent_home_runtime_provider_session_title",
+      "value": "Provider Runtime Session"
+    },
+    {
+      "name": "agent_home_runtime_provider_session_desc",
+      "value": "Shows interactive runtime status declared by the current provider."
+    },
+    {
+      "name": "agent_home_runtime_provider_refresh",
+      "value": "Refresh Status"
+    },
+    {
+      "name": "agent_home_runtime_provider_attach",
+      "value": "Attach Session"
+    },
+    {
+      "name": "agent_home_runtime_provider_fallback_reason",
+      "value": "Fallback Reason"
+    },
+    {
+      "name": "agent_home_runtime_provider_attach_requested",
+      "value": "Provider session attach requested"
+    },
+    {
+      "name": "agent_home_runtime_provider_status_requested",
+      "value": "Provider runtime status refresh requested"
+    },
+    {
+      "name": "agent_home_agent_fork_mode_title",
+      "value": "Choose Fork Workspace"
+    },
+    {
+      "name": "agent_home_agent_fork_mode_message",
+      "value": "Share the current workspace or create an isolated Git worktree."
+    },
+    {
+      "name": "agent_home_agent_fork_shared",
+      "value": "Shared Workspace"
+    },
+    {
+      "name": "agent_home_agent_fork_isolated",
+      "value": "Isolated Worktree"
+    },
+    {
+      "name": "agent_home_agent_fork_isolated_confirm_title",
+      "value": "Create Isolated Fork"
+    },
+    {
+      "name": "agent_home_agent_fork_isolated_confirm_message",
+      "value": "Create the following worktree and child agent:"
+    },
+    {
+      "name": "agent_home_action_confirm",
+      "value": "Confirm"
+    },
+    {
+      "name": "agent_home_host_profiles_title",
+      "value": "Host Profiles"
+    },
+    {
+      "name": "agent_home_host_profiles_empty",
+      "value": "No Host Profiles"
+    },
+    {
+      "name": "agent_home_host_add",
+      "value": "Add Host"
+    },
+    {
+      "name": "agent_home_host_current",
+      "value": "Current"
+    },
+    {
+      "name": "agent_home_host_credential_saved",
+      "value": "Credential Saved Securely"
+    },
+    {
+      "name": "agent_home_host_credential_missing",
+      "value": "Credential Missing"
+    },
+    {
+      "name": "agent_home_host_editor_add",
+      "value": "Add Host Profile"
+    },
+    {
+      "name": "agent_home_host_editor_edit",
+      "value": "Edit Host Profile"
+    },
+    {
+      "name": "agent_home_host_name_label",
+      "value": "Host Name"
+    },
+    {
+      "name": "agent_home_host_name_placeholder",
+      "value": "For Example: Development PC"
+    },
+    {
+      "name": "agent_home_host_token_keep_hint",
+      "value": "Leave Blank to Keep the Saved Credential"
+    },
+    {
+      "name": "agent_home_host_auto_connect",
+      "value": "Connect Automatically on Launch"
+    },
+    {
+      "name": "agent_home_host_save",
+      "value": "Save Host"
+    },
+    {
+      "name": "agent_home_host_switch_title",
+      "value": "Switch Host?"
+    },
+    {
+      "name": "agent_home_host_switch_message",
+      "value": "The Current Connection Will Close While Remote Tasks Continue Running"
+    },
+    {
+      "name": "agent_home_host_switch_action",
+      "value": "Switch"
+    },
+    {
+      "name": "agent_home_host_delete_title",
+      "value": "Delete Host Profile?"
+    },
+    {
+      "name": "agent_home_host_delete_message",
+      "value": "Local Cache and Secure Credentials Will Be Removed; Remote Data and Device Trust Will Remain"
+    },
+    {
+      "name": "agent_home_host_delete_action",
+      "value": "Delete"
+    },
+    {
+      "name": "agent_home_host_rebind_title",
+      "value": "Rebind Host?"
+    },
+    {
+      "name": "agent_home_host_rebind_message",
+      "value": "The Saved Device Identity Will Be Cleared and Verified on the Next Connection"
+    },
+    {
+      "name": "agent_home_host_rebind_action",
+      "value": "Rebind"
+    },
+    {
+      "name": "agent_home_host_cached",
+      "value": "Cached"
+    },
+    {
+      "name": "agent_home_host_offline",
+      "value": "Offline"
+    },
+    {
+      "name": "agent_home_host_workspace_groups_title",
+      "value": "Browse Workspaces by Host"
+    },
+    {
+      "name": "agent_home_provider_directory_title",
+      "value": "Remote Provider Directory"
+    },
+    {
+      "name": "agent_home_provider_directory_url_placeholder",
+      "value": "HTTPS Catalog URL"
+    },
+    {
+      "name": "agent_home_provider_directory_search_placeholder",
+      "value": "Search Providers"
+    },
+    {
+      "name": "agent_home_provider_directory_refresh",
+      "value": "Refresh Catalog"
+    },
+    {
+      "name": "agent_home_provider_directory_empty",
+      "value": "No Providers Available"
+    },
+    {
+      "name": "agent_home_provider_directory_install",
+      "value": "Install"
+    },
+    {
+      "name": "agent_home_provider_directory_update",
+      "value": "Update"
+    },
+    {
+      "name": "agent_home_provider_directory_rollback",
+      "value": "Rollback"
+    },
+    {
+      "name": "agent_home_provider_directory_remove",
+      "value": "Remove"
+    },
+    {
+      "name": "agent_home_provider_directory_confirm_title",
+      "value": "Install Provider?"
+    },
+    {
+      "name": "agent_home_provider_directory_confirm_message",
+      "value": "The managed Provider package will be downloaded, verified, and activated."
+    },
+    {
+      "name": "agent_home_provider_directory_status_installed",
+      "value": "Installed"
+    },
+    {
+      "name": "agent_home_provider_directory_status_available",
+      "value": "Available"
+    },
+    {
+      "name": "agent_home_provider_directory_feature_disabled",
+      "value": "Remote catalog is disabled or its trust key is unavailable"
+    },
+    {
+      "name": "agent_home_github_sign_in",
+      "value": "Sign in"
+    },
+    {
+      "name": "agent_home_github_pr_list",
+      "value": "PR list"
+    },
+    {
+      "name": "agent_home_github_watch_start",
+      "value": "Watch"
+    },
+    {
+      "name": "agent_home_github_watch_stop",
+      "value": "Stop watch"
+    },
+    {
+      "name": "agent_home_github_auth_code",
+      "value": "Authorization code"
+    },
+    {
+      "name": "agent_home_workspace_diff_load_more",
+      "value": "Load more diff"
+    },
+    {
+      "name": "agent_home_github_auth_pending",
+      "value": "Waiting for GitHub authorization"
+    },
+    {
+      "name": "agent_home_github_binding",
+      "value": "Repository binding"
+    },
+    {
+      "name": "agent_home_github_ready",
+      "value": "Mark ready"
+    },
+    {
+      "name": "agent_home_github_attachment",
+      "value": "Upload attachment"
+    },
+    {
+      "name": "agent_home_github_owner_placeholder",
+      "value": "Repository owner"
+    },
+    {
+      "name": "agent_home_github_repo_placeholder",
+      "value": "Repository name"
+    },
+    {
+      "name": "agent_home_github_reviewer_placeholder",
+      "value": "Reviewer login"
+    },
+    {
+      "name": "agent_home_github_label_placeholder",
+      "value": "Label name"
+    },
+    {
+      "name": "agent_home_github_attachment_path_placeholder",
+      "value": "Workspace file path"
+    },
+    {
+      "name": "agent_home_daemon_instance_id",
+      "value": "Instance ID"
+    },
+    {
+      "name": "agent_home_daemon_instance_health",
+      "value": "Instance health"
+    },
+    {
+      "name": "agent_home_daemon_remote_config",
+      "value": "Remote config"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_url",
+      "value": "Signed config HTTPS URL"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_fetch",
+      "value": "Fetch config"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview",
+      "value": "Preview apply"
+    },
+    {
+      "name": "agent_home_usage_real",
+      "value": "Actual usage"
+    },
+    {
+      "name": "agent_home_usage_estimated",
+      "value": "Estimated usage"
+    },
+    {
+      "name": "agent_home_usage_refresh",
+      "value": "Refresh usage"
+    },
+    {
+      "name": "agent_home_metadata_title",
+      "value": "Generate title"
+    },
+    {
+      "name": "agent_home_diagnostics_export",
+      "value": "Export diagnostics"
+    },
+    {
+      "name": "agent_home_command_palette",
+      "value": "Command palette"
+    },
+    {
+      "name": "agent_home_content_truncated",
+      "value": "Content was truncated. Open details to continue."
+    },
+    {
+      "name": "agent_home_usage_compactions",
+      "value": "Compactions"
+    },
+    {
+      "name": "agent_home_usage_token_budget",
+      "value": "Token Budget"
+    },
+    {
+      "name": "agent_home_usage_cost_budget",
+      "value": "Cost Budget"
+    },
+    {
+      "name": "agent_home_usage_budget_save",
+      "value": "Save Budget"
+    },
+    {
+      "name": "agent_home_usage_budget_invalid",
+      "value": "Budgets must be non-negative numbers."
+    },
+    {
+      "name": "agent_home_queue_refresh",
+      "value": "Refresh Queue"
+    },
+    {
+      "name": "agent_home_queue_count",
+      "value": "Queued Items: %s"
+    },
+    {
+      "name": "agent_home_metadata_preview",
+      "value": "Edit the suggestion before applying it"
+    },
+    {
+      "name": "agent_home_metadata_copy",
+      "value": "Copy"
+    },
+    {
+      "name": "agent_home_metadata_cancel",
+      "value": "Cancel"
+    },
+    {
+      "name": "agent_home_metadata_copied",
+      "value": "Suggestion copied."
+    },
+    {
+      "name": "agent_home_queue_cancel",
+      "value": "Cancel"
+    },
+    {
+      "name": "agent_home_queue_retry",
+      "value": "Retry"
+    },
+    {
+      "name": "agent_home_usage_unavailable",
+      "value": "Unavailable"
+    },
+    {
+      "name": "agent_home_metadata_apply",
+      "value": "Apply"
+    },
+    {
+      "name": "agent_home_metadata_branch",
+      "value": "Generate Branch"
+    },
+    {
+      "name": "agent_home_metadata_commit",
+      "value": "Generate Commit"
+    },
+    {
+      "name": "agent_home_metadata_pr",
+      "value": "Generate PR"
+    },
+    {
+      "name": "agent_home_metadata_branch_ready",
+      "value": "Branch name is ready in Git actions. Review it before applying."
+    },
+    {
+      "name": "agent_home_metadata_commit_ready",
+      "value": "Commit message is ready in Git actions. Confirm it before committing."
+    },
+    {
+      "name": "agent_home_metadata_pr_ready",
+      "value": "PR copy is ready in the GitHub workbench. Review it before creating."
+    },
+    {
+      "name": "agent_home_display_settings",
+      "value": "Chat and Code Display"
+    },
+    {
+      "name": "agent_home_chat_font_size",
+      "value": "Chat Font Size: %s"
+    },
+    {
+      "name": "agent_home_code_font_size",
+      "value": "Code Font Size: %s"
+    },
+    {
+      "name": "agent_home_line_height",
+      "value": "Chat Line Height: %s"
+    },
+    {
+      "name": "agent_home_compact_density",
+      "value": "Compact Density"
+    },
+    {
+      "name": "agent_home_compatibility_title",
+      "value": "Version Compatibility"
+    },
+    {
+      "name": "agent_home_compatibility_unknown",
+      "value": "The Bridge has not returned complete compatibility information."
+    },
+    {
+      "name": "agent_home_command_search",
+      "value": "Search hosts, sessions, terminals, or settings"
+    },
+    {
+      "name": "agent_home_refresh_current_scope",
+      "value": "Refresh Current Scope"
+    },
+    {
+      "name": "agent_home_open_session_window",
+      "value": "Open Session Window"
+    },
+    {
+      "name": "agent_home_session_window_failed",
+      "value": "Could not open the session window."
+    },
+    {
+      "name": "agent_home_diagnostics_text",
+      "value": "Text Report"
+    },
+    {
+      "name": "agent_home_diagnostics_copy",
+      "value": "Copy Report"
+    },
+    {
+      "name": "agent_home_diagnostics_fix",
+      "value": "Resolve"
+    },
+    {
+      "name": "agent_home_keyboard_shortcuts",
+      "value": "Keyboard Shortcuts"
+    },
+    {
+      "name": "agent_home_message_fork",
+      "value": "Fork From Message"
+    },
+    {
+      "name": "agent_home_message_fork_shared",
+      "value": "Shared Workspace"
+    },
+    {
+      "name": "agent_home_message_fork_isolated",
+      "value": "Isolated Workspace"
+    },
+    {
+      "name": "agent_home_message_fork_unavailable",
+      "value": "This message has no verifiable timeline boundary."
+    },
+    {
+      "name": "agent_home_message_fork_preview_title",
+      "value": "Review Fork"
+    },
+    {
+      "name": "agent_home_message_fork_preview_message",
+      "value": "A child session will be created from the selected message boundary."
+    },
+    {
+      "name": "agent_home_message_fork_preview_mode",
+      "value": "Workspace Mode"
+    },
+    {
+      "name": "agent_home_message_fork_preview_context",
+      "value": "Context Items"
+    },
+    {
+      "name": "agent_home_message_fork_preview_cursor",
+      "value": "Timeline Cursor"
+    },
+    {
+      "name": "agent_home_message_fork_preview_digest",
+      "value": "Context Digest"
+    },
+    {
+      "name": "agent_home_message_fork_preview_warnings",
+      "value": "Warnings"
+    },
+    {
+      "name": "agent_home_message_fork_preview_stale",
+      "value": "The fork preview is stale. Start again."
+    },
+    {
+      "name": "agent_session_window_title",
+      "value": "Session Workspace"
+    },
+    {
+      "name": "agent_session_window_messages",
+      "value": "Messages"
+    },
+    {
+      "name": "agent_session_window_queue",
+      "value": "Queue"
+    },
+    {
+      "name": "agent_session_window_usage",
+      "value": "Usage"
+    },
+    {
+      "name": "agent_session_window_terminal",
+      "value": "Terminal"
+    },
+    {
+      "name": "agent_session_window_close",
+      "value": "Close Window"
+    },
+    {
+      "name": "agent_session_window_refresh",
+      "value": "Refresh Session"
+    },
+    {
+      "name": "agent_session_window_send",
+      "value": "Send"
+    },
+    {
+      "name": "agent_session_window_composer_placeholder",
+      "value": "Message This Session"
+    },
+    {
+      "name": "agent_session_window_empty_messages",
+      "value": "No Messages In This Session"
+    },
+    {
+      "name": "agent_session_window_empty_queue",
+      "value": "No Queued Messages"
+    },
+    {
+      "name": "agent_session_window_empty_usage",
+      "value": "No Usage Events"
+    },
+    {
+      "name": "agent_session_window_empty_terminals",
+      "value": "No Terminals For This Session"
+    },
+    {
+      "name": "agent_session_window_status_connecting",
+      "value": "Connecting"
+    },
+    {
+      "name": "agent_session_window_status_connected",
+      "value": "Connected"
+    },
+    {
+      "name": "agent_session_window_status_disconnected",
+      "value": "Disconnected"
+    },
+    {
+      "name": "agent_session_window_status_error",
+      "value": "Connection Failed"
+    },
+    {
+      "name": "agent_session_window_status_scope_missing",
+      "value": "Invalid Window Scope"
+    },
+    {
+      "name": "agent_session_window_status_host_missing",
+      "value": "Target Host Unavailable"
+    },
+    {
+      "name": "agent_session_window_status_session_missing",
+      "value": "Target Session Unavailable"
+    },
+    {
+      "name": "agent_session_window_status_credential_missing",
+      "value": "Target Host Credential Unavailable"
+    },
+    {
+      "name": "agent_session_window_status_remote_missing",
+      "value": "Session Is Not Connected To Bridge"
+    },
+    {
+      "name": "agent_session_window_role_user",
+      "value": "You"
+    },
+    {
+      "name": "agent_session_window_role_assistant",
+      "value": "Assistant"
+    },
+    {
+      "name": "agent_session_window_role_system",
+      "value": "Status"
+    },
+    {
+      "name": "agent_session_window_queue_cancel",
+      "value": "Cancel"
+    },
+    {
+      "name": "agent_session_window_queue_retry",
+      "value": "Retry"
+    },
+    {
+      "name": "agent_session_window_usage_actual_tokens",
+      "value": "Actual Tokens"
+    },
+    {
+      "name": "agent_session_window_usage_estimated_tokens",
+      "value": "Estimated Tokens"
+    },
+    {
+      "name": "agent_session_window_usage_actual_cost",
+      "value": "Actual Cost"
+    },
+    {
+      "name": "agent_session_window_usage_estimated_cost",
+      "value": "Estimated Cost"
+    },
+    {
+      "name": "agent_session_window_usage_budget_warning",
+      "value": "Usage Reached The Budget Warning Threshold"
+    },
+    {
+      "name": "agent_session_window_terminal_select",
+      "value": "View Terminal"
+    },
+    {
+      "name": "agent_session_window_terminal_waiting",
+      "value": "Waiting For Terminal Output"
+    },
+    {
+      "name": "agent_home_usage_cache_read",
+      "value": "Cache Read"
+    },
+    {
+      "name": "agent_home_usage_cache_write",
+      "value": "Cache Write"
+    },
+    {
+      "name": "agent_home_usage_reasoning_tokens",
+      "value": "Reasoning Tokens"
+    },
+    {
+      "name": "agent_home_usage_costs",
+      "value": "Costs"
+    },
+    {
+      "name": "agent_home_usage_quota",
+      "value": "Quota"
+    },
+    {
+      "name": "agent_home_usage_quota_remaining",
+      "value": "Remaining"
+    },
+    {
+      "name": "agent_home_usage_quota_limit",
+      "value": "Limit"
+    },
+    {
+      "name": "agent_home_usage_quota_reset",
+      "value": "Resets"
+    },
+    {
+      "name": "agent_home_usage_quota_source",
+      "value": "Source"
+    },
+    {
+      "name": "agent_home_usage_provider",
+      "value": "Provider"
+    },
+    {
+      "name": "agent_home_usage_window",
+      "value": "Usage Window"
+    },
+    {
+      "name": "agent_home_usage_window_session",
+      "value": "Session"
+    },
+    {
+      "name": "agent_home_usage_window_day",
+      "value": "Day"
+    },
+    {
+      "name": "agent_home_usage_window_month",
+      "value": "Month"
+    },
+    {
+      "name": "agent_home_usage_currency",
+      "value": "Currency"
+    },
+    {
+      "name": "agent_home_usage_warning_threshold",
+      "value": "Warning Threshold (0–1)"
+    },
+    {
+      "name": "agent_home_usage_budget_clear",
+      "value": "Clear Budget"
+    },
+    {
+      "name": "agent_home_usage_budget_warning",
+      "value": "Budget Warning"
+    },
+    {
+      "name": "agent_home_usage_budget_warning_token",
+      "value": "Token Usage Reached the Warning Threshold"
+    },
+    {
+      "name": "agent_home_usage_budget_warning_cost",
+      "value": "Cost Reached the Warning Threshold"
+    },
+    {
+      "name": "agent_home_usage_compaction_timeline",
+      "value": "Compaction Timeline"
+    },
+    {
+      "name": "agent_home_usage_events",
+      "value": "Recent Usage Events"
+    },
+    {
+      "name": "agent_home_diagnostics_export_json",
+      "value": "Export JSON"
+    },
+    {
+      "name": "agent_home_diagnostics_export_text",
+      "value": "Export Text"
+    },
+    {
+      "name": "agent_home_diagnostics_export_saved",
+      "value": "Diagnostics Report Saved"
+    },
+    {
+      "name": "agent_home_diagnostics_export_failed",
+      "value": "Could Not Save Diagnostics Report"
+    },
+    {
+      "name": "agent_home_diagnostics_schema",
+      "value": "Report Schema"
+    },
+    {
+      "name": "agent_home_diagnostics_generated",
+      "value": "Generated"
+    },
+    {
+      "name": "agent_home_diagnostics_truncated",
+      "value": "Report Truncated"
+    },
+    {
+      "name": "agent_home_diagnostics_group_daemon",
+      "value": "Daemon"
+    },
+    {
+      "name": "agent_home_diagnostics_group_provider",
+      "value": "Provider"
+    },
+    {
+      "name": "agent_home_diagnostics_group_terminal",
+      "value": "Terminal"
+    },
+    {
+      "name": "agent_home_diagnostics_group_queue",
+      "value": "Message Queue"
+    },
+    {
+      "name": "agent_home_diagnostics_group_usage",
+      "value": "Usage"
+    },
+    {
+      "name": "agent_home_diagnostics_group_secure_storage",
+      "value": "Secure Storage"
+    },
+    {
+      "name": "agent_home_diagnostics_group_remote_config",
+      "value": "Remote Config"
+    },
+    {
+      "name": "agent_home_diagnostics_group_persistence",
+      "value": "Persistence"
+    },
+    {
+      "name": "agent_home_compatibility_app_version",
+      "value": "App"
+    },
+    {
+      "name": "agent_home_compatibility_bridge_version",
+      "value": "Bridge"
+    },
+    {
+      "name": "agent_home_compatibility_minimum",
+      "value": "Minimum"
+    },
+    {
+      "name": "agent_home_compatibility_recommended",
+      "value": "Recommended"
+    },
+    {
+      "name": "agent_home_compatibility_remediation",
+      "value": "Remediation"
+    },
+    {
+      "name": "agent_home_compatibility_status_upgrade",
+      "value": "Upgrade Recommended"
+    },
+    {
+      "name": "agent_home_compatibility_status_app_old",
+      "value": "App Too Old"
+    },
+    {
+      "name": "agent_home_compatibility_status_bridge_old",
+      "value": "Bridge Too Old"
+    },
+    {
+      "name": "agent_home_compatibility_status_unknown",
+      "value": "Compatibility Unknown"
+    },
+    {
+      "name": "agent_home_content_code",
+      "value": "Code"
+    },
+    {
+      "name": "agent_home_content_diff",
+      "value": "Diff"
+    },
+    {
+      "name": "agent_home_content_unavailable",
+      "value": "This content cannot be displayed safely"
+    },
+    {
+      "name": "agent_home_todo_pending",
+      "value": "Pending"
+    },
+    {
+      "name": "agent_home_todo_in_progress",
+      "value": "In Progress"
+    },
+    {
+      "name": "agent_home_todo_completed",
+      "value": "Completed"
+    },
+    {
+      "name": "agent_home_todo_cancelled",
+      "value": "Cancelled"
+    },
+    {
+      "name": "agent_home_relay_title",
+      "value": "Remote Relay"
+    },
+    {
+      "name": "agent_home_relay_desc",
+      "value": "Connect to the Bridge securely from external networks through an end-to-end encrypted relay."
+    },
+    {
+      "name": "agent_home_relay_url_placeholder",
+      "value": "Relay URL (wss://)"
+    },
+    {
+      "name": "agent_home_relay_refresh",
+      "value": "Refresh"
+    },
+    {
+      "name": "agent_home_relay_pairing_start",
+      "value": "Create Pairing"
+    },
+    {
+      "name": "agent_home_relay_pairing_scan",
+      "value": "Scan Relay Pairing QR Code"
+    },
+    {
+      "name": "agent_home_relay_connect",
+      "value": "Connect Relay"
+    },
+    {
+      "name": "agent_home_relay_disconnect",
+      "value": "Disconnect Relay"
+    },
+    {
+      "name": "agent_home_relay_status",
+      "value": "Connection Status"
+    },
+    {
+      "name": "agent_home_relay_transport",
+      "value": "Transport"
+    },
+    {
+      "name": "agent_home_relay_encryption",
+      "value": "End-to-End Encryption"
+    },
+    {
+      "name": "agent_home_relay_forward_secrecy",
+      "value": "Forward Secrecy"
+    },
+    {
+      "name": "agent_home_relay_reconnect_attempt",
+      "value": "Reconnect Attempts"
+    },
+    {
+      "name": "agent_home_relay_offline_queue",
+      "value": "Offline Queue"
+    },
+    {
+      "name": "agent_home_relay_last_heartbeat",
+      "value": "Last Heartbeat"
+    },
+    {
+      "name": "agent_home_relay_queue_risk",
+      "value": "The offline queue has size and retention limits. Excess items are rejected rather than retained indefinitely."
+    },
+    {
+      "name": "agent_home_relay_e2e_unavailable",
+      "value": "This Bridge does not advertise Relay end-to-end encryption. Do not send sensitive content over this connection."
+    },
+    {
+      "name": "agent_home_relay_pairing_code",
+      "value": "Pairing Code"
+    },
+    {
+      "name": "agent_home_relay_pairing_expires",
+      "value": "Expires At"
+    },
+    {
+      "name": "agent_home_relay_pairing_copy",
+      "value": "Copy Pairing Details"
+    },
+    {
+      "name": "agent_home_relay_pairing_cancel",
+      "value": "Cancel Pairing"
+    },
+    {
+      "name": "agent_home_relay_pairing_copied",
+      "value": "Pairing details copied"
+    },
+    {
+      "name": "agent_home_relay_pairing_completed",
+      "value": "Device pairing completed"
+    },
+    {
+      "name": "agent_home_relay_pairing_connecting",
+      "value": "Establishing an encrypted Relay connection"
+    },
+    {
+      "name": "agent_home_relay_pairing_connected",
+      "value": "Relay host saved securely and connected"
+    },
+    {
+      "name": "agent_home_relay_pairing_qr_invalid",
+      "value": "The Relay pairing QR code is invalid or expired"
+    },
+    {
+      "name": "agent_home_relay_devices_title",
+      "value": "Paired Devices"
+    },
+    {
+      "name": "agent_home_relay_devices_empty",
+      "value": "No paired devices"
+    },
+    {
+      "name": "agent_home_relay_device_unknown",
+      "value": "Unnamed Device"
+    },
+    {
+      "name": "agent_home_relay_device_fingerprint",
+      "value": "Fingerprint"
+    },
+    {
+      "name": "agent_home_relay_device_last_seen",
+      "value": "Last Seen"
+    },
+    {
+      "name": "agent_home_relay_device_revoked",
+      "value": "Revoked"
+    },
+    {
+      "name": "agent_home_relay_device_revoke",
+      "value": "Revoke"
+    },
+    {
+      "name": "agent_home_relay_identity_rotate",
+      "value": "Rotate Identity Key"
+    },
+    {
+      "name": "agent_home_relay_revoke_title",
+      "value": "Revoke Device"
+    },
+    {
+      "name": "agent_home_relay_revoke_message",
+      "value": "This device will immediately lose Relay access and must be paired again"
+    },
+    {
+      "name": "agent_home_relay_revoke_action",
+      "value": "Revoke Access"
+    },
+    {
+      "name": "agent_home_relay_rotate_title",
+      "value": "Rotate Relay Identity Key"
+    },
+    {
+      "name": "agent_home_relay_rotate_message",
+      "value": "All paired devices will be invalidated and must be paired again after rotation."
+    },
+    {
+      "name": "agent_home_relay_rotate_action",
+      "value": "Rotate Key"
+    },
+    {
+      "name": "agent_home_relay_state_disabled",
+      "value": "Disabled"
+    },
+    {
+      "name": "agent_home_relay_state_disconnected",
+      "value": "Disconnected"
+    },
+    {
+      "name": "agent_home_relay_state_pairing",
+      "value": "Pairing"
+    },
+    {
+      "name": "agent_home_relay_state_connecting",
+      "value": "Connecting"
+    },
+    {
+      "name": "agent_home_relay_state_connected",
+      "value": "Connected"
+    },
+    {
+      "name": "agent_home_relay_state_degraded",
+      "value": "Degraded"
+    },
+    {
+      "name": "agent_home_relay_state_revoked",
+      "value": "Access Revoked"
+    },
+    {
+      "name": "agent_home_relay_url_invalid",
+      "value": "Enter a valid WSS Relay URL. Loopback WS URLs are allowed only for local development."
+    },
+    {
+      "name": "agent_home_relay_operation_failed",
+      "value": "Relay operation failed"
+    },
+    {
+      "name": "agent_home_relay_host_default_name",
+      "value": "Relay Host"
+    },
+    {
+      "name": "agent_home_relay_host_public",
+      "value": "Public Relay descriptor, no standard access credential"
+    },
+    {
+      "name": "agent_home_relay_identity_cleanup_failed",
+      "value": "The Relay host was deleted, but its local identity key could not be removed. Check secure storage in Diagnostics."
+    },
+    {
+      "name": "agent_home_relay_metadata_risk",
+      "value": "The Relay cannot read encrypted content, but it can still observe connection timing, routing identifiers, and traffic size."
+    },
+    {
+      "name": "agent_home_m7_title",
+      "value": "Automation & Collaboration"
+    },
+    {
+      "name": "agent_home_m7_subtitle",
+      "value": "Manage schedules, verification loops, and collaboration rooms"
+    },
+    {
+      "name": "agent_home_m7_refresh",
+      "value": "Refresh"
+    },
+    {
+      "name": "agent_home_m7_tab_schedules",
+      "value": "Schedules"
+    },
+    {
+      "name": "agent_home_m7_tab_loops",
+      "value": "Loops"
+    },
+    {
+      "name": "agent_home_m7_tab_rooms",
+      "value": "Rooms"
+    },
+    {
+      "name": "agent_home_m7_new",
+      "value": "New"
+    },
+    {
+      "name": "agent_home_m7_edit",
+      "value": "Edit"
+    },
+    {
+      "name": "agent_home_m7_remove",
+      "value": "Remove"
+    },
+    {
+      "name": "agent_home_m7_save_preview",
+      "value": "Preview Save"
+    },
+    {
+      "name": "agent_home_m7_confirm_title",
+      "value": "Confirm Automation Action"
+    },
+    {
+      "name": "agent_home_m7_confirm_message",
+      "value": "Review the preview before continuing. The target Bridge will execute this action."
+    },
+    {
+      "name": "agent_home_m7_preview_ready",
+      "value": "Preview ready and awaiting confirmation"
+    },
+    {
+      "name": "agent_home_m7_operation_complete",
+      "value": "Operation completed"
+    },
+    {
+      "name": "agent_home_m7_schedule_editor",
+      "value": "Schedule Configuration"
+    },
+    {
+      "name": "agent_home_m7_schedule_name",
+      "value": "Schedule Name"
+    },
+    {
+      "name": "agent_home_m7_schedule_prompt",
+      "value": "Run Prompt"
+    },
+    {
+      "name": "agent_home_m7_schedule_cron",
+      "value": "Cron Expression"
+    },
+    {
+      "name": "agent_home_m7_schedule_timezone",
+      "value": "Time Zone, e.g. Asia/Hong_Kong"
+    },
+    {
+      "name": "agent_home_m7_schedule_enabled",
+      "value": "Enable After Creation"
+    },
+    {
+      "name": "agent_home_m7_schedules",
+      "value": "Schedules"
+    },
+    {
+      "name": "agent_home_m7_schedules_empty",
+      "value": "No schedules yet"
+    },
+    {
+      "name": "agent_home_m7_run_now",
+      "value": "Run Now"
+    },
+    {
+      "name": "agent_home_m7_enable",
+      "value": "Enable"
+    },
+    {
+      "name": "agent_home_m7_disable",
+      "value": "Disable"
+    },
+    {
+      "name": "agent_home_m7_history",
+      "value": "History"
+    },
+    {
+      "name": "agent_home_m7_schedule_history",
+      "value": "Run History"
+    },
+    {
+      "name": "agent_home_m7_schedule_history_empty",
+      "value": "No run history"
+    },
+    {
+      "name": "agent_home_m7_schedule_summary",
+      "value": "%s · %s · %s total runs"
+    },
+    {
+      "name": "agent_home_m7_loop_editor",
+      "value": "Loop Configuration"
+    },
+    {
+      "name": "agent_home_m7_loop_name",
+      "value": "Loop Name"
+    },
+    {
+      "name": "agent_home_m7_loop_prompt",
+      "value": "Worker Prompt"
+    },
+    {
+      "name": "agent_home_m7_loop_verify_prompt",
+      "value": "Verifier Prompt"
+    },
+    {
+      "name": "agent_home_m7_loop_criterion",
+      "value": "Acceptance Criterion"
+    },
+    {
+      "name": "agent_home_m7_loop_max_rounds",
+      "value": "Max Rounds"
+    },
+    {
+      "name": "agent_home_m7_loop_isolated",
+      "value": "Isolated"
+    },
+    {
+      "name": "agent_home_m7_loop_shared",
+      "value": "Shared"
+    },
+    {
+      "name": "agent_home_m7_loops",
+      "value": "Loops"
+    },
+    {
+      "name": "agent_home_m7_loops_empty",
+      "value": "No loops yet"
+    },
+    {
+      "name": "agent_home_m7_start",
+      "value": "Start"
+    },
+    {
+      "name": "agent_home_m7_pause",
+      "value": "Pause"
+    },
+    {
+      "name": "agent_home_m7_resume",
+      "value": "Resume"
+    },
+    {
+      "name": "agent_home_m7_stop",
+      "value": "Stop"
+    },
+    {
+      "name": "agent_home_m7_takeover",
+      "value": "Take Over"
+    },
+    {
+      "name": "agent_home_m7_rounds",
+      "value": "Rounds"
+    },
+    {
+      "name": "agent_home_m7_loop_round_history",
+      "value": "Verification Rounds"
+    },
+    {
+      "name": "agent_home_m7_loop_rounds_empty",
+      "value": "No round history"
+    },
+    {
+      "name": "agent_home_m7_loop_round_label",
+      "value": "Round %s · %s"
+    },
+    {
+      "name": "agent_home_m7_loop_summary",
+      "value": "%s/%s rounds · %s"
+    },
+    {
+      "name": "agent_home_m7_room_editor",
+      "value": "Room Configuration"
+    },
+    {
+      "name": "agent_home_m7_room_name",
+      "value": "Room Name"
+    },
+    {
+      "name": "agent_home_m7_room_purpose",
+      "value": "Collaboration Purpose"
+    },
+    {
+      "name": "agent_home_m7_rooms",
+      "value": "Collaboration Rooms"
+    },
+    {
+      "name": "agent_home_m7_rooms_empty",
+      "value": "No collaboration rooms yet"
+    },
+    {
+      "name": "agent_home_m7_open",
+      "value": "Open"
+    },
+    {
+      "name": "agent_home_m7_archive",
+      "value": "Archive"
+    },
+    {
+      "name": "agent_home_m7_room_members",
+      "value": "Members"
+    },
+    {
+      "name": "agent_home_m7_room_agent_id",
+      "value": "Agent ID"
+    },
+    {
+      "name": "agent_home_m7_add_agent",
+      "value": "Add Agent"
+    },
+    {
+      "name": "agent_home_m7_room_messages",
+      "value": "Messages"
+    },
+    {
+      "name": "agent_home_m7_mark_read",
+      "value": "Mark Read"
+    },
+    {
+      "name": "agent_home_m7_room_message_placeholder",
+      "value": "Send a room message"
+    },
+    {
+      "name": "agent_home_m7_room_messages_empty",
+      "value": "No messages yet"
+    },
+    {
+      "name": "agent_home_m7_mention",
+      "value": "Mention"
+    },
+    {
+      "name": "agent_home_m7_reply",
+      "value": "Reply"
+    },
+    {
+      "name": "agent_home_m7_clear_context",
+      "value": "Clear"
+    },
+    {
+      "name": "agent_home_m7_role_agent",
+      "value": "Set Agent"
+    },
+    {
+      "name": "agent_home_m7_role_viewer",
+      "value": "Set Viewer"
+    },
+    {
+      "name": "agent_home_m7_delivery_count",
+      "value": "Agent deliveries: %s"
+    },
+    {
+      "name": "agent_home_m7_room_summary",
+      "value": "%s members · %s messages · %s unread"
+    },
+    {
+      "name": "agent_home_m7_room_context_both",
+      "value": "Mentioning %s and replying to %s"
+    },
+    {
+      "name": "agent_home_m7_room_context_mention",
+      "value": "Mentioning %s"
+    },
+    {
+      "name": "agent_home_m7_room_context_reply",
+      "value": "Replying to %s"
+    },
+    {
+      "name": "microphone_reason",
+      "value": "Used for voice input, live dictation, and spoken interaction"
+    },
+    {
+      "name": "agent_home_voice_start",
+      "value": "Start Voice Input"
+    },
+    {
+      "name": "agent_home_voice_stop",
+      "value": "Finish Recording"
+    },
+    {
+      "name": "agent_home_voice_cancel",
+      "value": "Cancel Voice Input"
+    },
+    {
+      "name": "agent_home_voice_confirm",
+      "value": "Use Transcript"
+    },
+    {
+      "name": "agent_home_voice_recording",
+      "value": "Recording…"
+    },
+    {
+      "name": "agent_home_voice_transcribing",
+      "value": "Transcribing…"
+    },
+    {
+      "name": "agent_home_voice_speaking",
+      "value": "Speaking…"
+    },
+    {
+      "name": "agent_home_voice_interrupt",
+      "value": "Interrupt Speech"
+    },
+    {
+      "name": "agent_home_voice_unavailable",
+      "value": "Voice is unavailable on this device or Bridge"
+    },
+    {
+      "name": "agent_home_voice_permission_denied",
+      "value": "Microphone permission is required for voice input"
+    },
+    {
+      "name": "agent_home_voice_partial_hint",
+      "value": "Live Transcript"
+    },
+    {
+      "name": "agent_home_voice_final_hint",
+      "value": "Review Transcript"
+    },
+    {
+      "name": "agent_home_voice_retry",
+      "value": "Record Again"
+    },
+    {
+      "name": "agent_home_service_proxy_title",
+      "value": "Workspace Services"
+    },
+    {
+      "name": "agent_home_service_proxy_desc",
+      "value": "View and manage controlled services in this workspace."
+    },
+    {
+      "name": "agent_home_service_proxy_refresh",
+      "value": "Refresh"
+    },
+    {
+      "name": "agent_home_service_proxy_empty",
+      "value": "No registered services."
+    },
+    {
+      "name": "agent_home_service_proxy_logs",
+      "value": "Logs"
+    },
+    {
+      "name": "agent_home_service_proxy_start",
+      "value": "Start"
+    },
+    {
+      "name": "agent_home_service_proxy_stop",
+      "value": "Stop"
+    },
+    {
+      "name": "agent_home_service_proxy_confirm_title",
+      "value": "Confirm Service Operation"
+    },
+    {
+      "name": "agent_home_service_proxy_confirm_message",
+      "value": "A controlled service operation is ready. Continue?"
+    },
+    {
+      "name": "agent_home_service_proxy_open",
+      "value": "Open"
+    },
+    {
+      "name": "agent_home_service_proxy_open_confirm_message",
+      "value": "Issue a short-lived one-time access ticket and open this service in the system browser."
+    },
+    {
+      "name": "agent_home_service_proxy_open_invalid",
+      "value": "The service access URL is invalid or untrusted."
+    },
+    {
+      "name": "agent_home_service_proxy_open_failed",
+      "value": "Could not open the workspace service."
+    },
+    {
+      "name": "agent_home_browser_title",
+      "value": "Browser Automation"
+    },
+    {
+      "name": "agent_home_browser_desc",
+      "value": "Connect an explicitly registered browser host for controlled navigation, screenshots, and page actions."
+    },
+    {
+      "name": "agent_home_browser_refresh",
+      "value": "Refresh"
+    },
+    {
+      "name": "agent_home_browser_url_placeholder",
+      "value": "https://example.com"
+    },
+    {
+      "name": "agent_home_browser_open_page",
+      "value": "New Page"
+    },
+    {
+      "name": "agent_home_browser_domain_placeholder",
+      "value": "Allowed domain, for example example.com"
+    },
+    {
+      "name": "agent_home_browser_allow_domain",
+      "value": "Update Permission"
+    },
+    {
+      "name": "agent_home_browser_no_host",
+      "value": "No compatible browser host is connected for this workspace."
+    },
+    {
+      "name": "agent_home_browser_no_pages",
+      "value": "No browser pages are available."
+    },
+    {
+      "name": "agent_home_browser_snapshot",
+      "value": "Snapshot"
+    },
+    {
+      "name": "agent_home_browser_screenshot",
+      "value": "Screenshot"
+    },
+    {
+      "name": "agent_home_browser_permission_confirm_title",
+      "value": "Update Browser Domain Permission?"
+    },
+    {
+      "name": "agent_home_browser_permission_confirm_message",
+      "value": "After confirmation, browser automation may navigate to this domain. Page input and file actions still require separate confirmation."
+    },
+    {
+      "name": "agent_home_browser_page_create_failed",
+      "value": "Unable to create the browser page."
+    },
+    {
+      "name": "agent_home_git_plan_preview_title",
+      "value": "Review Git Operation"
+    },
+    {
+      "name": "agent_home_git_plan_preview_message",
+      "value": "Review affected paths, target refs, and repository risks before continuing."
+    },
+    {
+      "name": "agent_home_git_plan_affected_paths",
+      "value": "Affected paths"
+    },
+    {
+      "name": "agent_home_git_plan_untracked_paths",
+      "value": "Untracked paths"
+    },
+    {
+      "name": "agent_home_git_plan_target",
+      "value": "Target ref"
+    },
+    {
+      "name": "agent_home_git_plan_remote",
+      "value": "Remote"
+    },
+    {
+      "name": "agent_home_git_plan_ahead_behind",
+      "value": "Ahead/behind"
+    },
+    {
+      "name": "agent_home_git_plan_risks",
+      "value": "Risks"
+    },
+    {
+      "name": "agent_home_git_plan_force_risk",
+      "value": "Includes force-operation risk"
+    },
+    {
+      "name": "agent_home_git_plan_overwrite_risk",
+      "value": "May overwrite local state"
+    },
+    {
+      "name": "agent_home_git_plan_conflict_risk",
+      "value": "Conflicts may occur"
+    },
+    {
+      "name": "agent_home_git_plan_expired",
+      "value": "The plan is no longer valid. Request a new preview."
+    },
+    {
+      "name": "agent_home_git_plan_confirm_failed",
+      "value": "Git operation confirmation failed"
+    },
+    {
+      "name": "agent_home_git_plan_confirmed",
+      "value": "Git operation confirmed"
+    },
+    {
+      "name": "agent_home_daemon_fleet_restart",
+      "value": "Rolling Restart"
+    },
+    {
+      "name": "agent_home_daemon_fleet_update",
+      "value": "Rolling Update"
+    },
+    {
+      "name": "agent_home_daemon_fleet_rollback",
+      "value": "Rolling Rollback"
+    },
+    {
+      "name": "agent_home_daemon_fleet_execute",
+      "value": "Run Rolling Operation"
+    },
+    {
+      "name": "agent_home_daemon_fleet_isolate",
+      "value": "Isolate"
+    },
+    {
+      "name": "agent_home_daemon_fleet_reenable",
+      "value": "Re-enable"
+    },
+    {
+      "name": "agent_home_daemon_fleet_preview_ready",
+      "value": "Rolling operation preview is ready. Review it before confirming."
+    },
+    {
+      "name": "agent_home_daemon_fleet_confirm_title",
+      "value": "Confirm Rolling Operation"
+    },
+    {
+      "name": "agent_home_daemon_fleet_confirm_message",
+      "value": "Instances will be processed in order. The first failure stops the remaining targets. Targets: "
+    },
+    {
+      "name": "agent_home_daemon_fleet_completed",
+      "value": "Rolling operation completed."
+    },
+    {
+      "name": "agent_home_daemon_fleet_failed",
+      "value": "Rolling operation stopped. Check the failed instance."
+    },
+    {
+      "name": "agent_home_daemon_fleet_plan_completed",
+      "value": "Completed"
+    },
+    {
+      "name": "agent_home_daemon_fleet_plan_failed",
+      "value": "Failed"
+    },
+    {
+      "name": "agent_home_daemon_fleet_host_missing",
+      "value": "The target host profile is no longer available."
+    },
+    {
+      "name": "agent_home_daemon_fleet_title",
+      "value": "Daemon Fleet"
+    },
+    {
+      "name": "agent_home_daemon_fleet_desc",
+      "value": "Aggregate instance health across hosts and run rolling operations in the confirmed order."
+    },
+    {
+      "name": "agent_home_daemon_fleet_refresh",
+      "value": "Refresh Instances"
+    },
+    {
+      "name": "agent_home_daemon_fleet_loading",
+      "value": "Querying instance status…"
+    },
+    {
+      "name": "agent_home_daemon_fleet_empty",
+      "value": "No daemon instances are available."
+    },
+    {
+      "name": "agent_home_daemon_fleet_plan_status",
+      "value": "Plan Status"
+    },
+    {
+      "name": "agent_home_daemon_fleet_plan_targets",
+      "value": "Pending"
+    },
+    {
+      "name": "agent_home_daemon_fleet_plan_excluded",
+      "value": "Excluded"
+    },
+    {
+      "name": "agent_home_provider_usage_title",
+      "value": "Provider Usage"
+    },
+    {
+      "name": "agent_home_provider_usage_status",
+      "value": "Status"
+    },
+    {
+      "name": "agent_home_provider_usage_plan",
+      "value": "Plan"
+    },
+    {
+      "name": "agent_home_provider_usage_source",
+      "value": "Source"
+    },
+    {
+      "name": "agent_home_provider_usage_fetched",
+      "value": "Fetched"
+    },
+    {
+      "name": "agent_home_provider_usage_expires",
+      "value": "Expires"
+    },
+    {
+      "name": "agent_home_provider_usage_loading",
+      "value": "Loading provider usage…"
+    },
+    {
+      "name": "agent_home_provider_usage_used",
+      "value": "Used"
+    },
+    {
+      "name": "agent_home_provider_usage_reset",
+      "value": "Reset"
+    },
+    {
+      "name": "agent_home_provider_usage_failure",
+      "value": "Usage unavailable"
+    },
+    {
+      "name": "agent_home_provider_usage_remediation",
+      "value": "Remediation"
+    },
+    {
+      "name": "agent_home_browser_hosts",
+      "value": "Browser Hosts"
+    },
+    {
+      "name": "agent_home_browser_instances",
+      "value": "Browser Instances"
+    },
+    {
+      "name": "agent_home_browser_pages",
+      "value": "Browser Pages"
+    },
+    {
+      "name": "agent_home_browser_select_host",
+      "value": "Select Host"
+    },
+    {
+      "name": "agent_home_browser_select_instance",
+      "value": "Select Instance"
+    },
+    {
+      "name": "agent_home_browser_create_instance",
+      "value": "Create Instance"
+    },
+    {
+      "name": "agent_home_browser_close_instance",
+      "value": "Close Instance"
+    },
+    {
+      "name": "agent_home_browser_close_page",
+      "value": "Close Page"
+    },
+    {
+      "name": "agent_home_browser_back",
+      "value": "Back"
+    },
+    {
+      "name": "agent_home_browser_forward",
+      "value": "Forward"
+    },
+    {
+      "name": "agent_home_browser_reload",
+      "value": "Reload"
+    },
+    {
+      "name": "agent_home_browser_navigate",
+      "value": "Navigate"
+    },
+    {
+      "name": "agent_home_browser_logs",
+      "value": "Logs"
+    },
+    {
+      "name": "agent_home_browser_wait",
+      "value": "Wait"
+    },
+    {
+      "name": "agent_home_browser_downloads",
+      "value": "Downloads"
+    },
+    {
+      "name": "agent_home_browser_actions",
+      "value": "Page Actions"
+    },
+    {
+      "name": "agent_home_browser_run_action",
+      "value": "Run Action"
+    },
+    {
+      "name": "agent_home_browser_action_ref_placeholder",
+      "value": "Element ref, for example @e1"
+    },
+    {
+      "name": "agent_home_browser_action_value_placeholder",
+      "value": "Value"
+    },
+    {
+      "name": "agent_home_browser_action_text_placeholder",
+      "value": "Text to type"
+    },
+    {
+      "name": "agent_home_browser_action_key_placeholder",
+      "value": "Key, for example Enter"
+    },
+    {
+      "name": "agent_home_browser_action_source_ref_placeholder",
+      "value": "Drag source ref"
+    },
+    {
+      "name": "agent_home_browser_action_target_ref_placeholder",
+      "value": "Drag target ref"
+    },
+    {
+      "name": "agent_home_browser_action_file_placeholder",
+      "value": "Workspace-relative file path"
+    },
+    {
+      "name": "agent_home_browser_action_function_placeholder",
+      "value": "Bounded JavaScript function"
+    },
+    {
+      "name": "agent_home_browser_action_delta_x_placeholder",
+      "value": "Horizontal scroll delta"
+    },
+    {
+      "name": "agent_home_browser_action_delta_y_placeholder",
+      "value": "Vertical scroll delta"
+    },
+    {
+      "name": "agent_home_browser_wait_text_placeholder",
+      "value": "Text condition (optional)"
+    },
+    {
+      "name": "agent_home_browser_wait_url_placeholder",
+      "value": "URL fragment (optional)"
+    },
+    {
+      "name": "agent_home_browser_no_instances",
+      "value": "No browser instances reported by the selected host."
+    },
+    {
+      "name": "agent_home_browser_no_logs",
+      "value": "No logs reported by the selected page."
+    },
+    {
+      "name": "agent_home_browser_no_downloads",
+      "value": "No browser downloads reported."
+    },
+    {
+      "name": "agent_home_browser_status_ready",
+      "value": "Browser control surface is ready"
+    },
+    {
+      "name": "agent_home_browser_action_click",
+      "value": "Click"
+    },
+    {
+      "name": "agent_home_browser_action_fill",
+      "value": "Fill"
+    },
+    {
+      "name": "agent_home_browser_action_type",
+      "value": "Type"
+    },
+    {
+      "name": "agent_home_browser_action_keypress",
+      "value": "Keypress"
+    },
+    {
+      "name": "agent_home_browser_action_hover",
+      "value": "Hover"
+    },
+    {
+      "name": "agent_home_browser_action_select",
+      "value": "Select"
+    },
+    {
+      "name": "agent_home_browser_action_drag",
+      "value": "Drag"
+    },
+    {
+      "name": "agent_home_browser_action_upload",
+      "value": "Upload"
+    },
+    {
+      "name": "agent_home_browser_action_scroll",
+      "value": "Scroll"
+    },
+    {
+      "name": "agent_home_browser_action_download",
+      "value": "Trigger Download"
+    },
+    {
+      "name": "agent_home_browser_action_evaluate",
+      "value": "Evaluate Script"
+    },
+    {
+      "name": "agent_home_browser_action_confirm_title",
+      "value": "Confirm Browser Action"
+    },
+    {
+      "name": "agent_home_browser_action_confirm_message",
+      "value": "This action may modify page or workspace state. It is sent to the browser host only after confirmation."
+    },
+    {
+      "name": "agent_home_browser_wait_invalid",
+      "value": "Enter either a text condition or a URL fragment, not both."
+    },
+    {
+      "name": "agent_home_browser_screenshot_summary",
+      "value": "Screenshot captured"
+    },
+    {
+      "name": "agent_home_browser_result_summary",
+      "value": "Browser operation completed"
+    },
+    {
+      "name": "agent_home_browser_screenshot_preview",
+      "value": "Screenshot preview (size limited)"
+    },
+    {
+      "name": "agent_home_provider_usage_stale",
+      "value": "Provider usage is stale; refresh to get current data"
+    },
+    {
+      "name": "agent_home_compatibility_protocol_version",
+      "value": "Protocol"
+    },
+    {
+      "name": "agent_home_compatibility_supported_protocols",
+      "value": "Supported Protocols"
+    },
+    {
+      "name": "agent_home_browser_host_warning_count",
+      "value": "Capability warnings:"
+    },
+    {
+      "name": "agent_home_browser_host_not_ready",
+      "value": "Host is connected but not ready for automation."
+    },
+    {
+      "name": "agent_home_browser_no_ready_host",
+      "value": "No ready browser host is available. Check capability warnings or reconnect a host."
+    },
+    {
+      "name": "agent_home_browser_upload_scope_hint",
+      "value": "Uploads accept workspace-relative paths only; files outside the workspace are not read."
+    },
+    {
+      "name": "agent_home_browser_error_generic",
+      "value": "The browser operation failed."
+    },
+    {
+      "name": "agent_home_browser_error_not_ready",
+      "value": "The browser host is not ready."
+    },
+    {
+      "name": "agent_home_browser_error_capability",
+      "value": "The selected host does not support this browser capability."
+    },
+    {
+      "name": "agent_home_browser_error_scope",
+      "value": "The request is outside the active workspace scope."
+    },
+    {
+      "name": "agent_home_browser_error_permission",
+      "value": "Browser permissions or the domain policy rejected the request."
+    },
+    {
+      "name": "agent_home_browser_error_retry",
+      "value": "Refresh the host status and try again."
+    },
+    {
+      "name": "agent_home_daemon_remote_config_status",
+      "value": "Status"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_validate",
+      "value": "Validate"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_rollback",
+      "value": "Roll Back"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_active",
+      "value": "Active version"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_previous",
+      "value": "Previous version"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_fetched",
+      "value": "Fetched version"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_validation",
+      "value": "Validation"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_source",
+      "value": "Source"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_restart_required",
+      "value": "The Bridge must be restarted after applying."
+    },
+    {
+      "name": "agent_home_daemon_remote_config_url_required",
+      "value": "Enter an HTTPS config URL."
+    },
+    {
+      "name": "agent_home_daemon_remote_config_source_configured",
+      "value": "Configured (URL hidden)"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_source_unavailable",
+      "value": "Not configured"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_validation_valid",
+      "value": "Valid"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_validation_degraded",
+      "value": "Degraded"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_validation_invalid",
+      "value": "Invalid"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview_title",
+      "value": "Remote config apply preview"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview_version",
+      "value": "Version"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview_scope",
+      "value": "Scope"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview_overrides",
+      "value": "Locally overridden fields"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview_digest",
+      "value": "Config digest"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_confirm_apply",
+      "value": "Apply"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_confirm_rollback",
+      "value": "Roll Back"
+    },
+    {
+      "name": "agent_home_workspace_diff_truncated_notice",
+      "value": "Diff is truncated. Continue loading to view more content."
+    },
+    {
+      "name": "agent_home_workspace_diff_truncation_reason",
+      "value": "Truncation reason"
+    },
+    {
+      "name": "agent_home_browser_permission_current",
+      "value": "Current domain permissions"
+    },
+    {
+      "name": "agent_home_browser_permission_empty",
+      "value": "No domains are allowed"
+    },
+    {
+      "name": "agent_home_browser_permission_download_managed",
+      "value": "Downloads are managed by Bridge inside the workspace"
+    },
+    {
+      "name": "agent_home_browser_permission_updated",
+      "value": "Updated"
+    },
+    {
+      "name": "agent_home_browser_permission_download_unavailable",
+      "value": "This Bridge did not provide download directory status"
+    },
+    {
+      "name": "agent_home_voice_permission_remediation",
+      "value": "Allow microphone access in system settings, then try again"
+    },
+    {
+      "name": "agent_home_provider_usage_unsupported",
+      "value": "This Provider does not expose plan usage data"
+    },
+    {
+      "name": "agent_home_provider_usage_empty",
+      "value": "Provider usage is supported, but no data is available"
+    },
+    {
+      "name": "agent_home_provider_usage_failed",
+      "value": "Provider usage refresh failed"
+    },
+    {
+      "name": "agent_home_daemon_fleet_summary",
+      "value": "Instances"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health",
+      "value": "Health"
+    },
+    {
+      "name": "agent_home_daemon_fleet_versions",
+      "value": "Bridge Versions"
+    },
+    {
+      "name": "agent_home_daemon_fleet_config_versions",
+      "value": "Config Versions"
+    },
+    {
+      "name": "agent_home_daemon_fleet_warnings",
+      "value": "Warning Instances"
+    },
+    {
+      "name": "agent_home_daemon_fleet_heartbeat",
+      "value": "Missing Heartbeats"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_healthy",
+      "value": "Healthy"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_degraded",
+      "value": "Degraded"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_unreachable",
+      "value": "Unreachable"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_incompatible",
+      "value": "Incompatible"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_updating",
+      "value": "Updating"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_isolated",
+      "value": "Isolated"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_unknown",
+      "value": "Unknown"
+    },
+    {
+      "name": "agent_home_daemon_fleet_interrupted",
+      "value": "The previous Fleet operation was interrupted when the app closed"
+    },
+    {
+      "name": "agent_home_daemon_fleet_interrupted_remediation",
+      "value": "Refresh the instances and preview again before executing; the app will not resume automatically"
+    },
+    {
+      "name": "agent_home_browser_action_target_summary",
+      "value": "Action target"
+    },
+    {
+      "name": "agent_home_browser_action_target_workspace",
+      "value": "Workspace"
+    },
+    {
+      "name": "agent_home_browser_action_target_agent",
+      "value": "Agent"
+    },
+    {
+      "name": "agent_home_browser_action_target_host",
+      "value": "Host"
+    },
+    {
+      "name": "agent_home_browser_action_target_instance",
+      "value": "Instance"
+    },
+    {
+      "name": "agent_home_browser_action_target_page",
+      "value": "Page"
+    },
+    {
+      "name": "agent_home_browser_action_target_kind",
+      "value": "Action"
+    },
+    {
+      "name": "agent_home_browser_action_use_selected_file",
+      "value": "Use Selected Workspace File"
+    },
+    {
+      "name": "agent_home_browser_action_selected_file_unavailable",
+      "value": "No uploadable file is selected in the active workspace"
+    },
+    {
+      "name": "agent_home_browser_action_selected_file_applied",
+      "value": "Selected workspace file added to the upload action"
+    },
+    {
+      "name": "agent_home_provider_usage_details",
+      "value": "Plan details"
+    },
+    {
+      "name": "agent_home_voice_retention_unknown",
+      "value": "The remote voice service has not declared a retention policy. Review the risk before continuing."
+    },
+    {
+      "name": "agent_home_browser_screenshot_full_page",
+      "value": "Full-Page Screenshot"
+    },
+    {
+      "name": "agent_home_github_sign_out",
+      "value": "Sign out"
     }
   ]
 }

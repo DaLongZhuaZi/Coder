@@ -6,7 +6,7 @@
     },
     {
       "name": "EntryAbility_label",
-      "value": "Coder"
+      "value": "NGFCoder"
     },
     {
       "name": "activity_motion_reason",
@@ -53,6 +53,22 @@
       "value": "OpenCode"
     },
     {
+      "name": "agent_bridge_provider_openclaw",
+      "value": "OpenClaw"
+    },
+    {
+      "name": "agent_bridge_provider_openclaw_gateway",
+      "value": "OpenClaw Gateway"
+    },
+    {
+      "name": "agent_bridge_provider_hermes",
+      "value": "Hermes"
+    },
+    {
+      "name": "agent_bridge_provider_hermes_studio",
+      "value": "Hermes Studio"
+    },
+    {
       "name": "agent_bridge_token_label",
       "value": "访问 Token"
     },
@@ -82,7 +98,7 @@
     },
     {
       "name": "agent_home_app_title",
-      "value": "Coder"
+      "value": "NGFCoder"
     },
     {
       "name": "agent_home_attachment_empty",
@@ -1455,6 +1471,4158 @@
     {
       "name": "agent_home_onboarding_md_demo_content",
       "value": "## 复杂 Markdown 渲染验证\n\n这是一段使用了 **粗体**、*斜体*、`行内代码`、[链接](https://afdian.com/a/dalongzz) 与图片的内容，用来确认启动引导页底部会触发完整 Markdown 渲染。\n\n![应用图标 startIcon]({{startIcon}})\n\n> 这块区域使用独立加载态，不会阻塞上面的启动步骤与连接状态。\n\n- 图片来自应用资源 `startIcon`\n- 链接点击会进入现有富文本链接处理\n- 表格、代码块和列表应当一起正常渲染\n\n| 能力 | 预期表现 |\n| --- | --- |\n| Markdown | 正确显示标题、列表、引用和表格 |\n| 图片 | 正确显示应用图标 |\n| 分区加载 | 只影响当前富文本区域 |\n\n```ts\nconst renderer = \"NGFRichContentRenderer\";\nconst mode = \"partitioned-loading\";\n```"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_conflicts_title",
+      "value": "发现文件冲突"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_conflicts_message",
+      "value": "这些文件已变化，普通恢复不会覆盖。强制恢复会先保存恢复前快照。"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_conflicts_count",
+      "value": "冲突文件"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_force",
+      "value": "强制恢复"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_ready_title",
+      "value": "准备恢复文件"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_ready_message",
+      "value": "未发现文件冲突。确认后会恢复对话与文件。"
+    },
+    {
+      "name": "agent_home_provider_profile_runtime_mode_placeholder",
+      "value": "Runtime 模式：oneshot 或 stdio"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_source",
+      "value": "来源"
+    },
+    {
+      "name": "agent_home_agent_archive_cascade_title",
+      "value": "归档子 Agent？"
+    },
+    {
+      "name": "agent_home_agent_archive_cascade_message",
+      "value": "此 Agent 有子 Agent。可以只归档当前 Agent，或同时归档所有子 Agent。"
+    },
+    {
+      "name": "agent_home_agent_archive_single",
+      "value": "仅当前"
+    },
+    {
+      "name": "agent_home_agent_archive_cascade",
+      "value": "同时归档"
+    },
+    {
+      "name": "agent_home_provider_profile_runtime_oneshot",
+      "value": "一次性"
+    },
+    {
+      "name": "agent_home_provider_profile_runtime_stdio",
+      "value": "持续会话"
+    },
+    {
+      "name": "agent_home_provider_profiles_test",
+      "value": "测试"
+    },
+    {
+      "name": "agent_home_provider_profile_test_requested",
+      "value": "已请求测试 Provider Profile"
+    },
+    {
+      "name": "agent_home_provider_profile_test_ok",
+      "value": "Provider Profile 测试通过"
+    },
+    {
+      "name": "agent_home_provider_profile_test_failed",
+      "value": "Provider Profile 测试失败"
+    },
+    {
+      "name": "agent_home_git_action_ok",
+      "value": "Git 操作完成"
+    },
+    {
+      "name": "agent_home_git_action_failed",
+      "value": "Git 操作失败"
+    },
+    {
+      "name": "agent_home_daemon_doctor_summary",
+      "value": "诊断"
+    },
+    {
+      "name": "agent_home_daemon_doctor_ok",
+      "value": "正常"
+    },
+    {
+      "name": "agent_home_daemon_doctor_errors",
+      "value": "错误"
+    },
+    {
+      "name": "agent_home_daemon_doctor_warnings",
+      "value": "警告"
+    },
+    {
+      "name": "agent_home_daemon_doctor_generated",
+      "value": "生成时间"
+    },
+    {
+      "name": "agent_home_daemon_doctor_empty",
+      "value": "暂无诊断结果"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_verify_summary",
+      "value": "校验"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_manifest_failed",
+      "value": "快照校验失败，已阻止恢复。"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_file_counts",
+      "value": "文件统计"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_restore_seq",
+      "value": "恢复序号"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_truncated",
+      "value": "已截断"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_restored",
+      "value": "已恢复"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_verified",
+      "value": "已校验"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_skipped",
+      "value": "已跳过"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_verify_errors",
+      "value": "校验错误"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_preview",
+      "value": "预览 Hook"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_uninstall",
+      "value": "卸载 Hook"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_install_confirm",
+      "value": "将写入 shell profile 并先生成 .bak 备份，终端重启后生效。"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_uninstall_confirm",
+      "value": "将从 shell profile 移除受管 Hook block，并先生成 .bak 备份。"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_profile_installed",
+      "value": "Profile 已安装"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_script_ready",
+      "value": "脚本已就绪"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_not_installed",
+      "value": "未安装"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_pre_snapshot",
+      "value": "恢复前快照"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_pre_snapshot_title",
+      "value": "可回退文件恢复"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_pre_snapshot_message",
+      "value": "Bridge 已保存恢复前文件快照，可先 dry-run 检查后再回退。"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_pre_snapshot_dry_run",
+      "value": "Dry-run 回退"
+    },
+    {
+      "name": "agent_home_provider_profile_env_placeholder",
+      "value": "Env JSON，例如 {\"KEY\":\"VALUE\"}"
+    },
+    {
+      "name": "agent_home_provider_profile_env_invalid",
+      "value": "Env JSON 无效"
+    },
+    {
+      "name": "agent_home_provider_profiles_clone",
+      "value": "Clone"
+    },
+    {
+      "name": "agent_home_provider_profile_clone_requested",
+      "value": "已请求克隆 profile"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_pause",
+      "value": "暂停"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_resume",
+      "value": "恢复"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_status",
+      "value": "订阅状态"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_status_unknown",
+      "value": "未知"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_paused",
+      "value": "已暂停"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_changes",
+      "value": "变更/文件"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_last_success",
+      "value": "上次成功"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_backoff",
+      "value": "退避"
+    },
+    {
+      "name": "agent_home_git_diff_mode_unified",
+      "value": "Unified"
+    },
+    {
+      "name": "agent_home_git_diff_mode_stat",
+      "value": "Stat"
+    },
+    {
+      "name": "agent_home_git_diff_mode_files",
+      "value": "Files"
+    },
+    {
+      "name": "agent_home_git_diff_stat_file",
+      "value": "文件"
+    },
+    {
+      "name": "agent_home_git_diff_stat_status",
+      "value": "状态"
+    },
+    {
+      "name": "agent_home_git_diff_stat_added",
+      "value": "新增行"
+    },
+    {
+      "name": "agent_home_git_diff_stat_deleted",
+      "value": "删除行"
+    },
+    {
+      "name": "agent_home_git_diff_stat_files",
+      "value": "文件数"
+    },
+    {
+      "name": "agent_home_git_action_exit_code",
+      "value": "退出码"
+    },
+    {
+      "name": "agent_home_git_action_remote",
+      "value": "远端"
+    },
+    {
+      "name": "agent_home_git_action_changed_files",
+      "value": "变更文件"
+    },
+    {
+      "name": "agent_home_git_action_failure_category",
+      "value": "失败类别"
+    },
+    {
+      "name": "agent_home_git_action_conflict",
+      "value": "冲突"
+    },
+    {
+      "name": "agent_home_git_action_conflicts",
+      "value": "冲突文件"
+    },
+    {
+      "name": "agent_home_git_action_remediation",
+      "value": "处理建议"
+    },
+    {
+      "name": "agent_home_workspace_open",
+      "value": "打开目录"
+    },
+    {
+      "name": "agent_home_workspace_open_requested",
+      "value": "已请求打开工作区目录"
+    },
+    {
+      "name": "agent_home_runtime_cli_session_title",
+      "value": "交互式 CLI 会话"
+    },
+    {
+      "name": "agent_home_runtime_cli_session_desc",
+      "value": "仅 stdio provider 会显示长期会话状态。"
+    },
+    {
+      "name": "agent_home_runtime_cli_refresh",
+      "value": "刷新状态"
+    },
+    {
+      "name": "agent_home_runtime_cli_attach",
+      "value": "附加会话"
+    },
+    {
+      "name": "agent_home_runtime_cli_mode",
+      "value": "运行模式"
+    },
+    {
+      "name": "agent_home_runtime_cli_state",
+      "value": "会话状态"
+    },
+    {
+      "name": "agent_home_runtime_cli_ready",
+      "value": "交互可用"
+    },
+    {
+      "name": "agent_home_runtime_cli_pid",
+      "value": "进程 PID"
+    },
+    {
+      "name": "agent_home_runtime_cli_started_at",
+      "value": "启动时间"
+    },
+    {
+      "name": "agent_home_runtime_cli_last_activity",
+      "value": "最后活动"
+    },
+    {
+      "name": "agent_home_runtime_cli_exit_code",
+      "value": "退出码"
+    },
+    {
+      "name": "agent_home_runtime_cli_last_error",
+      "value": "最近错误"
+    },
+    {
+      "name": "agent_home_runtime_cli_recent_output",
+      "value": "最近输出"
+    },
+    {
+      "name": "agent_home_runtime_cli_attach_requested",
+      "value": "已请求附加交互式会话"
+    },
+    {
+      "name": "agent_home_runtime_cli_status_requested",
+      "value": "已请求刷新交互式会话状态"
+    },
+    {
+      "name": "agent_home_runtime_cli_ready_yes",
+      "value": "可用"
+    },
+    {
+      "name": "agent_home_runtime_cli_ready_no",
+      "value": "不可用"
+    },
+    {
+      "name": "agent_home_checkpoint_manifest_summary",
+      "value": "Manifest 摘要"
+    },
+    {
+      "name": "agent_home_checkpoint_workspace_root",
+      "value": "工作区"
+    },
+    {
+      "name": "agent_home_checkpoint_file_policy",
+      "value": "文件策略"
+    },
+    {
+      "name": "agent_home_checkpoint_skipped_reasons",
+      "value": "跳过原因"
+    },
+    {
+      "name": "agent_home_checkpoint_runtime_not_restored",
+      "value": "运行时不会回滚"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_plan",
+      "value": "恢复计划"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_blocked",
+      "value": "恢复已阻断"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_status",
+      "value": "状态"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_snapshot_bytes",
+      "value": "快照字节"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_persisted_bytes",
+      "value": "落盘字节"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_warning",
+      "value": "捕获警告"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_path",
+      "value": "捕获日志"
+    },
+    {
+      "name": "agent_home_runtime_terminal_activity",
+      "value": "活动"
+    },
+    {
+      "name": "agent_home_runtime_terminal_attention",
+      "value": "需关注"
+    },
+    {
+      "name": "agent_home_runtime_terminal_snapshot_restored",
+      "value": "终端已恢复"
+    },
+    {
+      "name": "agent_home_runtime_terminal_input_error",
+      "value": "输入"
+    },
+    {
+      "name": "agent_home_runtime_terminal_resize_error",
+      "value": "调整尺寸"
+    },
+    {
+      "name": "agent_home_runtime_terminal_attention_required",
+      "value": "需要关注"
+    },
+    {
+      "name": "agent_home_runtime_terminal_copy",
+      "value": "复制终端"
+    },
+    {
+      "name": "agent_home_runtime_terminal_copied",
+      "value": "已复制终端内容"
+    },
+    {
+      "name": "agent_home_runtime_terminal_copy_empty",
+      "value": "暂无可复制的终端内容"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_title",
+      "value": "鼠标"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_off",
+      "value": "关闭"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_click",
+      "value": "点击"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_drag",
+      "value": "拖动"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_all",
+      "value": "全部"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_sgr",
+      "value": "SGR"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_unavailable",
+      "value": "鼠标模式不可用"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_mode_applied",
+      "value": "已更新鼠标模式"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_status",
+      "value": "鼠标模式"
+    },
+    {
+      "name": "agent_home_runtime_terminal_mouse_error",
+      "value": "鼠标错误"
+    },
+    {
+      "name": "agent_home_runtime_terminal_ansi_status",
+      "value": "ANSI 已标准化"
+    },
+    {
+      "name": "agent_home_status_detail_relationship",
+      "value": "Agent 关系"
+    },
+    {
+      "name": "agent_home_relationship_status",
+      "value": "关系状态"
+    },
+    {
+      "name": "agent_home_relationship_parent",
+      "value": "父 Agent"
+    },
+    {
+      "name": "agent_home_relationship_root",
+      "value": "根 Agent"
+    },
+    {
+      "name": "agent_home_relationship_children",
+      "value": "子 Agent"
+    },
+    {
+      "name": "agent_home_relationship_depth",
+      "value": "树深度"
+    },
+    {
+      "name": "agent_home_relationship_detached",
+      "value": "已分离"
+    },
+    {
+      "name": "agent_home_relationship_fork_source",
+      "value": "Fork 来源"
+    },
+    {
+      "name": "agent_home_relationship_checkpoint",
+      "value": "Fork Checkpoint"
+    },
+    {
+      "name": "agent_home_relationship_updated_at",
+      "value": "关系更新时间"
+    },
+    {
+      "name": "agent_home_relationship_warnings",
+      "value": "关系警告"
+    },
+    {
+      "name": "agent_home_relationship_no_warnings",
+      "value": "无"
+    },
+    {
+      "name": "agent_home_relationship_warnings_count_suffix",
+      "value": " 个问题"
+    },
+    {
+      "name": "agent_home_relationship_group_title",
+      "value": "相关 Agent"
+    },
+    {
+      "name": "agent_home_relationship_group_root",
+      "value": "根"
+    },
+    {
+      "name": "agent_home_relationship_group_parent",
+      "value": "父级"
+    },
+    {
+      "name": "agent_home_relationship_group_child",
+      "value": "子级"
+    },
+    {
+      "name": "agent_home_relationship_group_detached",
+      "value": "分离"
+    },
+    {
+      "name": "agent_home_relationship_yes",
+      "value": "是"
+    },
+    {
+      "name": "agent_home_relationship_no",
+      "value": "否"
+    },
+    {
+      "name": "agent_home_discovery_label",
+      "value": "能力发现"
+    },
+    {
+      "name": "agent_home_discovery_warnings",
+      "value": "警告"
+    },
+    {
+      "name": "agent_home_discovery_unavailable",
+      "value": "不可用"
+    },
+    {
+      "name": "agent_home_discovery_source_runtime",
+      "value": "运行时"
+    },
+    {
+      "name": "agent_home_discovery_source_profile",
+      "value": "配置"
+    },
+    {
+      "name": "agent_home_discovery_source_cache",
+      "value": "缓存"
+    },
+    {
+      "name": "agent_home_discovery_source_fallback",
+      "value": "后备"
+    },
+    {
+      "name": "agent_home_discovery_status_ready",
+      "value": "就绪"
+    },
+    {
+      "name": "agent_home_discovery_status_degraded",
+      "value": "降级"
+    },
+    {
+      "name": "agent_home_discovery_status_unavailable",
+      "value": "不可用"
+    },
+    {
+      "name": "agent_home_discovery_status_unknown",
+      "value": "未知"
+    },
+    {
+      "name": "agent_home_slash_commands_requires_confirmation",
+      "value": "需要确认"
+    },
+    {
+      "name": "agent_home_provider_acp_preview_title",
+      "value": "ACP 导入预览"
+    },
+    {
+      "name": "agent_home_provider_acp_preview_empty",
+      "value": "还没有 ACP 预览结果"
+    },
+    {
+      "name": "agent_home_provider_acp_confirm_import",
+      "value": "确认导入"
+    },
+    {
+      "name": "agent_home_provider_acp_replace_duplicates",
+      "value": "覆盖重复项"
+    },
+    {
+      "name": "agent_home_provider_acp_skip_duplicates",
+      "value": "跳过重复项"
+    },
+    {
+      "name": "agent_home_provider_acp_confirm_title",
+      "value": "导入 ACP Provider？"
+    },
+    {
+      "name": "agent_home_provider_acp_confirm_message",
+      "value": "将导入预览中的可用 Provider，重复项按当前策略处理。"
+    },
+    {
+      "name": "agent_home_provider_acp_preview_requested",
+      "value": "已请求 ACP 预览"
+    },
+    {
+      "name": "agent_home_provider_acp_import_requested",
+      "value": "已请求 ACP 导入"
+    },
+    {
+      "name": "agent_home_provider_acp_import_done",
+      "value": "ACP 导入完成"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_scanned",
+      "value": "扫描"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_accepted",
+      "value": "可导入"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_rejected",
+      "value": "拒绝"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_duplicates",
+      "value": "重复"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_imported",
+      "value": "已导入"
+    },
+    {
+      "name": "agent_home_provider_acp_summary_skipped",
+      "value": "已跳过"
+    },
+    {
+      "name": "agent_home_provider_profile_disabled",
+      "value": "已禁用"
+    },
+    {
+      "name": "agent_home_provider_profile_enable",
+      "value": "启用"
+    },
+    {
+      "name": "agent_home_provider_profile_disable",
+      "value": "禁用"
+    },
+    {
+      "name": "agent_home_provider_profile_source",
+      "value": "来源"
+    },
+    {
+      "name": "agent_home_provider_profile_validation",
+      "value": "校验"
+    },
+    {
+      "name": "agent_home_workspace_registry_preview_import",
+      "value": "预览导入"
+    },
+    {
+      "name": "agent_home_workspace_registry_confirm_import",
+      "value": "确认导入"
+    },
+    {
+      "name": "agent_home_workspace_registry_preview_open",
+      "value": "预览打开"
+    },
+    {
+      "name": "agent_home_workspace_registry_confirm_open",
+      "value": "打开目录"
+    },
+    {
+      "name": "agent_home_workspace_registry_doctor",
+      "value": "工作区诊断"
+    },
+    {
+      "name": "agent_home_workspace_registry_refresh",
+      "value": "刷新注册表"
+    },
+    {
+      "name": "agent_home_workspace_registry_suggestions",
+      "value": "目录建议"
+    },
+    {
+      "name": "agent_home_workspace_registry_status",
+      "value": "注册表状态"
+    },
+    {
+      "name": "agent_home_workspace_registry_validation",
+      "value": "校验结果"
+    },
+    {
+      "name": "agent_home_workspace_registry_duplicate",
+      "value": "重复路径将更新既有记录"
+    },
+    {
+      "name": "agent_home_workspace_registry_restored_archived",
+      "value": "已恢复归档记录"
+    },
+    {
+      "name": "agent_home_workspace_registry_archive_title",
+      "value": "归档工作区"
+    },
+    {
+      "name": "agent_home_workspace_registry_archive_message",
+      "value": "此操作只从工作区列表归档，不删除本地目录。"
+    },
+    {
+      "name": "agent_home_workspace_registry_import_title",
+      "value": "导入工作区"
+    },
+    {
+      "name": "agent_home_workspace_registry_import_message",
+      "value": "校验通过后才会写入注册表。"
+    },
+    {
+      "name": "agent_home_workspace_registry_open_title",
+      "value": "打开工作区"
+    },
+    {
+      "name": "agent_home_workspace_registry_open_message",
+      "value": "Bridge 将调用本机目录打开器；失败会保留诊断信息。"
+    },
+    {
+      "name": "agent_home_workspace_registry_missing",
+      "value": "目录缺失"
+    },
+    {
+      "name": "agent_home_workspace_registry_stale",
+      "value": "需要复核"
+    },
+    {
+      "name": "agent_home_workspace_registry_archived",
+      "value": "已归档"
+    },
+    {
+      "name": "agent_home_workspace_registry_active",
+      "value": "正常"
+    },
+    {
+      "name": "agent_home_workspace_registry_projects",
+      "value": "项目分组"
+    },
+    {
+      "name": "agent_home_workspace_registry_no_suggestions",
+      "value": "暂无目录建议"
+    },
+    {
+      "name": "agent_home_workspace_registry_unavailable",
+      "value": "新版 Bridge 才支持工作区注册表"
+    },
+    {
+      "name": "agent_home_workspace_registry_preview_requested",
+      "value": "已请求工作区预览"
+    },
+    {
+      "name": "agent_home_workspace_registry_confirm_requested",
+      "value": "已提交确认操作"
+    },
+    {
+      "name": "agent_home_workspace_registry_archive_requested",
+      "value": "已请求归档预览"
+    },
+    {
+      "name": "agent_home_workspace_registry_done",
+      "value": "工作区注册表已更新"
+    },
+    {
+      "name": "agent_home_workspace_registry_failed",
+      "value": "工作区注册表操作失败"
+    },
+    {
+      "name": "agent_home_workspace_registry_open_preview_ready",
+      "value": "打开预览已就绪"
+    },
+    {
+      "name": "agent_home_workspace_registry_archive_preview_ready",
+      "value": "归档预览已就绪"
+    },
+    {
+      "name": "agent_home_workspace_registry_projects_empty",
+      "value": "暂无项目分组"
+    },
+    {
+      "name": "agent_home_workspace_registry_doctor_empty",
+      "value": "暂无诊断项"
+    },
+    {
+      "name": "agent_home_workspace_registry_save_local",
+      "value": "保存本地"
+    },
+    {
+      "name": "agent_home_workspace_registry_kind",
+      "value": "类型"
+    },
+    {
+      "name": "agent_home_workspace_registry_last_open",
+      "value": "最近打开"
+    },
+    {
+      "name": "agent_home_workspace_registry_open_status",
+      "value": "打开状态"
+    },
+    {
+      "name": "agent_home_workspace_registry_confirm_archive",
+      "value": "确认归档"
+    },
+    {
+      "name": "agent_home_daemon_health_refresh",
+      "value": "检查健康状态"
+    },
+    {
+      "name": "agent_home_daemon_start",
+      "value": "启动 Daemon"
+    },
+    {
+      "name": "agent_home_daemon_stop",
+      "value": "停止 Daemon"
+    },
+    {
+      "name": "agent_home_daemon_restart",
+      "value": "重启 Daemon"
+    },
+    {
+      "name": "agent_home_daemon_autostart_preview",
+      "value": "预览系统自启动"
+    },
+    {
+      "name": "agent_home_daemon_status",
+      "value": "状态"
+    },
+    {
+      "name": "agent_home_daemon_pid",
+      "value": "PID"
+    },
+    {
+      "name": "agent_home_daemon_started_at",
+      "value": "启动时间"
+    },
+    {
+      "name": "agent_home_daemon_heartbeat",
+      "value": "最近心跳"
+    },
+    {
+      "name": "agent_home_daemon_restart_count",
+      "value": "重启次数"
+    },
+    {
+      "name": "agent_home_daemon_last_error",
+      "value": "最近错误"
+    },
+    {
+      "name": "agent_home_daemon_message",
+      "value": "Daemon 消息"
+    },
+    {
+      "name": "agent_home_daemon_log_warnings",
+      "value": "日志警告"
+    },
+    {
+      "name": "agent_home_daemon_lifecycle_requested",
+      "value": "已请求 Daemon 操作"
+    },
+    {
+      "name": "agent_home_daemon_autostart_preview_requested",
+      "value": "已请求预览系统自启动"
+    },
+    {
+      "name": "agent_home_push_title",
+      "value": "Push Kit 离线通知"
+    },
+    {
+      "name": "agent_home_push_desc",
+      "value": "注册此设备的 Push Token，并检查 Bridge 离线投递状态"
+    },
+    {
+      "name": "agent_home_push_refresh",
+      "value": "刷新状态"
+    },
+    {
+      "name": "agent_home_push_retry_token",
+      "value": "重试 Token"
+    },
+    {
+      "name": "agent_home_push_register",
+      "value": "注册设备"
+    },
+    {
+      "name": "agent_home_push_unregister",
+      "value": "注销设备"
+    },
+    {
+      "name": "agent_home_push_client_status",
+      "value": "客户端状态"
+    },
+    {
+      "name": "agent_home_push_bridge_status",
+      "value": "Bridge 投递"
+    },
+    {
+      "name": "agent_home_push_subscription_count",
+      "value": "有效订阅"
+    },
+    {
+      "name": "agent_home_push_token_fingerprint",
+      "value": "Token 指纹"
+    },
+    {
+      "name": "agent_home_push_last_attempt",
+      "value": "最近尝试"
+    },
+    {
+      "name": "agent_home_push_last_success",
+      "value": "最近成功"
+    },
+    {
+      "name": "agent_home_push_delivery_count",
+      "value": "投递次数"
+    },
+    {
+      "name": "agent_home_push_last_failure",
+      "value": "最近失败"
+    },
+    {
+      "name": "agent_home_push_message",
+      "value": "Bridge 信息"
+    },
+    {
+      "name": "agent_home_push_remediation",
+      "value": "Bridge 建议"
+    },
+    {
+      "name": "agent_home_push_register_requested",
+      "value": "已请求注册 Push Token"
+    },
+    {
+      "name": "agent_home_push_unregister_requested",
+      "value": "已请求注销 Push Token"
+    },
+    {
+      "name": "agent_home_push_client_ready",
+      "value": "Push Token 已就绪"
+    },
+    {
+      "name": "agent_home_push_client_unavailable",
+      "value": "Push Kit 不可用"
+    },
+    {
+      "name": "agent_home_push_client_pending",
+      "value": "等待 Push Token"
+    },
+    {
+      "name": "agent_home_push_delivery_ready",
+      "value": "离线投递已就绪"
+    },
+    {
+      "name": "agent_home_push_delivery_waiting_subscription",
+      "value": "服务已配置，等待设备订阅"
+    },
+    {
+      "name": "agent_home_push_delivery_not_configured",
+      "value": "Bridge 离线投递未配置"
+    },
+    {
+      "name": "agent_home_push_client_message",
+      "value": "客户端信息"
+    },
+    {
+      "name": "agent_home_push_client_remediation",
+      "value": "客户端建议"
+    },
+    {
+      "name": "agent_home_daemon_autostart_install",
+      "value": "安装系统自启"
+    },
+    {
+      "name": "agent_home_daemon_autostart_uninstall",
+      "value": "卸载系统自启"
+    },
+    {
+      "name": "agent_home_daemon_autostart_install_confirm",
+      "value": "将在当前用户的系统自启配置中安装受管的 Agent Bridge 启动项。此操作不会写入密码或 Token，确认继续？"
+    },
+    {
+      "name": "agent_home_daemon_autostart_uninstall_confirm",
+      "value": "将只移除由 Agent Bridge 创建并带受管标记的系统自启项，确认继续？"
+    },
+    {
+      "name": "agent_home_daemon_autostart_configured",
+      "value": "已安装"
+    },
+    {
+      "name": "agent_home_daemon_autostart_not_configured",
+      "value": "未安装"
+    },
+    {
+      "name": "agent_home_daemon_autostart_registration",
+      "value": "注册项"
+    },
+    {
+      "name": "agent_home_daemon_autostart_target",
+      "value": "配置目标"
+    },
+    {
+      "name": "agent_home_daemon_autostart_warning",
+      "value": "自启警告"
+    },
+    {
+      "name": "agent_home_daemon_supervisor_pid",
+      "value": "监督进程 PID"
+    },
+    {
+      "name": "agent_home_daemon_worker_pid",
+      "value": "工作进程 PID"
+    },
+    {
+      "name": "agent_home_daemon_worker_generation",
+      "value": "工作进程代次"
+    },
+    {
+      "name": "agent_home_daemon_worker_ready",
+      "value": "工作进程就绪"
+    },
+    {
+      "name": "agent_home_daemon_worker_heartbeat",
+      "value": "工作进程心跳"
+    },
+    {
+      "name": "agent_home_daemon_consecutive_crashes",
+      "value": "连续崩溃次数"
+    },
+    {
+      "name": "agent_home_daemon_crash_window_count",
+      "value": "崩溃窗口计数"
+    },
+    {
+      "name": "agent_home_daemon_next_restart",
+      "value": "下次重启时间"
+    },
+    {
+      "name": "agent_home_daemon_last_restart_reason",
+      "value": "最近重启原因"
+    },
+    {
+      "name": "agent_home_daemon_crash_loop",
+      "value": "崩溃熔断"
+    },
+    {
+      "name": "agent_home_daemon_yes",
+      "value": "是"
+    },
+    {
+      "name": "agent_home_daemon_no",
+      "value": "否"
+    },
+    {
+      "name": "agent_home_daemon_update_status_refresh",
+      "value": "更新状态"
+    },
+    {
+      "name": "agent_home_daemon_update_check",
+      "value": "检查更新"
+    },
+    {
+      "name": "agent_home_daemon_update_preview",
+      "value": "预览更新"
+    },
+    {
+      "name": "agent_home_daemon_update_install",
+      "value": "安装更新"
+    },
+    {
+      "name": "agent_home_daemon_update_rollback",
+      "value": "回滚更新"
+    },
+    {
+      "name": "agent_home_daemon_update_install_confirm",
+      "value": "将下载并校验更新包，备份当前版本后修改全局 Bridge 安装，并重启守护进程。"
+    },
+    {
+      "name": "agent_home_daemon_update_rollback_confirm",
+      "value": "将从已校验的备份恢复上一版本，并重启守护进程。"
+    },
+    {
+      "name": "agent_home_daemon_update_current_version",
+      "value": "当前版本"
+    },
+    {
+      "name": "agent_home_daemon_update_target_version",
+      "value": "目标版本"
+    },
+    {
+      "name": "agent_home_daemon_update_state",
+      "value": "更新状态"
+    },
+    {
+      "name": "agent_home_daemon_update_available",
+      "value": "有可用更新"
+    },
+    {
+      "name": "agent_home_daemon_update_integrity",
+      "value": "完整性校验"
+    },
+    {
+      "name": "agent_home_daemon_update_backup",
+      "value": "回滚备份"
+    },
+    {
+      "name": "agent_home_daemon_update_pending_restart",
+      "value": "等待重启"
+    },
+    {
+      "name": "agent_home_daemon_update_replacement",
+      "value": "进程替换"
+    },
+    {
+      "name": "agent_home_daemon_update_failure",
+      "value": "失败类别"
+    },
+    {
+      "name": "agent_home_daemon_update_installation_kind",
+      "value": "安装类型"
+    },
+    {
+      "name": "agent_home_daemon_update_check_requested",
+      "value": "正在检查 Bridge 更新"
+    },
+    {
+      "name": "agent_home_daemon_update_preview_requested",
+      "value": "正在生成更新预览"
+    },
+    {
+      "name": "agent_home_daemon_update_action_requested",
+      "value": "更新操作已提交，连接可能短暂中断"
+    },
+    {
+      "name": "agent_home_runtime_provider_session_title",
+      "value": "Provider 运行会话"
+    },
+    {
+      "name": "agent_home_runtime_provider_session_desc",
+      "value": "显示当前 Provider 声明支持的交互式运行状态。"
+    },
+    {
+      "name": "agent_home_runtime_provider_refresh",
+      "value": "刷新状态"
+    },
+    {
+      "name": "agent_home_runtime_provider_attach",
+      "value": "附加会话"
+    },
+    {
+      "name": "agent_home_runtime_provider_fallback_reason",
+      "value": "降级原因"
+    },
+    {
+      "name": "agent_home_runtime_provider_attach_requested",
+      "value": "已请求附加 Provider 会话"
+    },
+    {
+      "name": "agent_home_runtime_provider_status_requested",
+      "value": "已请求刷新 Provider 运行状态"
+    },
+    {
+      "name": "agent_home_agent_fork_mode_title",
+      "value": "选择分支工作区"
+    },
+    {
+      "name": "agent_home_agent_fork_mode_message",
+      "value": "共享当前工作区，或创建隔离的 Git Worktree。"
+    },
+    {
+      "name": "agent_home_agent_fork_shared",
+      "value": "共享工作区"
+    },
+    {
+      "name": "agent_home_agent_fork_isolated",
+      "value": "隔离 Worktree"
+    },
+    {
+      "name": "agent_home_agent_fork_isolated_confirm_title",
+      "value": "创建隔离分支"
+    },
+    {
+      "name": "agent_home_agent_fork_isolated_confirm_message",
+      "value": "确认创建以下 Worktree 和子 Agent："
+    },
+    {
+      "name": "agent_home_action_confirm",
+      "value": "确认"
+    },
+    {
+      "name": "agent_home_host_profiles_title",
+      "value": "主机档案"
+    },
+    {
+      "name": "agent_home_host_profiles_empty",
+      "value": "尚未添加主机"
+    },
+    {
+      "name": "agent_home_host_add",
+      "value": "添加主机"
+    },
+    {
+      "name": "agent_home_host_current",
+      "value": "当前"
+    },
+    {
+      "name": "agent_home_host_credential_saved",
+      "value": "凭据已安全保存"
+    },
+    {
+      "name": "agent_home_host_credential_missing",
+      "value": "缺少连接凭据"
+    },
+    {
+      "name": "agent_home_host_editor_add",
+      "value": "新增主机档案"
+    },
+    {
+      "name": "agent_home_host_editor_edit",
+      "value": "编辑主机档案"
+    },
+    {
+      "name": "agent_home_host_name_label",
+      "value": "主机名称"
+    },
+    {
+      "name": "agent_home_host_name_placeholder",
+      "value": "例如：开发电脑"
+    },
+    {
+      "name": "agent_home_host_token_keep_hint",
+      "value": "留空则保留已保存的凭据"
+    },
+    {
+      "name": "agent_home_host_auto_connect",
+      "value": "启动时自动连接"
+    },
+    {
+      "name": "agent_home_host_save",
+      "value": "保存主机"
+    },
+    {
+      "name": "agent_home_host_switch_title",
+      "value": "切换主机？"
+    },
+    {
+      "name": "agent_home_host_switch_message",
+      "value": "当前连接将断开，远端任务会继续运行"
+    },
+    {
+      "name": "agent_home_host_switch_action",
+      "value": "切换"
+    },
+    {
+      "name": "agent_home_host_delete_title",
+      "value": "删除主机档案？"
+    },
+    {
+      "name": "agent_home_host_delete_message",
+      "value": "本地缓存和安全凭据将被删除，远端数据和设备信任不受影响"
+    },
+    {
+      "name": "agent_home_host_delete_action",
+      "value": "删除"
+    },
+    {
+      "name": "agent_home_host_rebind_title",
+      "value": "重新绑定主机？"
+    },
+    {
+      "name": "agent_home_host_rebind_message",
+      "value": "将清除已记录的设备身份，并在下次连接时重新验证"
+    },
+    {
+      "name": "agent_home_host_rebind_action",
+      "value": "重新绑定"
+    },
+    {
+      "name": "agent_home_host_cached",
+      "value": "缓存"
+    },
+    {
+      "name": "agent_home_host_offline",
+      "value": "离线"
+    },
+    {
+      "name": "agent_home_host_workspace_groups_title",
+      "value": "按主机浏览工作区"
+    },
+    {
+      "name": "agent_home_worktree_preview",
+      "value": "预览"
+    },
+    {
+      "name": "agent_home_worktree_preview_requested",
+      "value": "已请求 Worktree 预览"
+    },
+    {
+      "name": "agent_home_worktree_preview_ready",
+      "value": "Worktree 预览就绪"
+    },
+    {
+      "name": "agent_home_worktree_action_ok",
+      "value": "Worktree 操作完成"
+    },
+    {
+      "name": "agent_home_worktree_action_failed",
+      "value": "Worktree 操作失败"
+    },
+    {
+      "name": "agent_home_worktree_path",
+      "value": "路径"
+    },
+    {
+      "name": "agent_home_worktree_confirmed",
+      "value": "已确认"
+    },
+    {
+      "name": "agent_home_worktree_registry_linked",
+      "value": "已关联注册表"
+    },
+    {
+      "name": "agent_home_worktree_setup_status",
+      "value": "Setup 状态"
+    },
+    {
+      "name": "agent_home_worktree_git_registered",
+      "value": "Git 已登记"
+    },
+    {
+      "name": "agent_home_worktree_missing",
+      "value": "路径不存在"
+    },
+    {
+      "name": "agent_home_worktree_stale",
+      "value": "状态过期"
+    },
+    {
+      "name": "agent_home_worktree_source",
+      "value": "来源工作区"
+    },
+    {
+      "name": "agent_home_status_yes",
+      "value": "是"
+    },
+    {
+      "name": "agent_home_status_no",
+      "value": "否"
+    },
+    {
+      "name": "agent_home_worktree_create_title",
+      "value": "创建 Worktree"
+    },
+    {
+      "name": "agent_home_worktree_create_message",
+      "value": "预览已通过。确认后将创建 Git worktree，并登记为隔离工作区。"
+    },
+    {
+      "name": "agent_home_provider_directory_title",
+      "value": "远程 Provider 目录"
+    },
+    {
+      "name": "agent_home_provider_directory_url_placeholder",
+      "value": "HTTPS 目录地址"
+    },
+    {
+      "name": "agent_home_provider_directory_search_placeholder",
+      "value": "搜索 Provider"
+    },
+    {
+      "name": "agent_home_provider_directory_refresh",
+      "value": "刷新目录"
+    },
+    {
+      "name": "agent_home_provider_directory_empty",
+      "value": "目录中没有可用 Provider"
+    },
+    {
+      "name": "agent_home_provider_directory_install",
+      "value": "安装"
+    },
+    {
+      "name": "agent_home_provider_directory_update",
+      "value": "更新"
+    },
+    {
+      "name": "agent_home_provider_directory_rollback",
+      "value": "回滚"
+    },
+    {
+      "name": "agent_home_provider_directory_remove",
+      "value": "移除"
+    },
+    {
+      "name": "agent_home_provider_directory_confirm_title",
+      "value": "确认安装 Provider？"
+    },
+    {
+      "name": "agent_home_provider_directory_confirm_message",
+      "value": "将下载并校验受管 Provider 包，然后切换运行配置。"
+    },
+    {
+      "name": "agent_home_provider_directory_status_installed",
+      "value": "已安装"
+    },
+    {
+      "name": "agent_home_provider_directory_status_available",
+      "value": "可安装"
+    },
+    {
+      "name": "agent_home_provider_directory_feature_disabled",
+      "value": "远程目录未启用或信任密钥不可用"
+    },
+    {
+      "name": "agent_home_github_sign_in",
+      "value": "登录 GitHub"
+    },
+    {
+      "name": "agent_home_github_pr_list",
+      "value": "PR 列表"
+    },
+    {
+      "name": "agent_home_github_watch_start",
+      "value": "开始监控"
+    },
+    {
+      "name": "agent_home_github_watch_stop",
+      "value": "停止监控"
+    },
+    {
+      "name": "agent_home_github_auth_code",
+      "value": "授权码"
+    },
+    {
+      "name": "agent_home_workspace_diff_load_more",
+      "value": "继续加载 Diff"
+    },
+    {
+      "name": "agent_home_github_auth_pending",
+      "value": "等待 GitHub 授权"
+    },
+    {
+      "name": "agent_home_github_binding",
+      "value": "仓库绑定"
+    },
+    {
+      "name": "agent_home_github_ready",
+      "value": "标记为可审查"
+    },
+    {
+      "name": "agent_home_github_attachment",
+      "value": "上传附件"
+    },
+    {
+      "name": "agent_home_github_owner_placeholder",
+      "value": "仓库所有者"
+    },
+    {
+      "name": "agent_home_github_repo_placeholder",
+      "value": "仓库名称"
+    },
+    {
+      "name": "agent_home_github_reviewer_placeholder",
+      "value": "审查者账号"
+    },
+    {
+      "name": "agent_home_github_label_placeholder",
+      "value": "标签名称"
+    },
+    {
+      "name": "agent_home_github_attachment_path_placeholder",
+      "value": "工作区内文件路径"
+    },
+    {
+      "name": "agent_home_daemon_instance_id",
+      "value": "实例 ID"
+    },
+    {
+      "name": "agent_home_daemon_instance_health",
+      "value": "实例健康"
+    },
+    {
+      "name": "agent_home_daemon_remote_config",
+      "value": "远程配置"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_url",
+      "value": "签名配置 HTTPS 地址"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_fetch",
+      "value": "获取配置"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview",
+      "value": "预览应用"
+    },
+    {
+      "name": "agent_home_usage_real",
+      "value": "真实用量"
+    },
+    {
+      "name": "agent_home_usage_estimated",
+      "value": "估算用量"
+    },
+    {
+      "name": "agent_home_usage_refresh",
+      "value": "刷新用量"
+    },
+    {
+      "name": "agent_home_metadata_title",
+      "value": "生成会话标题"
+    },
+    {
+      "name": "agent_home_diagnostics_export",
+      "value": "导出诊断"
+    },
+    {
+      "name": "agent_home_command_palette",
+      "value": "命令面板"
+    },
+    {
+      "name": "agent_home_content_truncated",
+      "value": "内容已截断，可打开详情继续查看"
+    },
+    {
+      "name": "agent_home_usage_compactions",
+      "value": "上下文压缩"
+    },
+    {
+      "name": "agent_home_usage_token_budget",
+      "value": "Token 预算"
+    },
+    {
+      "name": "agent_home_usage_cost_budget",
+      "value": "费用预算"
+    },
+    {
+      "name": "agent_home_usage_budget_save",
+      "value": "保存预算"
+    },
+    {
+      "name": "agent_home_usage_budget_invalid",
+      "value": "预算必须是非负数字"
+    },
+    {
+      "name": "agent_home_queue_refresh",
+      "value": "刷新队列"
+    },
+    {
+      "name": "agent_home_queue_count",
+      "value": "队列任务：%s"
+    },
+    {
+      "name": "agent_home_metadata_preview",
+      "value": "生成结果可在应用前编辑"
+    },
+    {
+      "name": "agent_home_metadata_copy",
+      "value": "复制"
+    },
+    {
+      "name": "agent_home_metadata_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "agent_home_metadata_copied",
+      "value": "生成结果已复制"
+    },
+    {
+      "name": "agent_home_queue_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "agent_home_queue_retry",
+      "value": "重试"
+    },
+    {
+      "name": "agent_home_usage_unavailable",
+      "value": "不可用"
+    },
+    {
+      "name": "agent_home_metadata_apply",
+      "value": "应用"
+    },
+    {
+      "name": "agent_home_metadata_branch",
+      "value": "生成分支名"
+    },
+    {
+      "name": "agent_home_metadata_commit",
+      "value": "生成提交文案"
+    },
+    {
+      "name": "agent_home_metadata_pr",
+      "value": "生成 PR 文案"
+    },
+    {
+      "name": "agent_home_metadata_branch_ready",
+      "value": "分支名已写入 Git 操作区，请预览后执行"
+    },
+    {
+      "name": "agent_home_metadata_commit_ready",
+      "value": "提交文案已写入 Git 操作区，请确认后提交"
+    },
+    {
+      "name": "agent_home_metadata_pr_ready",
+      "value": "PR 文案已写入 GitHub 工作台，请预览后创建"
+    },
+    {
+      "name": "agent_home_display_settings",
+      "value": "聊天与代码显示"
+    },
+    {
+      "name": "agent_home_chat_font_size",
+      "value": "聊天字号：%s"
+    },
+    {
+      "name": "agent_home_code_font_size",
+      "value": "代码字号：%s"
+    },
+    {
+      "name": "agent_home_line_height",
+      "value": "聊天行高：%s"
+    },
+    {
+      "name": "agent_home_compact_density",
+      "value": "紧凑密度"
+    },
+    {
+      "name": "agent_home_compatibility_title",
+      "value": "版本兼容提示"
+    },
+    {
+      "name": "agent_home_compatibility_unknown",
+      "value": "Bridge 尚未返回完整兼容信息"
+    },
+    {
+      "name": "agent_home_command_search",
+      "value": "搜索主机、会话、终端或设置"
+    },
+    {
+      "name": "agent_home_refresh_current_scope",
+      "value": "刷新当前区域"
+    },
+    {
+      "name": "agent_home_open_session_window",
+      "value": "在独立窗口打开会话"
+    },
+    {
+      "name": "agent_home_session_window_failed",
+      "value": "无法打开会话窗口"
+    },
+    {
+      "name": "agent_home_diagnostics_text",
+      "value": "文本报告"
+    },
+    {
+      "name": "agent_home_diagnostics_copy",
+      "value": "复制报告"
+    },
+    {
+      "name": "agent_home_diagnostics_fix",
+      "value": "处理"
+    },
+    {
+      "name": "agent_home_keyboard_shortcuts",
+      "value": "键盘快捷键"
+    },
+    {
+      "name": "agent_home_message_fork",
+      "value": "从此消息分支"
+    },
+    {
+      "name": "agent_home_message_fork_shared",
+      "value": "共享工作区"
+    },
+    {
+      "name": "agent_home_message_fork_isolated",
+      "value": "隔离工作区"
+    },
+    {
+      "name": "agent_home_message_fork_unavailable",
+      "value": "此消息缺少可验证的时间线位置"
+    },
+    {
+      "name": "agent_home_message_fork_preview_title",
+      "value": "确认分叉预览"
+    },
+    {
+      "name": "agent_home_message_fork_preview_message",
+      "value": "确认后将从选定消息边界创建子会话。"
+    },
+    {
+      "name": "agent_home_message_fork_preview_mode",
+      "value": "工作区模式"
+    },
+    {
+      "name": "agent_home_message_fork_preview_context",
+      "value": "上下文条目"
+    },
+    {
+      "name": "agent_home_message_fork_preview_cursor",
+      "value": "时间线游标"
+    },
+    {
+      "name": "agent_home_message_fork_preview_digest",
+      "value": "上下文摘要"
+    },
+    {
+      "name": "agent_home_message_fork_preview_warnings",
+      "value": "注意事项"
+    },
+    {
+      "name": "agent_home_message_fork_preview_stale",
+      "value": "分叉预览已失效，请重新操作。"
+    },
+    {
+      "name": "agent_session_window_title",
+      "value": "会话工作台"
+    },
+    {
+      "name": "agent_session_window_messages",
+      "value": "消息"
+    },
+    {
+      "name": "agent_session_window_queue",
+      "value": "队列"
+    },
+    {
+      "name": "agent_session_window_usage",
+      "value": "用量"
+    },
+    {
+      "name": "agent_session_window_terminal",
+      "value": "终端"
+    },
+    {
+      "name": "agent_session_window_close",
+      "value": "关闭窗口"
+    },
+    {
+      "name": "agent_session_window_refresh",
+      "value": "刷新当前会话"
+    },
+    {
+      "name": "agent_session_window_send",
+      "value": "发送"
+    },
+    {
+      "name": "agent_session_window_composer_placeholder",
+      "value": "发送消息到当前会话"
+    },
+    {
+      "name": "agent_session_window_empty_messages",
+      "value": "当前会话还没有消息"
+    },
+    {
+      "name": "agent_session_window_empty_queue",
+      "value": "当前没有排队消息"
+    },
+    {
+      "name": "agent_session_window_empty_usage",
+      "value": "暂无用量事件"
+    },
+    {
+      "name": "agent_session_window_empty_terminals",
+      "value": "当前会话没有终端"
+    },
+    {
+      "name": "agent_session_window_status_connecting",
+      "value": "正在连接"
+    },
+    {
+      "name": "agent_session_window_status_connected",
+      "value": "已连接"
+    },
+    {
+      "name": "agent_session_window_status_disconnected",
+      "value": "已断开"
+    },
+    {
+      "name": "agent_session_window_status_error",
+      "value": "连接失败"
+    },
+    {
+      "name": "agent_session_window_status_scope_missing",
+      "value": "窗口会话范围无效"
+    },
+    {
+      "name": "agent_session_window_status_host_missing",
+      "value": "目标主机不可用"
+    },
+    {
+      "name": "agent_session_window_status_session_missing",
+      "value": "目标会话不可用"
+    },
+    {
+      "name": "agent_session_window_status_credential_missing",
+      "value": "目标主机凭证不可用"
+    },
+    {
+      "name": "agent_session_window_status_remote_missing",
+      "value": "目标会话尚未连接到 Bridge"
+    },
+    {
+      "name": "agent_session_window_role_user",
+      "value": "你"
+    },
+    {
+      "name": "agent_session_window_role_assistant",
+      "value": "助手"
+    },
+    {
+      "name": "agent_session_window_role_system",
+      "value": "状态"
+    },
+    {
+      "name": "agent_session_window_queue_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "agent_session_window_queue_retry",
+      "value": "重试"
+    },
+    {
+      "name": "agent_session_window_usage_actual_tokens",
+      "value": "真实 Token"
+    },
+    {
+      "name": "agent_session_window_usage_estimated_tokens",
+      "value": "估算 Token"
+    },
+    {
+      "name": "agent_session_window_usage_actual_cost",
+      "value": "真实费用"
+    },
+    {
+      "name": "agent_session_window_usage_estimated_cost",
+      "value": "估算费用"
+    },
+    {
+      "name": "agent_session_window_usage_budget_warning",
+      "value": "用量已达到预算告警阈值"
+    },
+    {
+      "name": "agent_session_window_terminal_select",
+      "value": "查看终端"
+    },
+    {
+      "name": "agent_session_window_terminal_waiting",
+      "value": "等待终端输出"
+    },
+    {
+      "name": "agent_home_usage_cache_read",
+      "value": "缓存读取"
+    },
+    {
+      "name": "agent_home_usage_cache_write",
+      "value": "缓存写入"
+    },
+    {
+      "name": "agent_home_usage_reasoning_tokens",
+      "value": "推理 Token"
+    },
+    {
+      "name": "agent_home_usage_costs",
+      "value": "费用"
+    },
+    {
+      "name": "agent_home_usage_quota",
+      "value": "配额"
+    },
+    {
+      "name": "agent_home_usage_quota_remaining",
+      "value": "剩余"
+    },
+    {
+      "name": "agent_home_usage_quota_limit",
+      "value": "上限"
+    },
+    {
+      "name": "agent_home_usage_quota_reset",
+      "value": "重置时间"
+    },
+    {
+      "name": "agent_home_usage_quota_source",
+      "value": "来源"
+    },
+    {
+      "name": "agent_home_usage_provider",
+      "value": "Provider"
+    },
+    {
+      "name": "agent_home_usage_window",
+      "value": "统计窗口"
+    },
+    {
+      "name": "agent_home_usage_window_session",
+      "value": "会话"
+    },
+    {
+      "name": "agent_home_usage_window_day",
+      "value": "当天"
+    },
+    {
+      "name": "agent_home_usage_window_month",
+      "value": "当月"
+    },
+    {
+      "name": "agent_home_usage_currency",
+      "value": "币种"
+    },
+    {
+      "name": "agent_home_usage_warning_threshold",
+      "value": "告警阈值（0–1）"
+    },
+    {
+      "name": "agent_home_usage_budget_clear",
+      "value": "清除预算"
+    },
+    {
+      "name": "agent_home_usage_budget_warning",
+      "value": "预算告警"
+    },
+    {
+      "name": "agent_home_usage_budget_warning_token",
+      "value": "Token 已达到告警阈值"
+    },
+    {
+      "name": "agent_home_usage_budget_warning_cost",
+      "value": "费用已达到告警阈值"
+    },
+    {
+      "name": "agent_home_usage_compaction_timeline",
+      "value": "上下文压缩记录"
+    },
+    {
+      "name": "agent_home_usage_events",
+      "value": "最近用量事件"
+    },
+    {
+      "name": "agent_home_diagnostics_export_json",
+      "value": "导出 JSON"
+    },
+    {
+      "name": "agent_home_diagnostics_export_text",
+      "value": "导出文本"
+    },
+    {
+      "name": "agent_home_diagnostics_export_saved",
+      "value": "诊断报告已保存"
+    },
+    {
+      "name": "agent_home_diagnostics_export_failed",
+      "value": "无法保存诊断报告"
+    },
+    {
+      "name": "agent_home_diagnostics_schema",
+      "value": "报告版本"
+    },
+    {
+      "name": "agent_home_diagnostics_generated",
+      "value": "生成时间"
+    },
+    {
+      "name": "agent_home_diagnostics_truncated",
+      "value": "报告已截断"
+    },
+    {
+      "name": "agent_home_diagnostics_group_daemon",
+      "value": "Daemon"
+    },
+    {
+      "name": "agent_home_diagnostics_group_provider",
+      "value": "Provider"
+    },
+    {
+      "name": "agent_home_diagnostics_group_terminal",
+      "value": "终端"
+    },
+    {
+      "name": "agent_home_diagnostics_group_queue",
+      "value": "消息队列"
+    },
+    {
+      "name": "agent_home_diagnostics_group_usage",
+      "value": "用量"
+    },
+    {
+      "name": "agent_home_diagnostics_group_secure_storage",
+      "value": "安全存储"
+    },
+    {
+      "name": "agent_home_diagnostics_group_remote_config",
+      "value": "远程配置"
+    },
+    {
+      "name": "agent_home_diagnostics_group_persistence",
+      "value": "持久化"
+    },
+    {
+      "name": "agent_home_compatibility_app_version",
+      "value": "App"
+    },
+    {
+      "name": "agent_home_compatibility_bridge_version",
+      "value": "Bridge"
+    },
+    {
+      "name": "agent_home_compatibility_minimum",
+      "value": "最低要求"
+    },
+    {
+      "name": "agent_home_compatibility_recommended",
+      "value": "建议版本"
+    },
+    {
+      "name": "agent_home_compatibility_remediation",
+      "value": "处理建议"
+    },
+    {
+      "name": "agent_home_compatibility_status_upgrade",
+      "value": "建议升级"
+    },
+    {
+      "name": "agent_home_compatibility_status_app_old",
+      "value": "App 版本过旧"
+    },
+    {
+      "name": "agent_home_compatibility_status_bridge_old",
+      "value": "Bridge 版本过旧"
+    },
+    {
+      "name": "agent_home_compatibility_status_unknown",
+      "value": "兼容状态未知"
+    },
+    {
+      "name": "agent_home_content_code",
+      "value": "代码"
+    },
+    {
+      "name": "agent_home_content_diff",
+      "value": "差异"
+    },
+    {
+      "name": "agent_home_content_unavailable",
+      "value": "此内容无法安全显示"
+    },
+    {
+      "name": "agent_home_todo_pending",
+      "value": "待处理"
+    },
+    {
+      "name": "agent_home_todo_in_progress",
+      "value": "进行中"
+    },
+    {
+      "name": "agent_home_todo_completed",
+      "value": "已完成"
+    },
+    {
+      "name": "agent_home_todo_cancelled",
+      "value": "已取消"
+    },
+    {
+      "name": "agent_home_relay_title",
+      "value": "远程 Relay"
+    },
+    {
+      "name": "agent_home_relay_desc",
+      "value": "通过端到端加密的 Relay 从外部网络安全连接 Bridge。"
+    },
+    {
+      "name": "agent_home_relay_url_placeholder",
+      "value": "Relay 地址（wss://）"
+    },
+    {
+      "name": "agent_home_relay_refresh",
+      "value": "刷新"
+    },
+    {
+      "name": "agent_home_relay_pairing_start",
+      "value": "创建配对"
+    },
+    {
+      "name": "agent_home_relay_pairing_scan",
+      "value": "扫描 Relay 配对二维码"
+    },
+    {
+      "name": "agent_home_relay_connect",
+      "value": "连接 Relay"
+    },
+    {
+      "name": "agent_home_relay_disconnect",
+      "value": "断开 Relay"
+    },
+    {
+      "name": "agent_home_relay_status",
+      "value": "连接状态"
+    },
+    {
+      "name": "agent_home_relay_transport",
+      "value": "传输方式"
+    },
+    {
+      "name": "agent_home_relay_encryption",
+      "value": "端到端加密"
+    },
+    {
+      "name": "agent_home_relay_forward_secrecy",
+      "value": "前向保密"
+    },
+    {
+      "name": "agent_home_relay_reconnect_attempt",
+      "value": "重连次数"
+    },
+    {
+      "name": "agent_home_relay_offline_queue",
+      "value": "离线队列"
+    },
+    {
+      "name": "agent_home_relay_last_heartbeat",
+      "value": "最近心跳"
+    },
+    {
+      "name": "agent_home_relay_queue_risk",
+      "value": "离线队列有数量和时效限制；超限内容会被拒绝，不会无限保留。"
+    },
+    {
+      "name": "agent_home_relay_e2e_unavailable",
+      "value": "当前 Bridge 未声明 Relay 端到端加密能力，请勿通过此连接传输敏感内容。"
+    },
+    {
+      "name": "agent_home_relay_pairing_code",
+      "value": "配对码"
+    },
+    {
+      "name": "agent_home_relay_pairing_expires",
+      "value": "有效期至"
+    },
+    {
+      "name": "agent_home_relay_pairing_copy",
+      "value": "复制配对信息"
+    },
+    {
+      "name": "agent_home_relay_pairing_cancel",
+      "value": "取消配对"
+    },
+    {
+      "name": "agent_home_relay_pairing_copied",
+      "value": "配对信息已复制"
+    },
+    {
+      "name": "agent_home_relay_pairing_completed",
+      "value": "设备配对完成"
+    },
+    {
+      "name": "agent_home_relay_pairing_connecting",
+      "value": "正在建立加密 Relay 连接"
+    },
+    {
+      "name": "agent_home_relay_pairing_connected",
+      "value": "Relay 主机已安全保存并连接"
+    },
+    {
+      "name": "agent_home_relay_pairing_qr_invalid",
+      "value": "Relay 配对二维码无效或已过期"
+    },
+    {
+      "name": "agent_home_relay_devices_title",
+      "value": "已配对设备"
+    },
+    {
+      "name": "agent_home_relay_devices_empty",
+      "value": "暂无已配对设备"
+    },
+    {
+      "name": "agent_home_relay_device_unknown",
+      "value": "未命名设备"
+    },
+    {
+      "name": "agent_home_relay_device_fingerprint",
+      "value": "指纹"
+    },
+    {
+      "name": "agent_home_relay_device_last_seen",
+      "value": "最近在线"
+    },
+    {
+      "name": "agent_home_relay_device_revoked",
+      "value": "已撤销"
+    },
+    {
+      "name": "agent_home_relay_device_revoke",
+      "value": "撤销"
+    },
+    {
+      "name": "agent_home_relay_identity_rotate",
+      "value": "轮换身份密钥"
+    },
+    {
+      "name": "agent_home_relay_revoke_title",
+      "value": "撤销设备"
+    },
+    {
+      "name": "agent_home_relay_revoke_message",
+      "value": "此设备将立即失去 Relay 访问权限，且需要重新配对"
+    },
+    {
+      "name": "agent_home_relay_revoke_action",
+      "value": "撤销访问"
+    },
+    {
+      "name": "agent_home_relay_rotate_title",
+      "value": "轮换 Relay 身份密钥"
+    },
+    {
+      "name": "agent_home_relay_rotate_message",
+      "value": "所有已配对设备都将失效。轮换后需要逐一重新配对。"
+    },
+    {
+      "name": "agent_home_relay_rotate_action",
+      "value": "轮换密钥"
+    },
+    {
+      "name": "agent_home_relay_state_disabled",
+      "value": "已禁用"
+    },
+    {
+      "name": "agent_home_relay_state_disconnected",
+      "value": "未连接"
+    },
+    {
+      "name": "agent_home_relay_state_pairing",
+      "value": "配对中"
+    },
+    {
+      "name": "agent_home_relay_state_connecting",
+      "value": "连接中"
+    },
+    {
+      "name": "agent_home_relay_state_connected",
+      "value": "已连接"
+    },
+    {
+      "name": "agent_home_relay_state_degraded",
+      "value": "连接受限"
+    },
+    {
+      "name": "agent_home_relay_state_revoked",
+      "value": "访问已撤销"
+    },
+    {
+      "name": "agent_home_relay_url_invalid",
+      "value": "请输入有效的 WSS Relay 地址；本地开发仅允许回环 WS 地址"
+    },
+    {
+      "name": "agent_home_relay_operation_failed",
+      "value": "Relay 操作失败"
+    },
+    {
+      "name": "agent_home_relay_host_default_name",
+      "value": "Relay 主机"
+    },
+    {
+      "name": "agent_home_relay_host_public",
+      "value": "公开 Relay 描述，无普通访问凭证"
+    },
+    {
+      "name": "agent_home_relay_identity_cleanup_failed",
+      "value": "Relay 主机已删除，但本机身份密钥清理失败，请在诊断中检查安全存储。"
+    },
+    {
+      "name": "agent_home_relay_metadata_risk",
+      "value": "Relay 无法读取加密内容，但仍可观察连接时间、路由标识和流量大小。"
+    },
+    {
+      "name": "agent_home_m7_title",
+      "value": "自动化与协作"
+    },
+    {
+      "name": "agent_home_m7_subtitle",
+      "value": "管理定时任务、验收循环和协作房间"
+    },
+    {
+      "name": "agent_home_m7_refresh",
+      "value": "刷新"
+    },
+    {
+      "name": "agent_home_m7_tab_schedules",
+      "value": "定时任务"
+    },
+    {
+      "name": "agent_home_m7_tab_loops",
+      "value": "循环"
+    },
+    {
+      "name": "agent_home_m7_tab_rooms",
+      "value": "房间"
+    },
+    {
+      "name": "agent_home_m7_new",
+      "value": "新建"
+    },
+    {
+      "name": "agent_home_m7_edit",
+      "value": "编辑"
+    },
+    {
+      "name": "agent_home_m7_remove",
+      "value": "移除"
+    },
+    {
+      "name": "agent_home_m7_save_preview",
+      "value": "预览保存"
+    },
+    {
+      "name": "agent_home_m7_confirm_title",
+      "value": "确认自动化操作"
+    },
+    {
+      "name": "agent_home_m7_confirm_message",
+      "value": "请核对预览后再继续。此操作将由目标 Bridge 执行。"
+    },
+    {
+      "name": "agent_home_m7_preview_ready",
+      "value": "预览已就绪，等待确认"
+    },
+    {
+      "name": "agent_home_m7_operation_complete",
+      "value": "操作已完成"
+    },
+    {
+      "name": "agent_home_m7_schedule_editor",
+      "value": "定时任务配置"
+    },
+    {
+      "name": "agent_home_m7_schedule_name",
+      "value": "任务名称"
+    },
+    {
+      "name": "agent_home_m7_schedule_prompt",
+      "value": "运行提示词"
+    },
+    {
+      "name": "agent_home_m7_schedule_cron",
+      "value": "Cron 表达式"
+    },
+    {
+      "name": "agent_home_m7_schedule_timezone",
+      "value": "时区，例如 Asia/Hong_Kong"
+    },
+    {
+      "name": "agent_home_m7_schedule_enabled",
+      "value": "创建后启用"
+    },
+    {
+      "name": "agent_home_m7_schedules",
+      "value": "定时任务"
+    },
+    {
+      "name": "agent_home_m7_schedules_empty",
+      "value": "当前没有定时任务"
+    },
+    {
+      "name": "agent_home_m7_run_now",
+      "value": "立即运行"
+    },
+    {
+      "name": "agent_home_m7_enable",
+      "value": "启用"
+    },
+    {
+      "name": "agent_home_m7_disable",
+      "value": "停用"
+    },
+    {
+      "name": "agent_home_m7_history",
+      "value": "历史"
+    },
+    {
+      "name": "agent_home_m7_schedule_history",
+      "value": "运行历史"
+    },
+    {
+      "name": "agent_home_m7_schedule_history_empty",
+      "value": "暂无运行记录"
+    },
+    {
+      "name": "agent_home_m7_schedule_summary",
+      "value": "%s · %s · 共 %s 次"
+    },
+    {
+      "name": "agent_home_m7_loop_editor",
+      "value": "循环配置"
+    },
+    {
+      "name": "agent_home_m7_loop_name",
+      "value": "循环名称"
+    },
+    {
+      "name": "agent_home_m7_loop_prompt",
+      "value": "Worker 提示词"
+    },
+    {
+      "name": "agent_home_m7_loop_verify_prompt",
+      "value": "Verifier 提示词"
+    },
+    {
+      "name": "agent_home_m7_loop_criterion",
+      "value": "验收条件"
+    },
+    {
+      "name": "agent_home_m7_loop_max_rounds",
+      "value": "最大轮次"
+    },
+    {
+      "name": "agent_home_m7_loop_isolated",
+      "value": "隔离工作区"
+    },
+    {
+      "name": "agent_home_m7_loop_shared",
+      "value": "共享工作区"
+    },
+    {
+      "name": "agent_home_m7_loops",
+      "value": "循环"
+    },
+    {
+      "name": "agent_home_m7_loops_empty",
+      "value": "当前没有循环"
+    },
+    {
+      "name": "agent_home_m7_start",
+      "value": "启动"
+    },
+    {
+      "name": "agent_home_m7_pause",
+      "value": "暂停"
+    },
+    {
+      "name": "agent_home_m7_resume",
+      "value": "继续"
+    },
+    {
+      "name": "agent_home_m7_stop",
+      "value": "终止"
+    },
+    {
+      "name": "agent_home_m7_takeover",
+      "value": "人工接管"
+    },
+    {
+      "name": "agent_home_m7_rounds",
+      "value": "轮次"
+    },
+    {
+      "name": "agent_home_m7_loop_round_history",
+      "value": "验收轮次"
+    },
+    {
+      "name": "agent_home_m7_loop_rounds_empty",
+      "value": "暂无轮次记录"
+    },
+    {
+      "name": "agent_home_m7_loop_round_label",
+      "value": "第 %s 轮 · %s"
+    },
+    {
+      "name": "agent_home_m7_loop_summary",
+      "value": "%s/%s 轮 · %s"
+    },
+    {
+      "name": "agent_home_m7_room_editor",
+      "value": "协作房间配置"
+    },
+    {
+      "name": "agent_home_m7_room_name",
+      "value": "房间名称"
+    },
+    {
+      "name": "agent_home_m7_room_purpose",
+      "value": "协作目标"
+    },
+    {
+      "name": "agent_home_m7_rooms",
+      "value": "协作房间"
+    },
+    {
+      "name": "agent_home_m7_rooms_empty",
+      "value": "当前没有协作房间"
+    },
+    {
+      "name": "agent_home_m7_open",
+      "value": "打开"
+    },
+    {
+      "name": "agent_home_m7_archive",
+      "value": "归档"
+    },
+    {
+      "name": "agent_home_m7_room_members",
+      "value": "成员"
+    },
+    {
+      "name": "agent_home_m7_room_agent_id",
+      "value": "Agent ID"
+    },
+    {
+      "name": "agent_home_m7_add_agent",
+      "value": "添加 Agent"
+    },
+    {
+      "name": "agent_home_m7_room_messages",
+      "value": "消息"
+    },
+    {
+      "name": "agent_home_m7_mark_read",
+      "value": "标为已读"
+    },
+    {
+      "name": "agent_home_m7_room_message_placeholder",
+      "value": "发送房间消息"
+    },
+    {
+      "name": "agent_home_m7_room_messages_empty",
+      "value": "暂无消息"
+    },
+    {
+      "name": "agent_home_m7_mention",
+      "value": "提及"
+    },
+    {
+      "name": "agent_home_m7_reply",
+      "value": "回复"
+    },
+    {
+      "name": "agent_home_m7_clear_context",
+      "value": "清除"
+    },
+    {
+      "name": "agent_home_m7_role_agent",
+      "value": "设为 Agent"
+    },
+    {
+      "name": "agent_home_m7_role_viewer",
+      "value": "设为只读"
+    },
+    {
+      "name": "agent_home_m7_delivery_count",
+      "value": "Agent 投递：%s"
+    },
+    {
+      "name": "agent_home_m7_room_summary",
+      "value": "%s 位成员 · %s 条消息 · %s 条未读"
+    },
+    {
+      "name": "agent_home_m7_room_context_both",
+      "value": "提及 %s，并回复 %s"
+    },
+    {
+      "name": "agent_home_m7_room_context_mention",
+      "value": "提及 %s"
+    },
+    {
+      "name": "agent_home_m7_room_context_reply",
+      "value": "回复 %s"
+    },
+    {
+      "name": "microphone_reason",
+      "value": "用于语音输入、实时听写和语音播放交互"
+    },
+    {
+      "name": "agent_home_voice_start",
+      "value": "开始语音输入"
+    },
+    {
+      "name": "agent_home_voice_stop",
+      "value": "结束录音"
+    },
+    {
+      "name": "agent_home_voice_cancel",
+      "value": "取消语音输入"
+    },
+    {
+      "name": "agent_home_voice_confirm",
+      "value": "使用听写文本"
+    },
+    {
+      "name": "agent_home_voice_recording",
+      "value": "正在录音…"
+    },
+    {
+      "name": "agent_home_voice_transcribing",
+      "value": "正在听写…"
+    },
+    {
+      "name": "agent_home_voice_speaking",
+      "value": "正在朗读…"
+    },
+    {
+      "name": "agent_home_voice_interrupt",
+      "value": "打断朗读"
+    },
+    {
+      "name": "agent_home_voice_unavailable",
+      "value": "当前设备或 Bridge 不支持语音能力"
+    },
+    {
+      "name": "agent_home_voice_permission_denied",
+      "value": "需要麦克风权限才能使用语音输入"
+    },
+    {
+      "name": "agent_home_voice_partial_hint",
+      "value": "实时听写结果"
+    },
+    {
+      "name": "agent_home_voice_final_hint",
+      "value": "请确认听写文本"
+    },
+    {
+      "name": "agent_home_voice_retry",
+      "value": "重新录音"
+    },
+    {
+      "name": "agent_home_service_proxy_title",
+      "value": "工作区服务"
+    },
+    {
+      "name": "agent_home_service_proxy_desc",
+      "value": "查看并管理工作区内受控服务。"
+    },
+    {
+      "name": "agent_home_service_proxy_refresh",
+      "value": "刷新"
+    },
+    {
+      "name": "agent_home_service_proxy_empty",
+      "value": "暂无已注册服务。"
+    },
+    {
+      "name": "agent_home_service_proxy_logs",
+      "value": "日志"
+    },
+    {
+      "name": "agent_home_service_proxy_start",
+      "value": "启动"
+    },
+    {
+      "name": "agent_home_service_proxy_stop",
+      "value": "停止"
+    },
+    {
+      "name": "agent_home_service_proxy_confirm_title",
+      "value": "确认服务操作"
+    },
+    {
+      "name": "agent_home_service_proxy_confirm_message",
+      "value": "将执行受控服务操作，是否继续？"
+    },
+    {
+      "name": "agent_home_service_proxy_open",
+      "value": "打开"
+    },
+    {
+      "name": "agent_home_service_proxy_open_confirm_message",
+      "value": "将签发短期一次性访问票据，并在系统浏览器中打开此服务。"
+    },
+    {
+      "name": "agent_home_service_proxy_open_invalid",
+      "value": "服务访问地址无效或不受信任。"
+    },
+    {
+      "name": "agent_home_service_proxy_open_failed",
+      "value": "无法打开工作区服务。"
+    },
+    {
+      "name": "agent_home_browser_title",
+      "value": "浏览器自动化"
+    },
+    {
+      "name": "agent_home_browser_desc",
+      "value": "连接显式注册的浏览器主机，受控导航、截图和操作页面。"
+    },
+    {
+      "name": "agent_home_browser_refresh",
+      "value": "刷新"
+    },
+    {
+      "name": "agent_home_browser_url_placeholder",
+      "value": "https://example.com"
+    },
+    {
+      "name": "agent_home_browser_open_page",
+      "value": "新建页面"
+    },
+    {
+      "name": "agent_home_browser_domain_placeholder",
+      "value": "允许的域名，例如 example.com"
+    },
+    {
+      "name": "agent_home_browser_allow_domain",
+      "value": "更新权限"
+    },
+    {
+      "name": "agent_home_browser_no_host",
+      "value": "当前工作区没有兼容的浏览器主机。"
+    },
+    {
+      "name": "agent_home_browser_no_pages",
+      "value": "当前没有浏览器页面。"
+    },
+    {
+      "name": "agent_home_browser_snapshot",
+      "value": "快照"
+    },
+    {
+      "name": "agent_home_browser_screenshot",
+      "value": "截图"
+    },
+    {
+      "name": "agent_home_browser_permission_confirm_title",
+      "value": "更新浏览器域名权限？"
+    },
+    {
+      "name": "agent_home_browser_permission_confirm_message",
+      "value": "确认后，浏览器自动化可以导航到该域名。页面输入和文件操作仍需单独确认。"
+    },
+    {
+      "name": "agent_home_browser_page_create_failed",
+      "value": "无法创建浏览器页面。"
+    },
+    {
+      "name": "agent_home_git_plan_preview_title",
+      "value": "核查 Git 操作"
+    },
+    {
+      "name": "agent_home_git_plan_preview_message",
+      "value": "请核查受影响路径、目标引用和仓库风险后再继续。"
+    },
+    {
+      "name": "agent_home_git_plan_affected_paths",
+      "value": "受影响路径"
+    },
+    {
+      "name": "agent_home_git_plan_untracked_paths",
+      "value": "未跟踪路径"
+    },
+    {
+      "name": "agent_home_git_plan_target",
+      "value": "目标引用"
+    },
+    {
+      "name": "agent_home_git_plan_remote",
+      "value": "远程仓库"
+    },
+    {
+      "name": "agent_home_git_plan_ahead_behind",
+      "value": "领先/落后"
+    },
+    {
+      "name": "agent_home_git_plan_risks",
+      "value": "风险"
+    },
+    {
+      "name": "agent_home_git_plan_force_risk",
+      "value": "包含强制操作风险"
+    },
+    {
+      "name": "agent_home_git_plan_overwrite_risk",
+      "value": "可能覆盖本地状态"
+    },
+    {
+      "name": "agent_home_git_plan_conflict_risk",
+      "value": "可能产生冲突"
+    },
+    {
+      "name": "agent_home_git_plan_expired",
+      "value": "计划已失效，请重新预览。"
+    },
+    {
+      "name": "agent_home_git_plan_confirm_failed",
+      "value": "Git 操作确认失败"
+    },
+    {
+      "name": "agent_home_git_plan_confirmed",
+      "value": "Git 操作已确认"
+    },
+    {
+      "name": "agent_home_daemon_fleet_restart",
+      "value": "滚动重启"
+    },
+    {
+      "name": "agent_home_daemon_fleet_update",
+      "value": "滚动升级"
+    },
+    {
+      "name": "agent_home_daemon_fleet_rollback",
+      "value": "滚动回滚"
+    },
+    {
+      "name": "agent_home_daemon_fleet_execute",
+      "value": "执行滚动操作"
+    },
+    {
+      "name": "agent_home_daemon_fleet_isolate",
+      "value": "隔离"
+    },
+    {
+      "name": "agent_home_daemon_fleet_reenable",
+      "value": "重新启用"
+    },
+    {
+      "name": "agent_home_daemon_fleet_preview_ready",
+      "value": "滚动操作预览已生成，请核查后确认。"
+    },
+    {
+      "name": "agent_home_daemon_fleet_confirm_title",
+      "value": "确认滚动操作"
+    },
+    {
+      "name": "agent_home_daemon_fleet_confirm_message",
+      "value": "操作将按顺序处理目标实例，首个失败会停止后续实例。目标数量："
+    },
+    {
+      "name": "agent_home_daemon_fleet_completed",
+      "value": "滚动操作已完成。"
+    },
+    {
+      "name": "agent_home_daemon_fleet_failed",
+      "value": "滚动操作已停止，请检查失败实例。"
+    },
+    {
+      "name": "agent_home_daemon_fleet_plan_completed",
+      "value": "已完成"
+    },
+    {
+      "name": "agent_home_daemon_fleet_plan_failed",
+      "value": "失败"
+    },
+    {
+      "name": "agent_home_daemon_fleet_host_missing",
+      "value": "目标主机配置已不存在。"
+    },
+    {
+      "name": "agent_home_daemon_fleet_title",
+      "value": "Daemon 实例集群"
+    },
+    {
+      "name": "agent_home_daemon_fleet_desc",
+      "value": "聚合各主机实例健康状态，并按用户确认顺序执行滚动操作。"
+    },
+    {
+      "name": "agent_home_daemon_fleet_refresh",
+      "value": "刷新实例"
+    },
+    {
+      "name": "agent_home_daemon_fleet_loading",
+      "value": "正在查询实例状态…"
+    },
+    {
+      "name": "agent_home_daemon_fleet_empty",
+      "value": "暂无可用实例。"
+    },
+    {
+      "name": "agent_home_daemon_fleet_plan_status",
+      "value": "计划状态"
+    },
+    {
+      "name": "agent_home_daemon_fleet_plan_targets",
+      "value": "待处理"
+    },
+    {
+      "name": "agent_home_daemon_fleet_plan_excluded",
+      "value": "已排除"
+    },
+    {
+      "name": "agent_home_provider_usage_title",
+      "value": "Provider 用量"
+    },
+    {
+      "name": "agent_home_provider_usage_status",
+      "value": "状态"
+    },
+    {
+      "name": "agent_home_provider_usage_plan",
+      "value": "套餐"
+    },
+    {
+      "name": "agent_home_provider_usage_source",
+      "value": "来源"
+    },
+    {
+      "name": "agent_home_provider_usage_fetched",
+      "value": "获取时间"
+    },
+    {
+      "name": "agent_home_provider_usage_expires",
+      "value": "过期时间"
+    },
+    {
+      "name": "agent_home_provider_usage_loading",
+      "value": "正在获取 Provider 用量…"
+    },
+    {
+      "name": "agent_home_provider_usage_used",
+      "value": "已使用"
+    },
+    {
+      "name": "agent_home_provider_usage_reset",
+      "value": "重置时间"
+    },
+    {
+      "name": "agent_home_provider_usage_failure",
+      "value": "用量不可用"
+    },
+    {
+      "name": "agent_home_provider_usage_remediation",
+      "value": "处理建议"
+    },
+    {
+      "name": "agent_home_browser_hosts",
+      "value": "浏览器主机"
+    },
+    {
+      "name": "agent_home_browser_instances",
+      "value": "浏览器实例"
+    },
+    {
+      "name": "agent_home_browser_pages",
+      "value": "浏览器页面"
+    },
+    {
+      "name": "agent_home_browser_select_host",
+      "value": "选择主机"
+    },
+    {
+      "name": "agent_home_browser_select_instance",
+      "value": "选择实例"
+    },
+    {
+      "name": "agent_home_browser_create_instance",
+      "value": "创建实例"
+    },
+    {
+      "name": "agent_home_browser_close_instance",
+      "value": "关闭实例"
+    },
+    {
+      "name": "agent_home_browser_close_page",
+      "value": "关闭页面"
+    },
+    {
+      "name": "agent_home_browser_back",
+      "value": "后退"
+    },
+    {
+      "name": "agent_home_browser_forward",
+      "value": "前进"
+    },
+    {
+      "name": "agent_home_browser_reload",
+      "value": "重新加载"
+    },
+    {
+      "name": "agent_home_browser_navigate",
+      "value": "导航"
+    },
+    {
+      "name": "agent_home_browser_logs",
+      "value": "日志"
+    },
+    {
+      "name": "agent_home_browser_wait",
+      "value": "等待"
+    },
+    {
+      "name": "agent_home_browser_downloads",
+      "value": "下载"
+    },
+    {
+      "name": "agent_home_browser_actions",
+      "value": "页面操作"
+    },
+    {
+      "name": "agent_home_browser_run_action",
+      "value": "执行操作"
+    },
+    {
+      "name": "agent_home_browser_action_ref_placeholder",
+      "value": "元素引用，例如 @e1"
+    },
+    {
+      "name": "agent_home_browser_action_value_placeholder",
+      "value": "值"
+    },
+    {
+      "name": "agent_home_browser_action_text_placeholder",
+      "value": "输入文本"
+    },
+    {
+      "name": "agent_home_browser_action_key_placeholder",
+      "value": "按键，例如 Enter"
+    },
+    {
+      "name": "agent_home_browser_action_source_ref_placeholder",
+      "value": "拖拽源引用"
+    },
+    {
+      "name": "agent_home_browser_action_target_ref_placeholder",
+      "value": "拖拽目标引用"
+    },
+    {
+      "name": "agent_home_browser_action_file_placeholder",
+      "value": "工作区相对文件路径"
+    },
+    {
+      "name": "agent_home_browser_action_function_placeholder",
+      "value": "受限 JavaScript 函数"
+    },
+    {
+      "name": "agent_home_browser_action_delta_x_placeholder",
+      "value": "水平滚动量"
+    },
+    {
+      "name": "agent_home_browser_action_delta_y_placeholder",
+      "value": "垂直滚动量"
+    },
+    {
+      "name": "agent_home_browser_wait_text_placeholder",
+      "value": "等待页面文本（可选）"
+    },
+    {
+      "name": "agent_home_browser_wait_url_placeholder",
+      "value": "等待 URL 片段（可选）"
+    },
+    {
+      "name": "agent_home_browser_no_instances",
+      "value": "当前主机没有报告浏览器实例。"
+    },
+    {
+      "name": "agent_home_browser_no_logs",
+      "value": "当前页面没有可用日志。"
+    },
+    {
+      "name": "agent_home_browser_no_downloads",
+      "value": "当前没有浏览器下载记录。"
+    },
+    {
+      "name": "agent_home_browser_status_ready",
+      "value": "浏览器控制面已就绪"
+    },
+    {
+      "name": "agent_home_browser_action_click",
+      "value": "点击"
+    },
+    {
+      "name": "agent_home_browser_action_fill",
+      "value": "填充"
+    },
+    {
+      "name": "agent_home_browser_action_type",
+      "value": "输入"
+    },
+    {
+      "name": "agent_home_browser_action_keypress",
+      "value": "按键"
+    },
+    {
+      "name": "agent_home_browser_action_hover",
+      "value": "悬停"
+    },
+    {
+      "name": "agent_home_browser_action_select",
+      "value": "选择"
+    },
+    {
+      "name": "agent_home_browser_action_drag",
+      "value": "拖拽"
+    },
+    {
+      "name": "agent_home_browser_action_upload",
+      "value": "上传"
+    },
+    {
+      "name": "agent_home_browser_action_scroll",
+      "value": "滚动"
+    },
+    {
+      "name": "agent_home_browser_action_download",
+      "value": "下载触发"
+    },
+    {
+      "name": "agent_home_browser_action_evaluate",
+      "value": "执行脚本"
+    },
+    {
+      "name": "agent_home_browser_action_confirm_title",
+      "value": "确认浏览器操作"
+    },
+    {
+      "name": "agent_home_browser_action_confirm_message",
+      "value": "该操作可能修改页面或工作区状态。确认后才会发送到浏览器主机。"
+    },
+    {
+      "name": "agent_home_browser_wait_invalid",
+      "value": "等待条件只能填写文本或 URL 片段之一。"
+    },
+    {
+      "name": "agent_home_browser_screenshot_summary",
+      "value": "截图已捕获"
+    },
+    {
+      "name": "agent_home_browser_result_summary",
+      "value": "浏览器操作已完成"
+    },
+    {
+      "name": "agent_home_browser_screenshot_preview",
+      "value": "截图预览（已限制大小）"
+    },
+    {
+      "name": "agent_home_provider_usage_stale",
+      "value": "数据已过期，请刷新 Provider 用量"
+    },
+    {
+      "name": "agent_home_compatibility_protocol_version",
+      "value": "协议"
+    },
+    {
+      "name": "agent_home_compatibility_supported_protocols",
+      "value": "支持协议"
+    },
+    {
+      "name": "agent_home_browser_host_warning_count",
+      "value": "能力警告："
+    },
+    {
+      "name": "agent_home_browser_host_not_ready",
+      "value": "主机已连接，但当前未准备好执行自动化。"
+    },
+    {
+      "name": "agent_home_browser_no_ready_host",
+      "value": "没有处于可用状态的浏览器主机，请检查能力警告或重新连接。"
+    },
+    {
+      "name": "agent_home_browser_upload_scope_hint",
+      "value": "上传只接受当前工作区内的相对路径；不会读取工作区外文件。"
+    },
+    {
+      "name": "agent_home_browser_error_generic",
+      "value": "浏览器操作失败。"
+    },
+    {
+      "name": "agent_home_browser_error_not_ready",
+      "value": "浏览器主机尚未准备好。"
+    },
+    {
+      "name": "agent_home_browser_error_capability",
+      "value": "当前主机不支持此浏览器能力。"
+    },
+    {
+      "name": "agent_home_browser_error_scope",
+      "value": "请求不在当前工作区范围内。"
+    },
+    {
+      "name": "agent_home_browser_error_permission",
+      "value": "浏览器权限或域名策略拒绝了请求。"
+    },
+    {
+      "name": "agent_home_browser_error_retry",
+      "value": "请刷新主机状态后重试。"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_status",
+      "value": "查看状态"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_validate",
+      "value": "验证"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_rollback",
+      "value": "回滚"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_active",
+      "value": "当前版本"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_previous",
+      "value": "上一版本"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_fetched",
+      "value": "已获取版本"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_validation",
+      "value": "验证状态"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_source",
+      "value": "来源"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_restart_required",
+      "value": "应用后需要重启 Bridge。"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_url_required",
+      "value": "请输入 HTTPS 配置地址。"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_source_configured",
+      "value": "已配置（地址已隐藏）"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_source_unavailable",
+      "value": "未配置"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_validation_valid",
+      "value": "有效"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_validation_degraded",
+      "value": "降级"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_validation_invalid",
+      "value": "无效"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview_title",
+      "value": "远程配置应用预览"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview_version",
+      "value": "版本"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview_scope",
+      "value": "作用域"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview_overrides",
+      "value": "本地覆盖字段"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_preview_digest",
+      "value": "配置摘要"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_confirm_apply",
+      "value": "确认应用"
+    },
+    {
+      "name": "agent_home_daemon_remote_config_confirm_rollback",
+      "value": "确认回滚"
+    },
+    {
+      "name": "agent_home_workspace_diff_truncated_notice",
+      "value": "Diff 已截断，继续加载可查看后续内容。"
+    },
+    {
+      "name": "agent_home_workspace_diff_truncation_reason",
+      "value": "截断原因"
+    },
+    {
+      "name": "agent_home_browser_permission_current",
+      "value": "当前域名许可"
+    },
+    {
+      "name": "agent_home_browser_permission_empty",
+      "value": "尚未允许任何域名"
+    },
+    {
+      "name": "agent_home_browser_permission_download_managed",
+      "value": "下载目录由 Bridge 在工作区内受控管理"
+    },
+    {
+      "name": "agent_home_browser_permission_updated",
+      "value": "更新时间"
+    },
+    {
+      "name": "agent_home_browser_permission_download_unavailable",
+      "value": "此 Bridge 未提供下载目录状态"
+    },
+    {
+      "name": "agent_home_voice_permission_remediation",
+      "value": "请在系统设置中允许麦克风权限后重试"
+    },
+    {
+      "name": "agent_home_provider_usage_unsupported",
+      "value": "此 Provider 不提供套餐用量数据"
+    },
+    {
+      "name": "agent_home_provider_usage_empty",
+      "value": "Provider 支持用量查询，但暂无可用数据"
+    },
+    {
+      "name": "agent_home_provider_usage_failed",
+      "value": "Provider 用量获取失败"
+    },
+    {
+      "name": "agent_home_daemon_fleet_summary",
+      "value": "实例总数"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health",
+      "value": "健康聚合"
+    },
+    {
+      "name": "agent_home_daemon_fleet_versions",
+      "value": "Bridge 版本分布"
+    },
+    {
+      "name": "agent_home_daemon_fleet_config_versions",
+      "value": "配置版本分布"
+    },
+    {
+      "name": "agent_home_daemon_fleet_warnings",
+      "value": "告警实例"
+    },
+    {
+      "name": "agent_home_daemon_fleet_heartbeat",
+      "value": "缺失心跳"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_healthy",
+      "value": "健康"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_degraded",
+      "value": "降级"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_unreachable",
+      "value": "不可达"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_incompatible",
+      "value": "不兼容"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_updating",
+      "value": "更新中"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_isolated",
+      "value": "已隔离"
+    },
+    {
+      "name": "agent_home_daemon_fleet_health_unknown",
+      "value": "未知"
+    },
+    {
+      "name": "agent_home_daemon_fleet_interrupted",
+      "value": "上次 Fleet 操作在应用退出时中断"
+    },
+    {
+      "name": "agent_home_daemon_fleet_interrupted_remediation",
+      "value": "请重新刷新实例并预览后再执行，应用不会自动继续操作"
+    },
+    {
+      "name": "agent_home_browser_action_target_summary",
+      "value": "操作目标"
+    },
+    {
+      "name": "agent_home_browser_action_target_workspace",
+      "value": "工作区"
+    },
+    {
+      "name": "agent_home_browser_action_target_agent",
+      "value": "Agent"
+    },
+    {
+      "name": "agent_home_browser_action_target_host",
+      "value": "主机"
+    },
+    {
+      "name": "agent_home_browser_action_target_instance",
+      "value": "实例"
+    },
+    {
+      "name": "agent_home_browser_action_target_page",
+      "value": "页面"
+    },
+    {
+      "name": "agent_home_browser_action_target_kind",
+      "value": "操作"
+    },
+    {
+      "name": "agent_home_browser_action_use_selected_file",
+      "value": "使用已选工作区文件"
+    },
+    {
+      "name": "agent_home_browser_action_selected_file_unavailable",
+      "value": "当前工作区未选择可上传的文件"
+    },
+    {
+      "name": "agent_home_browser_action_selected_file_applied",
+      "value": "已填入已选工作区文件"
+    },
+    {
+      "name": "agent_home_provider_usage_details",
+      "value": "套餐详情"
+    },
+    {
+      "name": "agent_home_voice_retention_unknown",
+      "value": "远程语音服务未声明数据保留策略，请确认风险后继续。"
+    },
+    {
+      "name": "agent_home_browser_screenshot_full_page",
+      "value": "整页截图"
+    },
+    {
+      "name": "agent_home_github_sign_out",
+      "value": "登出"
+    },
+    {
+      "name": "agent_home_bridge_legacy_limited",
+      "value": "电脑端桥接版本较旧，已进入兼容连接，暂不迁移设备缓存"
+    },
+    {
+      "name": "agent_home_bridge_untrusted_device",
+      "value": "设备身份校验失败，请重新配对电脑端桥接"
+    },
+    {
+      "name": "agent_home_bridge_trusted_device_applied",
+      "value": "已信任电脑："
+    },
+    {
+      "name": "agent_home_trusted_device_title",
+      "value": "可信设备"
+    },
+    {
+      "name": "agent_home_trusted_device_desc",
+      "value": "用于跨网络识别同一台电脑，并隔离会话与文件缓存。"
+    },
+    {
+      "name": "agent_home_trusted_device_name",
+      "value": "设备"
+    },
+    {
+      "name": "agent_home_trusted_device_state",
+      "value": "状态"
+    },
+    {
+      "name": "agent_home_trusted_device_fingerprint",
+      "value": "指纹"
+    },
+    {
+      "name": "agent_home_trusted_device_endpoint",
+      "value": "地址"
+    },
+    {
+      "name": "agent_home_trusted_device_remove",
+      "value": "移除信任"
+    },
+    {
+      "name": "agent_home_trusted_device_removed",
+      "value": "已移除设备信任"
+    },
+    {
+      "name": "agent_home_trusted_device_state_trusted",
+      "value": "已信任"
+    },
+    {
+      "name": "agent_home_trusted_device_state_legacy",
+      "value": "兼容模式"
+    },
+    {
+      "name": "agent_home_trusted_device_state_untrusted",
+      "value": "不可信"
+    },
+    {
+      "name": "agent_home_trusted_device_state_unknown",
+      "value": "待验证"
+    },
+    {
+      "name": "agent_home_runtime_terminal_title",
+      "value": "终端"
+    },
+    {
+      "name": "agent_home_runtime_terminal_empty",
+      "value": "还没有终端会话"
+    },
+    {
+      "name": "agent_home_runtime_terminal_create",
+      "value": "新建终端"
+    },
+    {
+      "name": "agent_home_runtime_terminal_refresh",
+      "value": "刷新终端"
+    },
+    {
+      "name": "agent_home_runtime_terminal_stop",
+      "value": "停止终端"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture",
+      "value": "捕获输出"
+    },
+    {
+      "name": "agent_home_runtime_terminal_input_placeholder",
+      "value": "输入命令"
+    },
+    {
+      "name": "agent_home_runtime_terminal_send",
+      "value": "发送"
+    },
+    {
+      "name": "agent_home_runtime_terminal_unavailable",
+      "value": "当前 Bridge 未启用终端二进制通道"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_title",
+      "value": "文件传输"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_empty",
+      "value": "暂无文件传输"
+    },
+    {
+      "name": "agent_home_runtime_terminal_desc",
+      "value": "可信 Bridge 下的实时终端输入与输出"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_desc",
+      "value": "通过二进制分块传输文件"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_size_mismatch",
+      "value": "下载大小校验失败"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_sha_mismatch",
+      "value": "下载哈希校验失败"
+    },
+    {
+      "name": "agent_home_agent_fork",
+      "value": "Fork Agent"
+    },
+    {
+      "name": "agent_home_agent_detach",
+      "value": "Detach Agent"
+    },
+    {
+      "name": "agent_home_checkpoint_create",
+      "value": "创建 Checkpoint"
+    },
+    {
+      "name": "agent_home_checkpoint_restore",
+      "value": "恢复 Checkpoint"
+    },
+    {
+      "name": "agent_home_agent_fork_suffix",
+      "value": "副本"
+    },
+    {
+      "name": "agent_home_feature_unavailable",
+      "value": "当前 Bridge 不支持此功能"
+    },
+    {
+      "name": "agent_home_agent_required",
+      "value": "需要先连接到 Bridge Agent"
+    },
+    {
+      "name": "agent_home_agent_fork_requested",
+      "value": "已请求 fork agent"
+    },
+    {
+      "name": "agent_home_agent_detach_requested",
+      "value": "已请求 detach agent"
+    },
+    {
+      "name": "agent_home_checkpoint_create_requested",
+      "value": "已请求创建 checkpoint"
+    },
+    {
+      "name": "agent_home_checkpoint_created_status",
+      "value": "Checkpoint 已创建"
+    },
+    {
+      "name": "agent_home_checkpoint_list_requested",
+      "value": "已刷新 checkpoint 列表，请再次选择恢复"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_title",
+      "value": "恢复 Checkpoint"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_message",
+      "value": "当前只恢复对话，不恢复文件。要继续吗？"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_conversation_only",
+      "value": "已恢复对话；文件未恢复"
+    },
+    {
+      "name": "agent_home_git_advanced_title",
+      "value": "Git 高级操作"
+    },
+    {
+      "name": "agent_home_git_pull",
+      "value": "Pull"
+    },
+    {
+      "name": "agent_home_git_push",
+      "value": "Push"
+    },
+    {
+      "name": "agent_home_git_branch_placeholder",
+      "value": "分支名"
+    },
+    {
+      "name": "agent_home_git_branch_list",
+      "value": "列表"
+    },
+    {
+      "name": "agent_home_git_branch_create",
+      "value": "创建分支"
+    },
+    {
+      "name": "agent_home_git_merge_placeholder",
+      "value": "Merge ref"
+    },
+    {
+      "name": "agent_home_git_stash",
+      "value": "Stash"
+    },
+    {
+      "name": "agent_home_git_merge",
+      "value": "Merge"
+    },
+    {
+      "name": "agent_home_git_pull_requested",
+      "value": "已请求 git pull --ff-only"
+    },
+    {
+      "name": "agent_home_git_push_requested",
+      "value": "已请求 git push"
+    },
+    {
+      "name": "agent_home_git_branch_list_requested",
+      "value": "已请求分支列表"
+    },
+    {
+      "name": "agent_home_git_branch_required",
+      "value": "请输入分支名"
+    },
+    {
+      "name": "agent_home_git_branch_create_requested",
+      "value": "已请求创建分支"
+    },
+    {
+      "name": "agent_home_git_stash_requested",
+      "value": "已请求 stash（包含未跟踪文件）"
+    },
+    {
+      "name": "agent_home_git_merge_ref_required",
+      "value": "请输入 merge ref"
+    },
+    {
+      "name": "agent_home_git_merge_requested",
+      "value": "已请求 merge"
+    },
+    {
+      "name": "agent_home_worktree_title",
+      "value": "Git Worktree"
+    },
+    {
+      "name": "agent_home_worktree_list",
+      "value": "刷新列表"
+    },
+    {
+      "name": "agent_home_worktree_path_placeholder",
+      "value": "Worktree 绝对路径"
+    },
+    {
+      "name": "agent_home_worktree_branch_placeholder",
+      "value": "新分支名（可选）"
+    },
+    {
+      "name": "agent_home_worktree_create",
+      "value": "创建"
+    },
+    {
+      "name": "agent_home_worktree_empty",
+      "value": "暂无 worktree"
+    },
+    {
+      "name": "agent_home_worktree_detached",
+      "value": "Detached"
+    },
+    {
+      "name": "agent_home_worktree_archive",
+      "value": "归档"
+    },
+    {
+      "name": "agent_home_worktree_list_requested",
+      "value": "已请求 worktree 列表"
+    },
+    {
+      "name": "agent_home_worktree_path_required",
+      "value": "请输入 worktree 绝对路径"
+    },
+    {
+      "name": "agent_home_worktree_create_requested",
+      "value": "已请求创建 worktree"
+    },
+    {
+      "name": "agent_home_worktree_archive_title",
+      "value": "归档 Worktree"
+    },
+    {
+      "name": "agent_home_worktree_archive_message",
+      "value": "只移除 git 已登记 worktree。要继续吗？"
+    },
+    {
+      "name": "agent_home_runtime_terminal_rename_placeholder",
+      "value": "终端名称"
+    },
+    {
+      "name": "agent_home_runtime_terminal_rename",
+      "value": "重命名"
+    },
+    {
+      "name": "agent_home_runtime_terminal_rows",
+      "value": "行"
+    },
+    {
+      "name": "agent_home_runtime_terminal_cols",
+      "value": "列"
+    },
+    {
+      "name": "agent_home_runtime_terminal_resize",
+      "value": "调整"
+    },
+    {
+      "name": "agent_home_runtime_terminal_shortcut_ctrl_c",
+      "value": "Ctrl+C"
+    },
+    {
+      "name": "agent_home_runtime_terminal_shortcut_esc",
+      "value": "Esc"
+    },
+    {
+      "name": "agent_home_runtime_terminal_shortcut_tab",
+      "value": "Tab"
+    },
+    {
+      "name": "agent_home_runtime_terminal_shortcut_clear",
+      "value": "Clear"
+    },
+    {
+      "name": "agent_home_runtime_terminal_rename_required",
+      "value": "请输入终端名称"
+    },
+    {
+      "name": "agent_home_runtime_terminal_resize_invalid",
+      "value": "请输入有效的终端行列数"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_source_placeholder",
+      "value": "本地文件路径或 URI"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_pick",
+      "value": "选择"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_target_placeholder",
+      "value": "工作区目标路径"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_upload",
+      "value": "上传"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_unavailable",
+      "value": "当前 Bridge 不支持二进制文件传输"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_cancel",
+      "value": "取消"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_retry",
+      "value": "重试"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_retry_unavailable",
+      "value": "缺少可重试的上传路径"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_path_required",
+      "value": "请选择本地文件并填写目标路径"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_read_failed",
+      "value": "读取本地文件失败"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_send_failed",
+      "value": "发送文件数据失败"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_upload_requested",
+      "value": "已开始上传文件"
+    },
+    {
+      "name": "agent_home_runtime_file_transfer_cancelled",
+      "value": "已取消文件传输"
+    },
+    {
+      "name": "agent_home_provider_profiles_title",
+      "value": "Provider Profiles"
+    },
+    {
+      "name": "agent_home_provider_profiles_desc",
+      "value": "管理自定义 Provider 配置；保存后需后续动态 runtime 接入后可直接启动。"
+    },
+    {
+      "name": "agent_home_provider_profile_name_placeholder",
+      "value": "Profile 名称"
+    },
+    {
+      "name": "agent_home_provider_profile_provider_placeholder",
+      "value": "Provider ID"
+    },
+    {
+      "name": "agent_home_provider_profile_endpoint_placeholder",
+      "value": "自定义端点（可选）"
+    },
+    {
+      "name": "agent_home_provider_profile_binary_placeholder",
+      "value": "Binary 路径（可选）"
+    },
+    {
+      "name": "agent_home_provider_profile_args_placeholder",
+      "value": "启动参数（可选）"
+    },
+    {
+      "name": "agent_home_provider_profile_cwd_placeholder",
+      "value": "工作目录（可选）"
+    },
+    {
+      "name": "agent_home_provider_profiles_refresh",
+      "value": "刷新"
+    },
+    {
+      "name": "agent_home_provider_profiles_save",
+      "value": "保存"
+    },
+    {
+      "name": "agent_home_provider_profiles_empty",
+      "value": "暂无 provider profile"
+    },
+    {
+      "name": "agent_home_provider_profiles_delete",
+      "value": "删除"
+    },
+    {
+      "name": "agent_home_provider_profile_required",
+      "value": "请输入 Profile 名称和 Provider ID"
+    },
+    {
+      "name": "agent_home_provider_profile_saved_runtime_pending",
+      "value": "已保存；需后续动态 runtime 接入后可直接启动"
+    },
+    {
+      "name": "agent_home_daemon_diagnostics_title",
+      "value": "Daemon 诊断"
+    },
+    {
+      "name": "agent_home_daemon_diagnostics_desc",
+      "value": "查看后台状态和最近 64KB 日志。"
+    },
+    {
+      "name": "agent_home_daemon_status_refresh",
+      "value": "刷新状态"
+    },
+    {
+      "name": "agent_home_daemon_logs_refresh",
+      "value": "刷新日志"
+    },
+    {
+      "name": "agent_home_daemon_server_id",
+      "value": "Server ID"
+    },
+    {
+      "name": "agent_home_daemon_uptime",
+      "value": "Uptime"
+    },
+    {
+      "name": "agent_home_daemon_connections",
+      "value": "连接数"
+    },
+    {
+      "name": "agent_home_daemon_log_path",
+      "value": "日志路径"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_status",
+      "value": "Hook 状态"
+    },
+    {
+      "name": "agent_home_runtime_terminal_hook_install",
+      "value": "安装 Hook"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_persisted",
+      "value": "已持久化"
+    },
+    {
+      "name": "agent_home_runtime_terminal_capture_memory",
+      "value": "内存缓存"
+    },
+    {
+      "name": "agent_home_provider_acp_path_placeholder",
+      "value": "ACP catalog 文件或目录"
+    },
+    {
+      "name": "agent_home_provider_acp_discover",
+      "value": "发现 ACP"
+    },
+    {
+      "name": "agent_home_provider_acp_import",
+      "value": "导入 ACP"
+    },
+    {
+      "name": "agent_home_provider_profile_runtime_ready",
+      "value": "Runtime 已注册"
+    },
+    {
+      "name": "agent_home_provider_profile_runtime_unavailable",
+      "value": "Runtime 未注册"
+    },
+    {
+      "name": "agent_home_daemon_autostart_enable",
+      "value": "启用自启偏好"
+    },
+    {
+      "name": "agent_home_daemon_autostart_disable",
+      "value": "关闭自启偏好"
+    },
+    {
+      "name": "agent_home_daemon_autostart",
+      "value": "自启偏好"
+    },
+    {
+      "name": "agent_home_security_devices_refresh",
+      "value": "刷新设备"
+    },
+    {
+      "name": "agent_home_security_device_trust",
+      "value": "信任本机"
+    },
+    {
+      "name": "agent_home_security_device_revoke",
+      "value": "撤销本机"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_start",
+      "value": "开启自动刷新"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_stop",
+      "value": "停止自动刷新"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_on",
+      "value": "Git 自动刷新已开启"
+    },
+    {
+      "name": "agent_home_git_auto_refresh_off",
+      "value": "Git 自动刷新已停止"
+    },
+    {
+      "name": "agent_home_checkpoint_include_files",
+      "value": "包含文件快照"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_message",
+      "value": "此检查点包含文件快照，是否同时恢复文件？建议先使用 dry-run 检查冲突。"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_dry_run",
+      "value": "先检查冲突"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_files_confirm",
+      "value": "确认恢复文件"
+    },
+    {
+      "name": "agent_home_checkpoint_restore_dry_run_done",
+      "value": "文件恢复 dry-run 已返回"
+    },
+    {
+      "name": "agent_home_github_title",
+      "value": "GitHub PR"
+    },
+    {
+      "name": "agent_home_github_pr_number_placeholder",
+      "value": "PR 编号"
+    },
+    {
+      "name": "agent_home_github_head_placeholder",
+      "value": "来源分支"
+    },
+    {
+      "name": "agent_home_github_base_placeholder",
+      "value": "目标分支"
+    },
+    {
+      "name": "agent_home_github_title_placeholder",
+      "value": "PR 标题"
+    },
+    {
+      "name": "agent_home_github_create_pr",
+      "value": "创建 PR"
+    },
+    {
+      "name": "agent_home_github_refresh_pr",
+      "value": "刷新 PR"
+    },
+    {
+      "name": "agent_home_github_refresh_checks",
+      "value": "刷新 Checks"
+    },
+    {
+      "name": "agent_home_github_merge_pr",
+      "value": "合并 PR"
+    },
+    {
+      "name": "agent_home_github_status_empty",
+      "value": "暂无 GitHub PR 状态"
+    },
+    {
+      "name": "agent_home_github_checks_summary",
+      "value": "Checks"
+    },
+    {
+      "name": "agent_home_github_repo",
+      "value": "仓库"
+    },
+    {
+      "name": "agent_home_github_merge_confirm_title",
+      "value": "确认合并 PR"
+    },
+    {
+      "name": "agent_home_github_merge_confirm_message",
+      "value": "合并会修改远端仓库，确认后才会执行。"
+    },
+    {
+      "name": "agent_home_github_merge_confirm",
+      "value": "合并"
+    },
+    {
+      "name": "agent_home_github_requested",
+      "value": "GitHub 请求已发送"
+    },
+    {
+      "name": "agent_home_github_failure_category",
+      "value": "失败类型"
+    },
+    {
+      "name": "agent_home_github_remediation",
+      "value": "建议"
+    },
+    {
+      "name": "agent_home_github_checks_passed",
+      "value": "通过"
+    },
+    {
+      "name": "agent_home_github_checks_failed",
+      "value": "失败"
+    },
+    {
+      "name": "agent_home_github_checks_pending",
+      "value": "等待"
+    },
+    {
+      "name": "agent_home_github_checks_cancelled",
+      "value": "取消"
+    },
+    {
+      "name": "agent_home_github_pr_number_required",
+      "value": "请输入 PR 编号"
+    },
+    {
+      "name": "agent_home_github_create_required",
+      "value": "请填写来源分支、目标分支和标题"
     }
   ]
 }

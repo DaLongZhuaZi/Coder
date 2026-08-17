@@ -1,5 +1,6 @@
 {
   "src": [
-    "pages/ngf/NGFAgentHomePage"
+    "pages/ngf/NGFAgentHomePage",
+    "pages/ngf/NGFAgentSessionWindowPage"
   ]
 }
