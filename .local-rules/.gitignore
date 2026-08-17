@@ -1,9 +1,9 @@
 # Keep local machine facts private by default.
-*.local.md
-snapshots/
-*.log
-*.tmp
+# 本目录只提交索引与基础规则，其余探测脚本、截图、临时输出一律忽略。
+# 默认全忽略，再按白名单放行。
+*
 
+# 放行的共享文件
 !README.md
 !base-local-rules.md
 !AGENTS.md

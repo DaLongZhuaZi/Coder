@@ -30,6 +30,7 @@ compile_commands.json
 *.tmp
 *.temp
 *.bak
+*.bak-r*
 *.orig
 *.rej
 *.swp
@@ -92,6 +93,9 @@ desktop.ini
 /.local-rules/*.log
 /.local-rules/*.tmp
 
+# Third-party project snapshots (参考用第三方工程，不作为本仓库成果提交)
+/paseo/
+
 # Environment and secrets
 .env
 .env.*
@@ -99,6 +103,8 @@ desktop.ini
 !.env.*.example
 
 # Signing and certificate files
+# 签名与证书文件一律不入库；签名口令请写入本机 local.properties（已被忽略），
+# 或交由 DevEco Studio 自行管理，禁止在受版本控制的文件中硬编码密码。
 *.p12
 *.cer
 *.csr
