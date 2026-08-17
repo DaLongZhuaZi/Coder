@@ -1,0 +1,158 @@
+name: Sign & Release HAP (签名发布 / Sign & Release)
+
+# 第二阶段(可选): push v* tag 时构建 -> hap-sign-tool 签名 -> 发布版本化 GitHub Release。
+# Optional stage 2: on v* tag push, build -> sign with hap-sign-tool -> publish a versioned release.
+# 证书/密钥/口令一律走 repository secrets, 绝不入库(.gitignore 已拦截证书类文件)。
+# Cert/key/password come only from repository secrets, never committed (.gitignore blocks them).
+# 未配置签名 secrets 时签名 job 自动跳过并输出指引, 不把 tag 构建打红。
+# If signing secrets are absent, the signing job skips with a guide (no red build).
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: read
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  HAP_SIGN_TOOL: /opt/command-line-tools/sdk/default/openharmony/toolchains/lib/hap-sign-tool.jar
+
+jobs:
+  prepare:
+    name: 解析 CI 镜像 / Resolve CI image
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.img.outputs.image }}
+    steps:
+      - name: 计算镜像引用 / Compute image reference
+        id: img
+        env:
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          owner=$(printf '%s' "$OWNER" | tr 'A-Z' 'a-z')
+          echo "image=ghcr.io/${owner}/harmonyos-ci:api23" >> "$GITHUB_OUTPUT"
+
+  sign-and-release:
+    name: 构建签名并发布 / Build, sign & release
+    needs: prepare
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.prepare.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    # 签名材料未配置时跳过(见 guide job), 避免 tag 构建误报红
+    if: >-
+      secrets.SIGNING_CERT != '' &&
+      secrets.SIGNING_PROFILE != '' &&
+      secrets.SIGNING_KEY != '' &&
+      secrets.SIGNING_KEY_ALIAS != '' &&
+      secrets.KEYSTORE_PASSWORD != '' &&
+      secrets.KEY_PASSWORD != ''
+    steps:
+      - name: Checkout 检出代码 / Checkout
+        uses: actions/checkout@v4
+
+      - name: 剥离本机签名配置 / Strip local signing config
+        run: python3 .github/scripts/strip_signing.py build-profile.json5
+
+      - name: 安装依赖 / Install dependencies (ohpm)
+        run: ohpm install --all
+
+      - name: 构建 HAP / Build HAP (debug)
+        run: hvigorw assembleHap --mode module -p product=default -p buildMode=debug --no-daemon --stacktrace
+
+      - name: 收集未签名 HAP / Collect unsigned HAPs
+        run: |
+          set -eu
+          mkdir -p dist
+          find . -type f -name '*.hap' -path '*/outputs/*' \
+            -not -path './oh_modules/*' -not -path './node_modules/*' \
+            -exec cp -v {} dist/ \;
+
+      - name: 从 secrets 还原签名材料 / Restore signing materials
+        env:
+          CERT_B64: ${{ secrets.SIGNING_CERT }}
+          PROFILE_B64: ${{ secrets.SIGNING_PROFILE }}
+          KEY_B64: ${{ secrets.SIGNING_KEY }}
+        run: |
+          set -eu
+          mkdir -p /tmp/materials
+          printf '%s' "$CERT_B64"    | base64 -d > /tmp/materials/cert.cer
+          printf '%s' "$PROFILE_B64" | base64 -d > /tmp/materials/profile.p7b
+          printf '%s' "$KEY_B64"     | base64 -d > /tmp/materials/key.p12
+          ls -l /tmp/materials
+
+      - name: 签名 HAP / Sign HAP (hap-sign-tool, JDK 17)
+        env:
+          KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          KEYSTORE_PWD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PWD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -eu
+          shopt -s nullglob
+          haps=(dist/*.hap)
+          if [ ${#haps[@]} -eq 0 ]; then
+            echo "::error::No unsigned hap to sign / 无待签名 hap"
+            exit 1
+          fi
+          for hap in "${haps[@]}"; do
+            base="$(basename "$hap" .hap)"
+            java -jar "$HAP_SIGN_TOOL" sign-app \
+              -keyAlias "$KEY_ALIAS" \
+              -signAlg "SHA256withECDSA" \
+              -mode "localSign" \
+              -appCertFile /tmp/materials/cert.cer \
+              -profileFile /tmp/materials/profile.p7b \
+              -inFile "$hap" \
+              -keystoreFile /tmp/materials/key.p12 \
+              -outFile "dist/${base}-signed.hap" \
+              -keyPwd "$KEY_PWD" \
+              -keystorePwd "$KEYSTORE_PWD" \
+              -signCode "1"
+          done
+          ls -l dist/
+
+      - name: 上传签名 artifact / Upload signed HAP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hap-signed
+          path: dist/*-signed.hap
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: 发布 GitHub Release / Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          files: dist/*-signed.hap
+          body: |
+            ## 版本发布 / Versioned release
+            由 `${{ github.ref_name }}` tag 触发, 已用 hap-sign-tool 签名。
+            Triggered by the `${{ github.ref_name }}` tag, signed via hap-sign-tool.
+            - 提交 / Commit: ${{ github.sha }}
+            - 产物 / Artifact: 已签名 HAP / signed HAP
+
+      - name: 清理签名材料 / Cleanup signing materials
+        if: always()
+        run: rm -rf /tmp/materials
+
+  guide:
+    name: 未配置签名 Secrets (跳过) / Signing secrets missing (skipped)
+    needs: sign-and-release
+    if: ${{ always() && needs.sign-and-release.result == 'skipped' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 说明如何启用签名 / Explain how to enable signing
+        run: |
+          echo "::notice::已跳过签名与 Release: 未配置签名 Secrets。 / Skipped: signing secrets not configured."
+          echo "配置以下 Secrets 后, 下次 push v* tag 将自动签名并发布 Release。 / Configure these to enable signed tag releases:"
+          echo "  SIGNING_CERT / SIGNING_PROFILE / SIGNING_KEY  -> 证书文件 base64(单行, base64 -w 0)"
+          echo "  SIGNING_KEY_ALIAS / KEYSTORE_PASSWORD / KEY_PASSWORD"
