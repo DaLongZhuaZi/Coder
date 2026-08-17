@@ -1,0 +1,40 @@
+services:
+  agent-bridge:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: bridge
+      args:
+        AGENT_BRIDGE_VERSION: ${AGENT_BRIDGE_VERSION:-dev}
+        VCS_REF: ${VCS_REF:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+    image: ngf-agent-bridge:${AGENT_BRIDGE_VERSION:-dev}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8787:8787"
+    environment:
+      AGENT_BRIDGE_TOKEN_FILE: /run/secrets/agent_bridge_token
+      AGENT_BRIDGE_HOSTNAMES: ${AGENT_BRIDGE_HOSTNAMES:-localhost,127.0.0.1}
+    secrets:
+      - agent_bridge_token
+    volumes:
+      - agent-bridge-data:/data
+      - ${AGENT_WORKSPACE:-../workspace}:/workspace:rw
+      - ${AGENT_PROVIDER_BINARIES:-../providers}:/opt/ngf/providers:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 1g
+    cpus: 2.0
+
+secrets:
+  agent_bridge_token:
+    file: ${AGENT_BRIDGE_TOKEN_FILE:-../secrets/agent-bridge-token.txt}
+
+volumes:
+  agent-bridge-data:

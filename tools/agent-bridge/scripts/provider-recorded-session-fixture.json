@@ -1,0 +1,208 @@
+{
+  "fixtureVersion": 1,
+  "recording": "sanitized-provider-protocol-shapes",
+  "codex": {
+    "threadId": "recorded-codex-thread",
+    "usage": [
+      {
+        "turnId": "recorded-turn-001",
+        "params": {
+          "tokenUsage": {
+            "last": {
+              "inputTokens": 1200,
+              "outputTokens": 360,
+              "cacheReadTokens": 80,
+              "cacheWriteTokens": 12,
+              "reasoningTokens": 48,
+              "cost": 0.42,
+              "currency": "USD",
+              "completedAtMs": 1780876800000
+            }
+          }
+        }
+      },
+      {
+        "turnId": "recorded-turn-002",
+        "params": {
+          "tokenUsage": {
+            "last": {
+              "inputTokens": 1800,
+              "outputTokens": 500,
+              "cacheReadTokens": 120,
+              "cacheWriteTokens": 18,
+              "reasoningTokens": 64,
+              "cost": 0.57,
+              "currency": "USD",
+              "occurredAt": "2026-06-08T00:15:00Z"
+            }
+          }
+        }
+      }
+    ],
+    "compactions": [
+      {
+        "turnId": "recorded-turn-002",
+        "itemFirst": {
+          "method": "item/completed",
+          "params": {
+            "threadId": "recorded-codex-thread",
+            "turnId": "recorded-turn-002",
+              "completedAtMs": 1780878600000,
+            "item": {
+              "id": "recorded-compaction-001",
+              "type": "contextCompaction",
+              "reason": "automatic",
+              "beforeTokens": 24500,
+              "afterTokens": 6200
+            }
+          }
+        },
+        "notificationSecond": {
+          "method": "thread/compacted",
+          "params": {
+            "threadId": "recorded-codex-thread",
+            "turnId": "recorded-turn-002",
+            "completedAtMs": 1780878600000
+          }
+        }
+      },
+      {
+        "turnId": "recorded-turn-003",
+        "notificationFirst": {
+          "method": "thread/compacted",
+          "params": {
+            "threadId": "recorded-codex-thread",
+            "turnId": "recorded-turn-003",
+            "completedAtMs": 1780879500000
+          }
+        },
+        "itemSecond": {
+          "method": "item/completed",
+          "params": {
+            "threadId": "recorded-codex-thread",
+            "turnId": "recorded-turn-003",
+            "completedAtMs": 1780879500000,
+            "item": {
+              "id": "recorded-compaction-002",
+              "type": "contextCompaction",
+              "reason": "manual",
+              "beforeTokens": 28000,
+              "afterTokens": 7000
+            }
+          }
+        }
+      },
+      {
+        "turnId": "recorded-turn-004",
+        "notificationOnly": {
+          "method": "thread/compacted",
+          "params": {
+            "threadId": "recorded-codex-thread",
+            "turnId": "recorded-turn-004",
+            "completedAtMs": 1780880400000
+          }
+        },
+        "turnCompleted": {
+          "method": "turn/completed",
+          "params": {
+            "threadId": "recorded-codex-thread",
+            "turnId": "recorded-turn-004",
+            "turn": { "status": "completed" }
+          }
+        }
+      }
+    ]
+  },
+  "opencode": {
+    "sessionId": "recorded-opencode-session",
+    "parts": [
+      {
+        "id": "recorded-step-001",
+        "type": "step-finish",
+        "tokens": {
+          "input": 900,
+          "output": 240,
+          "reasoning": 30,
+          "total": 1170,
+          "cache": { "read": 100, "write": 9 }
+        },
+        "cost": 0.18,
+        "currency": "USD",
+        "time": { "end": 1780880400000 }
+      },
+      {
+        "id": "recorded-opencode-compaction",
+        "type": "compaction",
+        "auto": true,
+        "beforeTokens": 31000,
+        "afterTokens": 7600,
+        "time": { "end": 1780881300000 }
+      }
+    ]
+  },
+  "gateway": {
+    "remoteSessionId": "recorded-gateway-session",
+    "responses": [
+      {
+        "response": {
+          "id": "recorded-response-001",
+          "completed_at": "2026-06-08T01:00:00Z",
+          "usage": {
+            "input_tokens": 700,
+            "output_tokens": 180,
+            "reasoning_tokens": 20,
+            "cached_tokens": 44,
+            "total_tokens": 900,
+            "cost": 0.11,
+            "currency": "USD"
+          }
+        }
+      },
+      {
+        "response": {
+          "id": "recorded-response-002",
+          "completed_at": "2026-06-08T01:30:00Z",
+          "usage": {
+            "input_tokens": 860,
+            "output_tokens": 220,
+            "reasoning_tokens": 26,
+            "cached_tokens": 52,
+            "total_tokens": 1080,
+            "cost": 0.14,
+            "currency": "USD"
+          }
+        }
+      }
+    ]
+  },
+  "quota": {
+    "initial": {
+      "ok": true,
+      "status": "available",
+      "fetchedAt": "2026-06-08T00:00:00Z",
+      "expiresAt": "2099-01-01T00:00:00Z",
+      "source": "recorded-provider",
+      "windows": [
+        { "name": "daily", "remaining": 100, "limit": 1000, "resetAt": "2026-06-09T00:00:00Z" },
+        { "name": "monthly", "remaining": 800, "limit": 10000, "resetAt": "2026-07-01T00:00:00Z" }
+      ]
+    },
+    "afterReset": {
+      "ok": true,
+      "status": "available",
+      "fetchedAt": "2026-06-09T00:00:01Z",
+      "expiresAt": "2099-01-02T00:00:00Z",
+      "source": "recorded-provider",
+      "windows": [
+        { "name": "daily", "remaining": 1000, "limit": 1000, "resetAt": "2026-06-10T00:00:00Z" },
+        { "name": "monthly", "remaining": 780, "limit": 10000, "resetAt": "2026-07-01T00:00:00Z" }
+      ]
+    }
+  },
+  "metadata": [
+    { "kind": "sessionTitle", "suggestion": "Recorded implementation session", "alternatives": ["Provider session summary"], "usage": { "inputTokens": 14, "outputTokens": 8, "cost": 0.01, "currency": "USD", "eventId": "recorded-metadata-title" } },
+    { "kind": "branchName", "suggestion": "feat/recorded-usage", "alternatives": ["chore/usage-fixture"], "usage": { "inputTokens": 16, "outputTokens": 9, "cost": 0.012, "currency": "USD", "eventId": "recorded-metadata-branch" } },
+    { "kind": "commitMessage", "suggestion": "test: replay recorded provider usage", "alternatives": ["test: add usage fixture"], "usage": { "inputTokens": 18, "outputTokens": 10, "cost": 0.014, "currency": "USD", "eventId": "recorded-metadata-commit" } },
+    { "kind": "pullRequest", "suggestion": "## Summary\n\nReplay provider usage and metadata fixtures.\n\n## Test plan\n\n- Run recorded session smoke", "alternatives": ["Add provider recording coverage"], "usage": { "inputTokens": 22, "outputTokens": 12, "cost": 0.018, "currency": "USD", "eventId": "recorded-metadata-pr" } }
+  ]
+}

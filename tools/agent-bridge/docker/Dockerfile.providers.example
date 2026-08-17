@@ -1,0 +1,9 @@
+ARG BASE_IMAGE=ngf-agent-bridge:dev
+FROM ${BASE_IMAGE}
+
+# Provider CLIs are intentionally not bundled by the base image. Install only
+# reviewed binaries here, pin versions and checksums, and never COPY credentials.
+USER root
+# RUN npm install --global --omit=dev <provider-package>@<pinned-version>
+USER 10001:10001
+

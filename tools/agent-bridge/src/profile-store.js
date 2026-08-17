@@ -3,10 +3,14 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { ensureDeviceIdentity } = require('./device-identity');
 
 const PROFILE_VERSION = 1;
 
 function profileDirectory() {
+  if (process.env.AGENT_BRIDGE_HOME && process.env.AGENT_BRIDGE_HOME.length > 0) {
+    return process.env.AGENT_BRIDGE_HOME;
+  }
   return path.join(os.homedir(), '.ngf-agent-bridge');
 }
 
@@ -38,6 +42,26 @@ function defaultProfile() {
     claudeCommand: 'claude',
     antigravityCommand: 'antigravity',
     antigravityArgs: '',
+    openClawCommand: 'openclaw',
+    openClawArgs: 'agent --message',
+    openClawGatewayUrl: 'http://127.0.0.1:18789',
+    openClawGatewayModel: 'openclaw/default',
+    startOpenClawGateway: false,
+    hermesCommand: 'hermes',
+    hermesArgs: 'chat --quiet -q',
+    hermesStudioCommand: 'hermes-web-ui',
+    hermesStudioArgs: 'start --no-open',
+    hermesStudioUrl: 'http://127.0.0.1:8648',
+    hermesStudioProfile: 'default',
+    hermesStudioProvider: '',
+    hermesStudioModel: '',
+    startHermesStudio: false,
+    physicalDeviceId: '',
+    bridgeInstanceId: '',
+    deviceDisplayName: '',
+    devicePlatform: '',
+    devicePublicKeyPem: '',
+    deviceKeyFingerprint: '',
     updatedAt: 0
   };
 }
@@ -68,7 +92,7 @@ function readNumber(source, key, fallbackValue) {
 
 function normalizeProfile(source) {
   const defaults = defaultProfile();
-  return {
+  const normalized = {
     version: PROFILE_VERSION,
     language: readString(source, 'language', defaults.language),
     connectHost: readString(source, 'connectHost', defaults.connectHost),
@@ -91,8 +115,77 @@ function normalizeProfile(source) {
     claudeCommand: readString(source, 'claudeCommand', defaults.claudeCommand),
     antigravityCommand: readString(source, 'antigravityCommand', defaults.antigravityCommand),
     antigravityArgs: readString(source, 'antigravityArgs', defaults.antigravityArgs),
+    openClawCommand: readString(source, 'openClawCommand', defaults.openClawCommand),
+    openClawArgs: readString(source, 'openClawArgs', defaults.openClawArgs),
+    openClawGatewayUrl: readString(source, 'openClawGatewayUrl', defaults.openClawGatewayUrl),
+    openClawGatewayModel: readString(source, 'openClawGatewayModel', defaults.openClawGatewayModel),
+    startOpenClawGateway: readBoolean(source, 'startOpenClawGateway', defaults.startOpenClawGateway),
+    hermesCommand: readString(source, 'hermesCommand', defaults.hermesCommand),
+    hermesArgs: readString(source, 'hermesArgs', defaults.hermesArgs),
+    hermesStudioCommand: readString(source, 'hermesStudioCommand', defaults.hermesStudioCommand),
+    hermesStudioArgs: readString(source, 'hermesStudioArgs', defaults.hermesStudioArgs),
+    hermesStudioUrl: readString(source, 'hermesStudioUrl', defaults.hermesStudioUrl),
+    hermesStudioProfile: readString(source, 'hermesStudioProfile', defaults.hermesStudioProfile),
+    hermesStudioProvider: readString(source, 'hermesStudioProvider', defaults.hermesStudioProvider),
+    hermesStudioModel: readString(source, 'hermesStudioModel', defaults.hermesStudioModel),
+    startHermesStudio: readBoolean(source, 'startHermesStudio', defaults.startHermesStudio),
+    physicalDeviceId: readString(source, 'physicalDeviceId', defaults.physicalDeviceId),
+    bridgeInstanceId: readString(source, 'bridgeInstanceId', defaults.bridgeInstanceId),
+    deviceDisplayName: readString(source, 'deviceDisplayName', defaults.deviceDisplayName),
+    devicePlatform: readString(source, 'devicePlatform', defaults.devicePlatform),
+    devicePublicKeyPem: readString(source, 'devicePublicKeyPem', defaults.devicePublicKeyPem),
+    deviceKeyFingerprint: readString(source, 'deviceKeyFingerprint', defaults.deviceKeyFingerprint),
     updatedAt: readNumber(source, 'updatedAt', defaults.updatedAt)
   };
+  return ensureDeviceIdentity(normalized, { legacyProfile: source });
+}
+
+function preserveStoredDeviceIdentity(source) {
+  const next = source && typeof source === 'object' && !Array.isArray(source)
+    ? Object.assign({}, source)
+    : {};
+  const filePath = profilePath();
+  if (!fs.existsSync(filePath)) {
+    return next;
+  }
+  try {
+    const stored = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) {
+      return next;
+    }
+    const credentialFields = [
+      'physicalDeviceId',
+      'bridgeInstanceId',
+      'devicePublicKeyPem'
+    ];
+    const storedHasCompleteCredentials = credentialFields.every((field) => {
+      return typeof stored[field] === 'string' && stored[field].length > 0;
+    });
+    const nextHasCompleteCredentials = credentialFields.every((field) => {
+      return typeof next[field] === 'string' && next[field].length > 0;
+    });
+    if (storedHasCompleteCredentials && !nextHasCompleteCredentials) {
+      for (const field of credentialFields) {
+        next[field] = stored[field];
+      }
+      next.deviceKeyFingerprint = stored.deviceKeyFingerprint;
+    }
+    const metadataFields = ['deviceDisplayName', 'devicePlatform'];
+    for (const field of metadataFields) {
+      const nextValue = next[field];
+      const storedValue = stored[field];
+      if (
+        (typeof nextValue !== 'string' || nextValue.length === 0) &&
+        typeof storedValue === 'string' &&
+        storedValue.length > 0
+      ) {
+        next[field] = storedValue;
+      }
+    }
+  } catch (error) {
+    return next;
+  }
+  return next;
 }
 
 function loadProfile() {
@@ -102,14 +195,27 @@ function loadProfile() {
   }
   try {
     const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-    return normalizeProfile(parsed);
+    const normalized = normalizeProfile(parsed);
+    if (
+      typeof parsed.physicalDeviceId !== 'string' ||
+      parsed.physicalDeviceId.length === 0 ||
+      typeof parsed.bridgeInstanceId !== 'string' ||
+      parsed.bridgeInstanceId.length === 0 ||
+      typeof parsed.devicePublicKeyPem !== 'string' ||
+      parsed.devicePublicKeyPem.length === 0 ||
+      typeof parsed.deviceKeyFingerprint !== 'string' ||
+      parsed.deviceKeyFingerprint.length === 0
+    ) {
+      saveProfile(normalized);
+    }
+    return normalized;
   } catch (error) {
     return null;
   }
 }
 
 function saveProfile(profile) {
-  const normalized = normalizeProfile(profile);
+  const normalized = normalizeProfile(preserveStoredDeviceIdentity(profile));
   normalized.updatedAt = Date.now();
   fs.mkdirSync(profileDirectory(), { recursive: true });
   fs.writeFileSync(profilePath(), JSON.stringify(normalized, null, 2), 'utf8');

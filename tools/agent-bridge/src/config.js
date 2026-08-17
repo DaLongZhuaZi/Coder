@@ -1,7 +1,11 @@
 'use strict';
 
 const crypto = require('crypto');
-const { loadProfile } = require('./profile-store');
+const fs = require('fs');
+const { defaultProfile, loadProfile, saveProfile } = require('./profile-store');
+const { publicDeviceIdentity } = require('./device-identity');
+const { PROTOCOL_VERSION, PROTOCOL_VERSION_V2 } = require('./protocol');
+const packageInfo = require('../package.json');
 
 const DEFAULT_CLI_TIMEOUT_MS = 10 * 60 * 1000;
 
@@ -47,9 +51,22 @@ function readBoolean(name, fallbackValue) {
   return fallbackValue;
 }
 
+function readSecretFile(name) {
+  const filePath = process.env[name];
+  if (typeof filePath !== 'string' || filePath.length === 0) return '';
+  try {
+    const stat = fs.statSync(filePath);
+    if (!stat.isFile() || stat.size <= 0 || stat.size > 64 * 1024) return '';
+    return fs.readFileSync(filePath, 'utf8').trim();
+  } catch (_error) {
+    return '';
+  }
+}
+
 function createConfig() {
-  const profile = loadProfile();
-  const envToken = process.env.AGENT_BRIDGE_TOKEN || '';
+  const loadedProfile = loadProfile();
+  const profile = loadedProfile || saveProfile(defaultProfile());
+  const envToken = process.env.AGENT_BRIDGE_TOKEN || readSecretFile('AGENT_BRIDGE_TOKEN_FILE');
   const profileToken = profile && profile.token ? profile.token : '';
   const tokenGenerated = envToken.length === 0 && profileToken.length === 0;
   const openCodeUrl = process.env.AGENT_BRIDGE_OPENCODE_URL || process.env.OPENCODE_BASE_URL || readProfileString(profile, 'openCodeUrl', 'http://127.0.0.1:4096');
@@ -62,15 +79,33 @@ function createConfig() {
   const mimoCodeUsername = process.env.AGENT_BRIDGE_MIMO_CODE_USERNAME || '';
   const mimoCodePassword = process.env.AGENT_BRIDGE_MIMO_CODE_PASSWORD || '';
   return {
-    protocolVersion: 'agent-bridge.v1',
+    protocolVersion: PROTOCOL_VERSION,
+    preferredProtocolVersion: PROTOCOL_VERSION_V2,
+    supportedProtocolVersions: [PROTOCOL_VERSION, PROTOCOL_VERSION_V2],
+    version: typeof packageInfo.version === 'string' ? packageInfo.version : '0.0.0',
+    containerMode: readBoolean('AGENT_BRIDGE_CONTAINER', false),
+    profile,
+    deviceIdentity: publicDeviceIdentity(profile),
     host: process.env.AGENT_BRIDGE_HOST || readProfileString(profile, 'bindHost', '127.0.0.1'),
     port: readPort(profile),
     token: tokenGenerated ? crypto.randomBytes(24).toString('hex') : (envToken.length > 0 ? envToken : profileToken),
     tokenGenerated,
+    push: {
+      apiBaseUrl: process.env.AGENT_BRIDGE_HUAWEI_PUSH_API_BASE_URL || 'https://push-api.cloud.huawei.com',
+      serviceAccountPath: process.env.AGENT_BRIDGE_HUAWEI_PUSH_SERVICE_ACCOUNT || '',
+      bearerToken: process.env.AGENT_BRIDGE_HUAWEI_PUSH_BEARER_TOKEN || '',
+      projectId: process.env.AGENT_BRIDGE_HUAWEI_PUSH_PROJECT_ID || '',
+      category: process.env.AGENT_BRIDGE_HUAWEI_PUSH_CATEGORY || 'MARKETING',
+      testMessage: readBoolean('AGENT_BRIDGE_HUAWEI_PUSH_TEST_MESSAGE', false),
+      requestTimeoutMs: readPositiveNumber('AGENT_BRIDGE_HUAWEI_PUSH_TIMEOUT_MS', 15000)
+    },
     openCode: {
       baseUrl: openCodeUrl,
       username: openCodeUsername,
       password: openCodePassword,
+      usageEndpoint: process.env.AGENT_BRIDGE_OPENCODE_USAGE_URL || '',
+      usageEndpointEnv: process.env.AGENT_BRIDGE_OPENCODE_USAGE_URL_ENV || '',
+      usageEndpointTokenEnv: process.env.AGENT_BRIDGE_OPENCODE_USAGE_TOKEN_ENV || '',
       requestTimeoutMs: readPositiveNumber('AGENT_BRIDGE_OPENCODE_TIMEOUT_MS', 30000),
       lightCapabilities: readBoolean('AGENT_BRIDGE_OPENCODE_LIGHT_CAPABILITIES', true)
     },
@@ -82,6 +117,9 @@ function createConfig() {
       baseUrl: devEcoUrl,
       username: devEcoUsername,
       password: devEcoPassword,
+      usageEndpoint: process.env.AGENT_BRIDGE_DEVECO_USAGE_URL || '',
+      usageEndpointEnv: process.env.AGENT_BRIDGE_DEVECO_USAGE_URL_ENV || '',
+      usageEndpointTokenEnv: process.env.AGENT_BRIDGE_DEVECO_USAGE_TOKEN_ENV || '',
       requestTimeoutMs: readPositiveNumber('AGENT_BRIDGE_DEVECO_TIMEOUT_MS', 30000),
       lightCapabilities: readBoolean('AGENT_BRIDGE_DEVECO_LIGHT_CAPABILITIES', true)
     },
@@ -93,12 +131,20 @@ function createConfig() {
       baseUrl: mimoCodeUrl,
       username: mimoCodeUsername,
       password: mimoCodePassword,
+      usageEndpoint: process.env.AGENT_BRIDGE_MIMO_USAGE_URL || '',
+      usageEndpointEnv: process.env.AGENT_BRIDGE_MIMO_USAGE_URL_ENV || '',
+      usageEndpointTokenEnv: process.env.AGENT_BRIDGE_MIMO_USAGE_TOKEN_ENV || '',
       requestTimeoutMs: readPositiveNumber('AGENT_BRIDGE_MIMO_CODE_TIMEOUT_MS', 30000),
       lightCapabilities: readBoolean('AGENT_BRIDGE_MIMO_CODE_LIGHT_CAPABILITIES', true)
     },
     codex: {
       command: process.env.AGENT_BRIDGE_CODEX_COMMAND || readProfileString(profile, 'codexCommand', 'codex'),
       args: process.env.AGENT_BRIDGE_CODEX_ARGS || 'exec --json',
+      runtime: process.env.AGENT_BRIDGE_CODEX_RUNTIME || 'auto',
+      appServerArgs: ['app-server'],
+      usageEndpoint: process.env.AGENT_BRIDGE_CODEX_USAGE_URL || '',
+      usageEndpointEnv: process.env.AGENT_BRIDGE_CODEX_USAGE_URL_ENV || '',
+      usageEndpointTokenEnv: process.env.AGENT_BRIDGE_CODEX_USAGE_TOKEN_ENV || '',
       timeoutMs: readPositiveNumber('AGENT_BRIDGE_CODEX_TIMEOUT_MS', DEFAULT_CLI_TIMEOUT_MS)
     },
     claude: {
@@ -114,6 +160,38 @@ function createConfig() {
       cwdFlag: process.env.AGENT_BRIDGE_ANTIGRAVITY_CWD_FLAG || '',
       jsonMode: process.env.AGENT_BRIDGE_ANTIGRAVITY_JSON_MODE || 'none',
       timeoutMs: readPositiveNumber('AGENT_BRIDGE_ANTIGRAVITY_TIMEOUT_MS', DEFAULT_CLI_TIMEOUT_MS)
+    },
+    openClaw: {
+      command: process.env.AGENT_BRIDGE_OPENCLAW_COMMAND || readProfileString(profile, 'openClawCommand', 'openclaw'),
+      args: process.env.AGENT_BRIDGE_OPENCLAW_ARGS || readProfileString(profile, 'openClawArgs', 'agent --message'),
+      timeoutMs: readPositiveNumber('AGENT_BRIDGE_OPENCLAW_TIMEOUT_MS', DEFAULT_CLI_TIMEOUT_MS)
+    },
+    openClawGateway: {
+      baseUrl: process.env.AGENT_BRIDGE_OPENCLAW_GATEWAY_URL || readProfileString(profile, 'openClawGatewayUrl', 'http://127.0.0.1:18789'),
+      token: process.env.AGENT_BRIDGE_OPENCLAW_GATEWAY_TOKEN || process.env.OPENCLAW_GATEWAY_TOKEN || '',
+      usageEndpoint: process.env.AGENT_BRIDGE_OPENCLAW_GATEWAY_USAGE_URL || '',
+      usageEndpointEnv: process.env.AGENT_BRIDGE_OPENCLAW_GATEWAY_USAGE_URL_ENV || '',
+      usageEndpointTokenEnv: process.env.AGENT_BRIDGE_OPENCLAW_GATEWAY_USAGE_TOKEN_ENV || '',
+      model: process.env.AGENT_BRIDGE_OPENCLAW_GATEWAY_MODEL || readProfileString(profile, 'openClawGatewayModel', 'openclaw/default'),
+      requestTimeoutMs: readPositiveNumber('AGENT_BRIDGE_OPENCLAW_GATEWAY_TIMEOUT_MS', DEFAULT_CLI_TIMEOUT_MS),
+      healthTimeoutMs: readPositiveNumber('AGENT_BRIDGE_OPENCLAW_GATEWAY_HEALTH_TIMEOUT_MS', 30000)
+    },
+    hermes: {
+      command: process.env.AGENT_BRIDGE_HERMES_COMMAND || readProfileString(profile, 'hermesCommand', 'hermes'),
+      args: process.env.AGENT_BRIDGE_HERMES_ARGS || readProfileString(profile, 'hermesArgs', 'chat --quiet -q'),
+      timeoutMs: readPositiveNumber('AGENT_BRIDGE_HERMES_TIMEOUT_MS', DEFAULT_CLI_TIMEOUT_MS)
+    },
+    hermesStudio: {
+      baseUrl: process.env.AGENT_BRIDGE_HERMES_STUDIO_URL || readProfileString(profile, 'hermesStudioUrl', 'http://127.0.0.1:8648'),
+      token: process.env.AGENT_BRIDGE_HERMES_STUDIO_TOKEN || process.env.HERMES_STUDIO_TOKEN || process.env.AUTH_TOKEN || '',
+      usageEndpoint: process.env.AGENT_BRIDGE_HERMES_STUDIO_USAGE_URL || '',
+      usageEndpointEnv: process.env.AGENT_BRIDGE_HERMES_STUDIO_USAGE_URL_ENV || '',
+      usageEndpointTokenEnv: process.env.AGENT_BRIDGE_HERMES_STUDIO_USAGE_TOKEN_ENV || '',
+      profile: process.env.AGENT_BRIDGE_HERMES_STUDIO_PROFILE || readProfileString(profile, 'hermesStudioProfile', 'default'),
+      provider: process.env.AGENT_BRIDGE_HERMES_STUDIO_PROVIDER || readProfileString(profile, 'hermesStudioProvider', ''),
+      model: process.env.AGENT_BRIDGE_HERMES_STUDIO_MODEL || readProfileString(profile, 'hermesStudioModel', ''),
+      requestTimeoutMs: readPositiveNumber('AGENT_BRIDGE_HERMES_STUDIO_TIMEOUT_MS', DEFAULT_CLI_TIMEOUT_MS),
+      healthTimeoutMs: readPositiveNumber('AGENT_BRIDGE_HERMES_STUDIO_HEALTH_TIMEOUT_MS', 30000)
     }
   };
 }

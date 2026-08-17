@@ -1,8 +1,13 @@
 'use strict';
 
+const fs = require('fs');
+const path = require('path');
+const { profileDirectory } = require('./profile-store');
+
 const COLOR_ENABLED = process.env.NO_COLOR !== '1' &&
   process.env.NO_COLOR !== 'true' &&
   process.stdout.isTTY !== false;
+const LOG_ROTATE_MAX_BYTES = 10 * 1024 * 1024;
 
 function color(code, value) {
   if (!COLOR_ENABLED) {
@@ -133,15 +138,21 @@ function createTerminalLogger(scope) {
   const baseScope = typeof scope === 'string' && scope.length > 0 ? scope : 'agent-bridge';
 
   function write(level, event, fields) {
-    const timestamp = dim(timestampText());
-    const levelText = colorizeLevel(level, padRight(level, 5));
+    const rawTimestamp = timestampText();
+    const timestamp = dim(rawTimestamp);
+    const rawLevelText = padRight(level, 5);
+    const levelText = colorizeLevel(level, rawLevelText);
     const scopeText = padRight(baseScope, 18);
     const eventText = typeof event === 'string' && event.length > 0 ? event : 'log';
     const fieldText = formatFields(fields);
+    const plainLine = fieldText.length > 0 ?
+      rawTimestamp + ' | ' + rawLevelText + ' | ' + scopeText + ' | ' + eventText + ' | ' + fieldText :
+      rawTimestamp + ' | ' + rawLevelText + ' | ' + scopeText + ' | ' + eventText;
     const line = fieldText.length > 0 ?
       timestamp + ' | ' + levelText + ' | ' + scopeText + ' | ' + eventText + ' | ' + fieldText :
       timestamp + ' | ' + levelText + ' | ' + scopeText + ' | ' + eventText;
     console.log(line);
+    appendLogLine(plainLine);
   }
 
   return {
@@ -160,6 +171,40 @@ function createTerminalLogger(scope) {
   };
 }
 
+function defaultLogPath() {
+  if (process.env.AGENT_BRIDGE_LOG_FILE && process.env.AGENT_BRIDGE_LOG_FILE.length > 0) {
+    return process.env.AGENT_BRIDGE_LOG_FILE;
+  }
+  return path.join(profileDirectory(), 'daemon.log');
+}
+
+function appendLogLine(line) {
+  const filePath = defaultLogPath();
+  try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    rotateLogIfNeeded(filePath);
+    fs.appendFileSync(filePath, line + '\n', 'utf8');
+  } catch (_error) {
+    // Console logging must keep working even when the optional file sink is unavailable.
+  }
+}
+
+function rotateLogIfNeeded(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return;
+  }
+  const stat = fs.statSync(filePath);
+  if (stat.size < LOG_ROTATE_MAX_BYTES) {
+    return;
+  }
+  const rotatedPath = filePath + '.1';
+  if (fs.existsSync(rotatedPath)) {
+    fs.unlinkSync(rotatedPath);
+  }
+  fs.renameSync(filePath, rotatedPath);
+}
+
 module.exports = {
-  createTerminalLogger
+  createTerminalLogger,
+  defaultLogPath
 };

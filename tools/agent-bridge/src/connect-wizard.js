@@ -2,13 +2,14 @@
 
 const crypto = require('crypto');
 const net = require('net');
-const os = require('os');
 const path = require('path');
 const readline = require('readline/promises');
 const { spawn } = require('child_process');
 const { loadProfile, profilePath, saveProfile } = require('./profile-store');
+const { publicDeviceIdentity } = require('./device-identity');
 const { scanProviders } = require('./provider-scan');
 const { writeQrImageFiles } = require('./qr-code');
+const { chooseDefaultAddress, listIPv4Addresses } = require('./network-address');
 
 const STRINGS = {
   en: {
@@ -46,6 +47,7 @@ const STRINGS = {
     qrFiles: 'QR image files',
     qrHtml: 'Display page',
     qrSecret: 'QR payload contains the token. Do not share screenshots publicly.',
+    qrUnavailable: 'QR generation failed. Agent Bridge can still start; enter the connection values manually: ',
     qrDisplayTitle: 'Agent Bridge QR',
     qrDisplayDesc: 'Scan this page from the NGF app connection settings. Keep the browser zoom at 100% if scanning is unstable.',
     terminalQr: 'Terminal QR preview:',
@@ -92,6 +94,7 @@ const STRINGS = {
     qrFiles: '二维码文件',
     qrHtml: '显示页面',
     qrSecret: '二维码内容包含 Token，请不要公开分享截图。',
+    qrUnavailable: '二维码生成失败。Agent Bridge 仍可启动，请手动填写连接信息：',
     qrDisplayTitle: 'Agent Bridge 二维码',
     qrDisplayDesc: '请在 NGF App 连接设置中扫描此页面。如果识别不稳定，请保持浏览器缩放为 100%。',
     terminalQr: '终端二维码预览:',
@@ -149,37 +152,6 @@ function parseArgs(argv) {
   return result;
 }
 
-function listIPv4Addresses() {
-  const results = [];
-  const interfaces = os.networkInterfaces();
-  for (const name of Object.keys(interfaces)) {
-    const entries = interfaces[name] || [];
-    for (const entry of entries) {
-      if (entry.family !== 'IPv4') {
-        continue;
-      }
-      results.push({
-        address: entry.address,
-        name,
-        internal: entry.internal
-      });
-    }
-  }
-  return results;
-}
-
-function chooseDefaultAddress(addresses, lastAddress) {
-  if (lastAddress && lastAddress.length > 0) {
-    return lastAddress;
-  }
-  for (const item of addresses) {
-    if (!item.internal && !item.address.startsWith('169.254.')) {
-      return item.address;
-    }
-  }
-  return '127.0.0.1';
-}
-
 function parsePort(value, fallbackValue) {
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed) || parsed <= 0 || parsed > 65535) {
@@ -224,10 +196,17 @@ function connectionEndpoint(host, port) {
   return 'ws://' + host + ':' + String(port) + '/ws';
 }
 
-function connectionUri(endpoint, token, providerId, workspacePath, workspaceTitle) {
+function connectionUri(endpoint, token, providerId, workspacePath, workspaceTitle, deviceIdentity) {
   const params = [];
   params.push('endpoint=' + encodeURIComponent(endpoint));
   params.push('token=' + encodeURIComponent(token));
+  if (deviceIdentity && typeof deviceIdentity.physicalDeviceId === 'string' && deviceIdentity.physicalDeviceId.length > 0) {
+    params.push('physicalDeviceId=' + encodeURIComponent(deviceIdentity.physicalDeviceId));
+    params.push('bridgeInstanceId=' + encodeURIComponent(deviceIdentity.bridgeInstanceId || ''));
+    params.push('deviceName=' + encodeURIComponent(deviceIdentity.displayName || ''));
+    params.push('devicePlatform=' + encodeURIComponent(deviceIdentity.platform || ''));
+    params.push('publicKeyFingerprint=' + encodeURIComponent(deviceIdentity.publicKeyFingerprint || ''));
+  }
   if (providerId.length > 0) {
     params.push('providerId=' + encodeURIComponent(providerId));
   }
@@ -240,11 +219,14 @@ function connectionUri(endpoint, token, providerId, workspacePath, workspaceTitl
   return 'ngf-agent-bridge://connect?' + params.join('&');
 }
 
-function connectionPayload(endpoint, token, providerId, workspacePath, workspaceTitle) {
+function connectionPayload(endpoint, token, providerId, workspacePath, workspaceTitle, deviceIdentity) {
   const value = {
     endpoint,
     token
   };
+  if (deviceIdentity && typeof deviceIdentity.physicalDeviceId === 'string' && deviceIdentity.physicalDeviceId.length > 0) {
+    value.deviceIdentity = deviceIdentity;
+  }
   if (providerId.length > 0) {
     value.providerId = providerId;
   }
@@ -356,7 +338,21 @@ function optionsFromProfile(repoRoot, profile) {
     codexCommand: profile.codexCommand.length > 0 ? profile.codexCommand : 'codex',
     claudeCommand: profile.claudeCommand.length > 0 ? profile.claudeCommand : 'claude',
     antigravityCommand: profile.antigravityCommand.length > 0 ? profile.antigravityCommand : 'antigravity',
-    antigravityArgs: profile.antigravityArgs
+    antigravityArgs: profile.antigravityArgs,
+    openClawCommand: profile.openClawCommand.length > 0 ? profile.openClawCommand : 'openclaw',
+    openClawArgs: profile.openClawArgs.length > 0 ? profile.openClawArgs : 'agent --message',
+    openClawGatewayUrl: profile.openClawGatewayUrl.length > 0 ? profile.openClawGatewayUrl : 'http://127.0.0.1:18789',
+    openClawGatewayModel: profile.openClawGatewayModel.length > 0 ? profile.openClawGatewayModel : 'openclaw/default',
+    startOpenClawGateway: profile.startOpenClawGateway,
+    hermesCommand: profile.hermesCommand.length > 0 ? profile.hermesCommand : 'hermes',
+    hermesArgs: profile.hermesArgs.length > 0 ? profile.hermesArgs : 'chat --quiet -q',
+    hermesStudioCommand: profile.hermesStudioCommand.length > 0 ? profile.hermesStudioCommand : 'hermes-web-ui',
+    hermesStudioArgs: profile.hermesStudioArgs.length > 0 ? profile.hermesStudioArgs : 'start --no-open',
+    hermesStudioUrl: profile.hermesStudioUrl.length > 0 ? profile.hermesStudioUrl : 'http://127.0.0.1:8648',
+    hermesStudioProfile: profile.hermesStudioProfile.length > 0 ? profile.hermesStudioProfile : 'default',
+    hermesStudioProvider: profile.hermesStudioProvider,
+    hermesStudioModel: profile.hermesStudioModel,
+    startHermesStudio: profile.startHermesStudio
   };
 }
 
@@ -367,6 +363,10 @@ function applyScanToOptions(options, scanResults) {
   const codexScan = findScanResult(scanResults, 'codex');
   const claudeScan = findScanResult(scanResults, 'claude');
   const antigravityScan = findScanResult(scanResults, 'antigravity');
+  const openClawScan = findScanResult(scanResults, 'openclaw');
+  const openClawGatewayScan = findScanResult(scanResults, 'openclaw-gateway');
+  const hermesScan = findScanResult(scanResults, 'hermes');
+  const hermesStudioScan = findScanResult(scanResults, 'hermes-studio');
   return {
     repoRoot: options.repoRoot,
     language: options.language,
@@ -389,7 +389,21 @@ function applyScanToOptions(options, scanResults) {
     codexCommand: scannedCommand(codexScan, options.codexCommand),
     claudeCommand: scannedCommand(claudeScan, options.claudeCommand),
     antigravityCommand: scannedCommand(antigravityScan, options.antigravityCommand),
-    antigravityArgs: options.antigravityArgs
+    antigravityArgs: options.antigravityArgs,
+    openClawCommand: scannedCommand(openClawScan, options.openClawCommand),
+    openClawArgs: options.openClawArgs,
+    openClawGatewayUrl: options.openClawGatewayUrl,
+    openClawGatewayModel: options.openClawGatewayModel,
+    startOpenClawGateway: shouldStartCompatibleServer(openClawGatewayScan, options.startOpenClawGateway),
+    hermesCommand: scannedCommand(hermesScan, options.hermesCommand),
+    hermesArgs: options.hermesArgs,
+    hermesStudioCommand: scannedCommand(hermesStudioScan, options.hermesStudioCommand),
+    hermesStudioArgs: options.hermesStudioArgs,
+    hermesStudioUrl: options.hermesStudioUrl,
+    hermesStudioProfile: options.hermesStudioProfile,
+    hermesStudioProvider: options.hermesStudioProvider,
+    hermesStudioModel: options.hermesStudioModel,
+    startHermesStudio: shouldStartCompatibleServer(hermesStudioScan, options.startHermesStudio)
   };
 }
 
@@ -436,12 +450,28 @@ async function askConfiguration(rl, language, repoRoot, addresses, savedProfile,
   let claudeCommand = previous.claudeCommand || commandForScan(scanResults, 'claude', 'claude');
   let antigravityCommand = previous.antigravityCommand || commandForScan(scanResults, 'antigravity', 'antigravity');
   let antigravityArgs = previous.antigravityArgs || '';
+  let openClawCommand = previous.openClawCommand || commandForScan(scanResults, 'openclaw', 'openclaw');
+  let openClawArgs = previous.openClawArgs || 'agent --message';
+  let openClawGatewayUrl = previous.openClawGatewayUrl || 'http://127.0.0.1:18789';
+  let openClawGatewayModel = previous.openClawGatewayModel || 'openclaw/default';
+  let hermesCommand = previous.hermesCommand || commandForScan(scanResults, 'hermes', 'hermes');
+  let hermesArgs = previous.hermesArgs || 'chat --quiet -q';
+  let hermesStudioCommand = previous.hermesStudioCommand || commandForScan(scanResults, 'hermes-studio', 'hermes-web-ui');
+  let hermesStudioArgs = previous.hermesStudioArgs || 'start --no-open';
+  let hermesStudioUrl = previous.hermesStudioUrl || 'http://127.0.0.1:8648';
+  let hermesStudioProfile = previous.hermesStudioProfile || 'default';
+  let hermesStudioProvider = previous.hermesStudioProvider || '';
+  let hermesStudioModel = previous.hermesStudioModel || '';
   const openCodeScan = findScanResult(scanResults, 'opencode');
   const devEcoScan = findScanResult(scanResults, 'deveco');
   const mimoScan = findScanResult(scanResults, 'mimo');
+  const openClawGatewayScan = findScanResult(scanResults, 'openclaw-gateway');
+  const hermesStudioScan = findScanResult(scanResults, 'hermes-studio');
   let startOpenCode = openCodeScan ? openCodeScan.installed && !openCodeScan.serverHealthy : false;
   let startDevEco = devEcoScan ? devEcoScan.installed && !devEcoScan.serverHealthy : false;
   let startMimoCode = mimoScan ? mimoScan.installed && !mimoScan.serverHealthy : false;
+  let startOpenClawGateway = openClawGatewayScan ? openClawGatewayScan.installed && !openClawGatewayScan.serverHealthy : false;
+  let startHermesStudio = hermesStudioScan ? hermesStudioScan.installed && !hermesStudioScan.serverHealthy : false;
   return {
     repoRoot,
     language,
@@ -453,6 +483,8 @@ async function askConfiguration(rl, language, repoRoot, addresses, savedProfile,
     startOpenCode,
     startDevEco,
     startMimoCode,
+    startOpenClawGateway,
+    startHermesStudio,
     workspacePath: '',
     workspaceTitle: '',
     openCodeCommand,
@@ -464,7 +496,19 @@ async function askConfiguration(rl, language, repoRoot, addresses, savedProfile,
     codexCommand,
     claudeCommand,
     antigravityCommand,
-    antigravityArgs
+    antigravityArgs,
+    openClawCommand,
+    openClawArgs,
+    openClawGatewayUrl,
+    openClawGatewayModel,
+    hermesCommand,
+    hermesArgs,
+    hermesStudioCommand,
+    hermesStudioArgs,
+    hermesStudioUrl,
+    hermesStudioProfile,
+    hermesStudioProvider,
+    hermesStudioModel
   };
 }
 
@@ -498,11 +542,25 @@ function saveOptions(options) {
     codexCommand: options.codexCommand,
     claudeCommand: options.claudeCommand,
     antigravityCommand: options.antigravityCommand,
-    antigravityArgs: options.antigravityArgs
+    antigravityArgs: options.antigravityArgs,
+    openClawCommand: options.openClawCommand,
+    openClawArgs: options.openClawArgs,
+    openClawGatewayUrl: options.openClawGatewayUrl,
+    openClawGatewayModel: options.openClawGatewayModel,
+    startOpenClawGateway: options.startOpenClawGateway,
+    hermesCommand: options.hermesCommand,
+    hermesArgs: options.hermesArgs,
+    hermesStudioCommand: options.hermesStudioCommand,
+    hermesStudioArgs: options.hermesStudioArgs,
+    hermesStudioUrl: options.hermesStudioUrl,
+    hermesStudioProfile: options.hermesStudioProfile,
+    hermesStudioProvider: options.hermesStudioProvider,
+    hermesStudioModel: options.hermesStudioModel,
+    startHermesStudio: options.startHermesStudio
   });
 }
 
-function printConnectionSummary(language, options, qrFiles) {
+function printConnectionSummary(language, options, qrFiles, qrError) {
   const endpoint = connectionEndpoint(options.connectHost, options.port);
   console.log('');
   console.log(tr(language, 'appValues'));
@@ -511,12 +569,16 @@ function printConnectionSummary(language, options, qrFiles) {
   console.log('  ' + tr(language, 'provider') + ':    ' + tr(language, 'allProviders'));
   console.log('  ' + tr(language, 'workspace') + ':   ' + tr(language, 'workspaceFromSession'));
   console.log('');
-  console.log(tr(language, 'qrFiles'));
-  console.log('  ' + tr(language, 'qrHtml') + ':  ' + qrFiles.htmlPath);
-  console.log('  PNG:         ' + qrFiles.pngPath);
-  console.log('  SVG:         ' + qrFiles.svgPath);
-  console.log('  Size:        ' + String(qrFiles.imageSize) + 'px, QR version ' + String(qrFiles.version));
-  console.log(tr(language, 'qrSecret'));
+  if (qrFiles) {
+    console.log(tr(language, 'qrFiles'));
+    console.log('  ' + tr(language, 'qrHtml') + ':  ' + qrFiles.htmlPath);
+    console.log('  PNG:         ' + qrFiles.pngPath);
+    console.log('  SVG:         ' + qrFiles.svgPath);
+    console.log('  Size:        ' + String(qrFiles.imageSize) + 'px, QR version ' + String(qrFiles.version));
+    console.log(tr(language, 'qrSecret'));
+  } else {
+    console.warn(tr(language, 'qrUnavailable') + qrError);
+  }
 }
 
 async function maybeStartBridge(rl, language, options, args) {
@@ -601,19 +663,27 @@ async function runWizard() {
     options.language = language;
 
     const endpoint = connectionEndpoint(options.connectHost, options.port);
-    const payload = connectionPayload(endpoint, options.token, options.providerId, options.workspacePath, options.workspaceTitle);
-    const qrFiles = writeQrImageFiles(payload, qrOutputDirectory(), 'agent-bridge-connection', {
-      targetSize: 640,
-      quietZone: 6,
-      title: tr(language, 'qrDisplayTitle'),
-      description: tr(language, 'qrDisplayDesc'),
-      warning: tr(language, 'qrSecret'),
-      fields: [
-        { label: tr(language, 'bridgeUrl'), value: endpoint },
-        { label: tr(language, 'token'), value: options.token }
-      ]
-    });
-    printConnectionSummary(language, options, qrFiles);
+    const savedProfile = loadProfile();
+    const deviceIdentity = savedProfile ? publicDeviceIdentity(savedProfile) : null;
+    const payload = connectionPayload(endpoint, options.token, options.providerId, options.workspacePath, options.workspaceTitle, deviceIdentity);
+    let qrFiles = null;
+    let qrError = '';
+    try {
+      qrFiles = writeQrImageFiles(payload, qrOutputDirectory(), 'agent-bridge-connection', {
+        targetSize: 640,
+        quietZone: 6,
+        title: tr(language, 'qrDisplayTitle'),
+        description: tr(language, 'qrDisplayDesc'),
+        warning: tr(language, 'qrSecret'),
+        fields: [
+          { label: tr(language, 'bridgeUrl'), value: endpoint },
+          { label: tr(language, 'token'), value: options.token }
+        ]
+      });
+    } catch (error) {
+      qrError = error instanceof Error ? error.message : String(error);
+    }
+    printConnectionSummary(language, options, qrFiles, qrError);
 
     await maybeStartBridge(rl, language, options, args);
   } finally {

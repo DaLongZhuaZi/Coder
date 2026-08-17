@@ -36,6 +36,10 @@ class WebSocketConnection {
       }
       if (frame.opcode === 0x1) {
         this.handlers.onMessage(frame.payload.toString('utf8'), this);
+      } else if (frame.opcode === 0x2) {
+        if (this.handlers && typeof this.handlers.onBinary === 'function') {
+          this.handlers.onBinary(frame.payload, this);
+        }
       } else if (frame.opcode === 0x8) {
         this.close();
         return;
@@ -111,6 +115,10 @@ class WebSocketConnection {
 
   sendText(text) {
     this.sendFrame(0x1, Buffer.from(text, 'utf8'));
+  }
+
+  sendBinary(payload) {
+    this.sendFrame(0x2, Buffer.from(payload));
   }
 
   sendPing() {

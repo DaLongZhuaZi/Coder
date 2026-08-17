@@ -51,6 +51,36 @@ const PROVIDERS = Object.freeze([
     canStartServer: false
   },
   {
+    id: 'openclaw',
+    displayName: 'OpenClaw CLI',
+    commandCandidates: ['openclaw'],
+    defaultUrl: '',
+    canStartServer: false
+  },
+  {
+    id: 'openclaw-gateway',
+    displayName: 'OpenClaw Gateway',
+    commandCandidates: ['openclaw'],
+    defaultUrl: 'http://127.0.0.1:18789',
+    healthPaths: ['/v1/models'],
+    canStartServer: true
+  },
+  {
+    id: 'hermes',
+    displayName: 'Hermes CLI',
+    commandCandidates: ['hermes'],
+    defaultUrl: '',
+    canStartServer: false
+  },
+  {
+    id: 'hermes-studio',
+    displayName: 'Hermes Studio',
+    commandCandidates: ['hermes-web-ui'],
+    defaultUrl: 'http://127.0.0.1:8648',
+    healthPaths: ['/api/health', '/health', '/'],
+    canStartServer: true
+  },
+  {
     id: 'mock',
     displayName: 'Mock Provider',
     commandCandidates: [],
@@ -150,30 +180,44 @@ async function firstAvailableCommand(candidates) {
   return '';
 }
 
-function checkHttpHealth(urlText, timeoutMs) {
+function checkHttpHealth(urlText, timeoutMs, paths) {
   return new Promise((resolve) => {
     if (typeof urlText !== 'string' || urlText.length === 0) {
       resolve(false);
       return;
     }
-    let url = null;
-    try {
-      url = new URL('/global/health', urlText);
-    } catch (error) {
-      resolve(false);
-      return;
+    const candidates = Array.isArray(paths) && paths.length > 0 ? paths : ['/global/health'];
+    let index = 0;
+    function attempt() {
+      if (index >= candidates.length) {
+        resolve(false);
+        return;
+      }
+      let url = null;
+      try {
+        url = new URL(candidates[index], urlText);
+      } catch (error) {
+        resolve(false);
+        return;
+      }
+      index += 1;
+      const client = url.protocol === 'https:' ? https : http;
+      const request = client.request(url, { method: 'GET', timeout: timeoutMs }, (response) => {
+        response.resume();
+        if (response.statusCode >= 200 && response.statusCode < 500) {
+          resolve(true);
+          return;
+        }
+        attempt();
+      });
+      request.on('timeout', () => {
+        request.destroy();
+        attempt();
+      });
+      request.on('error', attempt);
+      request.end();
     }
-    const client = url.protocol === 'https:' ? https : http;
-    const request = client.request(url, { method: 'GET', timeout: timeoutMs }, (response) => {
-      response.resume();
-      resolve(response.statusCode >= 200 && response.statusCode < 500);
-    });
-    request.on('timeout', () => {
-      request.destroy();
-      resolve(false);
-    });
-    request.on('error', () => resolve(false));
-    request.end();
+    attempt();
   });
 }
 
@@ -573,20 +617,62 @@ async function scanCliMetadata(providerId, command, options) {
   return metadata;
 }
 
+async function scanOpenClawGatewayMetadata(url, options) {
+  const scanOptions = normalizeScanOptions(options);
+  const metadata = {
+    version: '',
+    modelCount: 0,
+    sessionCount: 0,
+    capabilities: ['responses', 'sse'],
+    detail: ''
+  };
+  const body = await requestJson(url, '/v1/models', scanOptions.healthTimeoutMs);
+  if (body && typeof body === 'object') {
+    const models = readArrayFromValue(body, 0);
+    metadata.modelCount = models.length;
+    metadata.detail = 'Responses API';
+  }
+  return metadata;
+}
+
+async function scanHermesStudioMetadata(url, options) {
+  const scanOptions = normalizeScanOptions(options);
+  const metadata = {
+    version: '',
+    modelCount: 0,
+    sessionCount: 0,
+    capabilities: ['chat-run'],
+    detail: ''
+  };
+  const health = await requestJson(url, '/api/health', scanOptions.healthTimeoutMs);
+  if (health && typeof health === 'object') {
+    metadata.version = typeof health.version === 'string' ? health.version : '';
+    metadata.detail = 'Hermes Studio BFF';
+  }
+  return metadata;
+}
+
 async function scanProvider(provider, overrides, options) {
   const command = await firstAvailableCommand(commandCandidatesFor(provider, overrides));
   const url = providerUrl(provider.id, provider.defaultUrl, overrides);
   const scanOptions = normalizeScanOptions(options);
-  const serverHealthy = await checkHttpHealth(url, scanOptions.healthTimeoutMs);
-  const metadata = provider.id === 'opencode' || provider.id === 'deveco' || provider.id === 'mimo' ?
-    await scanOpenCodeCompatibleMetadata(provider.id, command, url, scanOptions) :
-    (command.length > 0 ? await scanCliMetadata(provider.id, command, scanOptions) : {
+  const serverHealthy = await checkHttpHealth(url, scanOptions.healthTimeoutMs, provider.healthPaths);
+  let metadata = {
       version: '',
       modelCount: 0,
       sessionCount: 0,
       capabilities: [],
       detail: ''
-    });
+    };
+  if (provider.id === 'opencode' || provider.id === 'deveco' || provider.id === 'mimo') {
+    metadata = await scanOpenCodeCompatibleMetadata(provider.id, command, url, scanOptions);
+  } else if (provider.id === 'openclaw-gateway') {
+    metadata = await scanOpenClawGatewayMetadata(url, scanOptions);
+  } else if (provider.id === 'hermes-studio') {
+    metadata = await scanHermesStudioMetadata(url, scanOptions);
+  } else if (command.length > 0) {
+    metadata = await scanCliMetadata(provider.id, command, scanOptions);
+  }
   return {
     id: provider.id,
     displayName: provider.displayName,
@@ -648,6 +734,18 @@ function providerCommand(providerId, overrides) {
   if (providerId === 'antigravity' && typeof overrides.antigravityCommand === 'string') {
     return overrides.antigravityCommand;
   }
+  if (providerId === 'openclaw' && typeof overrides.openClawCommand === 'string') {
+    return overrides.openClawCommand;
+  }
+  if (providerId === 'openclaw-gateway' && typeof overrides.openClawCommand === 'string') {
+    return overrides.openClawCommand;
+  }
+  if (providerId === 'hermes' && typeof overrides.hermesCommand === 'string') {
+    return overrides.hermesCommand;
+  }
+  if (providerId === 'hermes-studio' && typeof overrides.hermesStudioCommand === 'string') {
+    return overrides.hermesStudioCommand;
+  }
   return '';
 }
 
@@ -663,6 +761,12 @@ function providerUrl(providerId, fallbackValue, overrides) {
   }
   if (providerId === 'mimo' && typeof overrides.mimoCodeUrl === 'string' && overrides.mimoCodeUrl.length > 0) {
     return overrides.mimoCodeUrl;
+  }
+  if (providerId === 'openclaw-gateway' && typeof overrides.openClawGatewayUrl === 'string' && overrides.openClawGatewayUrl.length > 0) {
+    return overrides.openClawGatewayUrl;
+  }
+  if (providerId === 'hermes-studio' && typeof overrides.hermesStudioUrl === 'string' && overrides.hermesStudioUrl.length > 0) {
+    return overrides.hermesStudioUrl;
   }
   return fallbackValue;
 }

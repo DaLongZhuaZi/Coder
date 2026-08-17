@@ -15,7 +15,17 @@ const TOTAL_CODEWORDS = [
   196,
   242,
   292,
-  346
+  346,
+  404,
+  466,
+  532,
+  581,
+  655,
+  733,
+  815,
+  901,
+  991,
+  1085
 ];
 
 const ECC_LOW = [
@@ -29,7 +39,17 @@ const ECC_LOW = [
   { blocks: 2, eccCodewords: 20 },
   { blocks: 2, eccCodewords: 24 },
   { blocks: 2, eccCodewords: 30 },
-  { blocks: 4, eccCodewords: 18 }
+  { blocks: 4, eccCodewords: 18 },
+  { blocks: 4, eccCodewords: 20 },
+  { blocks: 4, eccCodewords: 24 },
+  { blocks: 4, eccCodewords: 26 },
+  { blocks: 4, eccCodewords: 30 },
+  { blocks: 6, eccCodewords: 22 },
+  { blocks: 6, eccCodewords: 24 },
+  { blocks: 6, eccCodewords: 28 },
+  { blocks: 6, eccCodewords: 30 },
+  { blocks: 7, eccCodewords: 28 },
+  { blocks: 8, eccCodewords: 28 }
 ];
 
 const ALIGNMENT_PATTERN_POSITIONS = [
@@ -43,7 +63,17 @@ const ALIGNMENT_PATTERN_POSITIONS = [
   [6, 22, 38],
   [6, 24, 42],
   [6, 26, 46],
-  [6, 28, 50]
+  [6, 28, 50],
+  [6, 30, 54],
+  [6, 32, 58],
+  [6, 34, 62],
+  [6, 26, 46, 66],
+  [6, 26, 48, 70],
+  [6, 26, 50, 74],
+  [6, 30, 54, 78],
+  [6, 30, 56, 82],
+  [6, 30, 58, 86],
+  [6, 34, 62, 90]
 ];
 
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -62,14 +92,14 @@ function appendBits(bits, value, length) {
 }
 
 function chooseVersion(byteLength) {
-  for (let version = 1; version <= 10; version++) {
+  for (let version = 1; version < TOTAL_CODEWORDS.length; version++) {
     const countBits = version < 10 ? 8 : 16;
     const requiredBits = 4 + countBits + byteLength * 8;
     if (requiredBits <= dataCodewordCount(version) * 8) {
       return version;
     }
   }
-  throw new Error('QR payload is too long for the built-in terminal encoder.');
+  throw new Error('QR payload is too long for the built-in encoder.');
 }
 
 function encodeDataCodewords(text, version) {

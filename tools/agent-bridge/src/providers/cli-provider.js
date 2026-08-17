@@ -9,6 +9,9 @@ const { EventType, makeEvent } = require('../protocol');
 const { buildPromptWithContext } = require('./context-utils');
 
 const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000;
+const DEFAULT_STDIO_RESPONSE_IDLE_MS = 180;
+const DEFAULT_STDIO_STARTUP_TIMEOUT_MS = 4000;
+const MAX_STDIO_RECENT_OUTPUT_TAIL_BYTES = 8192;
 const MAX_HISTORY_SESSIONS = 500;
 const MAX_HISTORY_LINE_BYTES = 2 * 1024 * 1024;
 const MAX_HISTORY_READ_BYTES = 4 * 1024 * 1024;
@@ -48,6 +51,47 @@ function readBooleanValue(source, key, fallbackValue) {
   return fallbackValue;
 }
 
+function normalizeCliRuntimeMode(value) {
+  const mode = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  return mode === 'stdio' ? 'stdio' : 'oneshot';
+}
+
+function createCliRuntimeError(code, message, details) {
+  const error = new Error(message);
+  error.code = code;
+  if (details && typeof details === 'object' && !Array.isArray(details)) {
+    for (const key of Object.keys(details)) {
+      error[key] = details[key];
+    }
+  }
+  return error;
+}
+
+function patternMatches(patternText, value) {
+  if (typeof patternText !== 'string' || patternText.length === 0) {
+    return false;
+  }
+  const text = typeof value === 'string' ? value : '';
+  if (text.length === 0) {
+    return false;
+  }
+  try {
+    return new RegExp(patternText).test(text);
+  } catch (error) {
+    return text.indexOf(patternText) >= 0;
+  }
+}
+
+function appendRecentOutputTail(existing, text) {
+  const next = (typeof existing === 'string' ? existing : '') + (typeof text === 'string' ? text : '');
+  const bytes = Buffer.byteLength(next, 'utf8');
+  if (bytes <= MAX_STDIO_RECENT_OUTPUT_TAIL_BYTES) {
+    return next;
+  }
+  const buffer = Buffer.from(next, 'utf8');
+  return buffer.subarray(Math.max(0, buffer.length - MAX_STDIO_RECENT_OUTPUT_TAIL_BYTES)).toString('utf8');
+}
+
 function readArrayValue(source, key) {
   if (!source || typeof source !== 'object') {
     return [];
@@ -81,6 +125,22 @@ function readObjectValue(source, key) {
     return value;
   }
   return null;
+}
+
+function normalizeEnvObject(value) {
+  const result = {};
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return result;
+  }
+  for (const key of Object.keys(value)) {
+    const item = value[key];
+    if (typeof item === 'string') {
+      result[key] = item;
+    } else if (typeof item === 'number' || typeof item === 'boolean') {
+      result[key] = String(item);
+    }
+  }
+  return result;
 }
 
 function safeJsonText(value) {
@@ -205,6 +265,33 @@ function terminateChildProcess(child) {
     // Ignore kill failures; the process may already be gone.
   }
   return requested;
+}
+
+function waitForChildProcessExit(child, timeoutMs) {
+  return new Promise((resolve) => {
+    if (!child || child.exitCode !== null || child.signalCode !== null) {
+      resolve(true);
+      return;
+    }
+    let settled = false;
+    let timer = null;
+    const finish = (value) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (timer !== null) {
+        clearTimeout(timer);
+      }
+      child.removeListener('exit', onExit);
+      child.removeListener('close', onExit);
+      resolve(value);
+    };
+    const onExit = () => finish(true);
+    timer = setTimeout(() => finish(false), timeoutMs);
+    child.once('exit', onExit);
+    child.once('close', onExit);
+  });
 }
 
 function commandExists(command) {
@@ -1669,7 +1756,10 @@ function buildConfiguredModelOption(providerId, displayName) {
     displayName: typeof displayName === 'string' && displayName.length > 0 ? displayName : 'Configured Model',
     vendor: providerId,
     isDefault: true,
-    contextWindow: 0
+    contextWindow: 0,
+    source: 'fallback',
+    available: true,
+    warning: ''
   };
 }
 
@@ -1685,11 +1775,64 @@ function buildConfiguredModels(providerId, modelNames, configuredDisplayName) {
       id: item.id,
       displayName: typeof item.displayName === 'string' && item.displayName.length > 0 ? item.displayName : item.id,
       vendor: typeof item.vendor === 'string' && item.vendor.length > 0 ? item.vendor : providerId,
-      isDefault: false,
-      contextWindow: readNumberValue(item, 'contextWindow', 0)
+      isDefault: item.isDefault === true,
+      contextWindow: readNumberValue(item, 'contextWindow', 0),
+      source: typeof item.source === 'string' && item.source.length > 0 ? item.source : 'profile',
+      available: item.available === false ? false : true,
+      warning: typeof item.warning === 'string' ? item.warning : ''
     });
   }
   return models;
+}
+
+function optionArrayHasExplicitItems(items) {
+  return Array.isArray(items) && items.length > 0;
+}
+
+function withOptionSource(items, source, fallbackWarning) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+  const result = [];
+  for (const item of items) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      continue;
+    }
+    const next = Object.assign({}, item);
+    if (typeof next.source !== 'string' || next.source.length === 0) {
+      next.source = source;
+    }
+    if (typeof next.available !== 'boolean') {
+      next.available = true;
+    }
+    if ((typeof next.warning !== 'string' || next.warning.length === 0) && fallbackWarning.length > 0) {
+      next.warning = fallbackWarning;
+    }
+    result.push(next);
+  }
+  return result;
+}
+
+function withForcedOptionSource(items, source, fallbackWarning) {
+  if (!Array.isArray(items)) {
+    return [];
+  }
+  const result = [];
+  for (const item of items) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      continue;
+    }
+    const next = Object.assign({}, item);
+    next.source = source;
+    if (typeof next.available !== 'boolean') {
+      next.available = true;
+    }
+    if ((typeof next.warning !== 'string' || next.warning.length === 0) && fallbackWarning.length > 0) {
+      next.warning = fallbackWarning;
+    }
+    result.push(next);
+  }
+  return result;
 }
 
 function buildDefaultSpeedModes() {
@@ -1981,9 +2124,14 @@ class CliProvider {
     this.description = readStringValue(config, 'description', 'Runs a local coding-agent CLI non-interactively.');
     this.command = readStringValue(config, 'command', this.id);
     this.commandArgs = Array.isArray(config && config.commandArgs) ? config.commandArgs : [];
+    this.defaultWorkspacePath = readStringValue(config, 'defaultWorkspacePath', readStringValue(config, 'cwd', ''));
+    this.env = normalizeEnvObject(config && config.env);
     this.promptMode = readStringValue(config, 'promptMode', 'stdin');
     this.modelFlag = readStringValue(config, 'modelFlag', '--model');
     this.cwdFlag = readStringValue(config, 'cwdFlag', '');
+    this.usageEndpoint = readStringValue(config, 'usageEndpoint', '');
+    this.usageEndpointEnv = readStringValue(config, 'usageEndpointEnv', '');
+    this.usageEndpointTokenEnv = readStringValue(config, 'usageEndpointTokenEnv', '');
     this.jsonMode = readStringValue(config, 'jsonMode', 'none');
     this.planArgs = splitArgs(readStringValue(config, 'planArgs', ''));
     this.goalArgs = splitArgs(readStringValue(config, 'goalArgs', ''));
@@ -1992,9 +2140,23 @@ class CliProvider {
     this.supportsPlanMode = config && config.supportsPlanMode === true;
     this.supportsGoalMode = config && config.supportsGoalMode === true;
     this.supportsPermissions = config && config.supportsPermissions === true;
+    this.runtimeMode = normalizeCliRuntimeMode(readStringValue(config, 'runtimeMode', 'oneshot'));
+    this.supportsInteractiveSessions = this.runtimeMode === 'stdio';
+    this.stdioPromptSuffix = readStringValue(config, 'stdioPromptSuffix', '\n');
+    this.stdioResponseIdleMs = readNumberValue(config, 'stdioResponseIdleMs', DEFAULT_STDIO_RESPONSE_IDLE_MS);
+    this.stdioStartupTimeoutMs = readNumberValue(config, 'stdioStartupTimeoutMs', DEFAULT_STDIO_STARTUP_TIMEOUT_MS);
+    this.stdioReadyPattern = readStringValue(config, 'stdioReadyPattern', '');
+    this.stdioPromptPattern = readStringValue(config, 'stdioPromptPattern', '');
+    this.stdioExitPattern = readStringValue(config, 'stdioExitPattern', '');
     this.timeoutMs = readNumberValue(config, 'timeoutMs', DEFAULT_TIMEOUT_MS);
-    this.models = buildConfiguredModels(this.id, Array.isArray(config && config.models) ? config.models : []);
-    this.tools = Array.isArray(config && config.tools) ? config.tools : [];
+    this.declaredModels = Array.isArray(config && config.models) ? config.models : [];
+    this.declaredTools = Array.isArray(config && config.tools) ? config.tools : [];
+    this.declaredSpeedModes = Array.isArray(config && config.speedModes) ? config.speedModes : [];
+    this.declaredReasoningModes = Array.isArray(config && config.reasoningModes) ? config.reasoningModes : [];
+    this.declaredInteractionModes = Array.isArray(config && config.interactionModes) ? config.interactionModes : [];
+    this.capabilitySource = readStringValue(config, 'capabilitySource', 'fallback');
+    this.models = buildConfiguredModels(this.id, this.declaredModels);
+    this.tools = withOptionSource(this.declaredTools, this.capabilitySource === 'profile' ? 'profile' : 'fallback', '');
     this.sessions = new Map();
     this.messages = new Map();
     this.sessionHistoryFiles = new Map();
@@ -2002,6 +2164,78 @@ class CliProvider {
     this.pendingPermissionRuns = new Map();
     this.pendingRequestRuns = new Map();
     this.activeRuns = new Map();
+    this.stdioSessions = new Map();
+  }
+
+  runtimeStatusForSession(sessionId) {
+    if (this.runtimeMode !== 'stdio') {
+      return {
+        runtimeMode: this.runtimeMode,
+        interactiveReady: false,
+        sessionState: 'oneshot',
+        exitCode: null,
+        lastError: '',
+        pid: 0,
+        startedAt: 0,
+        lastActivityAt: 0,
+        recentOutputTail: ''
+      };
+    }
+    const state = this.stdioSessions.get(sessionId);
+    if (!state) {
+      return {
+        runtimeMode: this.runtimeMode,
+        interactiveReady: this.supportsInteractiveSessions,
+        sessionState: 'idle',
+        exitCode: null,
+        lastError: '',
+        pid: 0,
+        startedAt: 0,
+        lastActivityAt: 0,
+        recentOutputTail: ''
+      };
+    }
+    if (state.exited) {
+      return {
+        runtimeMode: this.runtimeMode,
+        interactiveReady: false,
+        sessionState: state.sessionState || (state.aborted ? 'aborted' : 'exited'),
+        exitCode: state.exitCode,
+        lastError: state.lastError || (state.exitError ? String(state.exitError.message || state.exitError) : ''),
+        pid: state.pid || 0,
+        startedAt: state.startedAt || 0,
+        lastActivityAt: state.lastActivityAt || 0,
+        recentOutputTail: state.recentOutputTail || ''
+      };
+    }
+    return {
+      runtimeMode: this.runtimeMode,
+      interactiveReady: state.ready === true && state.exited !== true && state.sessionState !== 'failed' && state.sessionState !== 'aborted',
+      sessionState: state.sessionState || (state.current ? 'busy' : 'idle'),
+      exitCode: null,
+      lastError: state.lastError || '',
+      pid: state.pid || 0,
+      startedAt: state.startedAt || 0,
+      lastActivityAt: state.lastActivityAt || 0,
+      recentOutputTail: state.recentOutputTail || ''
+    };
+  }
+
+  applyRuntimeStatus(session) {
+    if (!session || typeof session !== 'object') {
+      return session;
+    }
+    const status = this.runtimeStatusForSession(session.sessionId || '');
+    session.runtimeMode = status.runtimeMode;
+    session.interactiveReady = status.interactiveReady;
+    session.sessionState = status.sessionState;
+    session.exitCode = status.exitCode;
+    session.lastError = status.lastError;
+    session.pid = status.pid;
+    session.startedAt = status.startedAt;
+    session.lastActivityAt = status.lastActivityAt;
+    session.recentOutputTail = status.recentOutputTail;
+    return session;
   }
 
   permissionRunKey(sessionId, requestId) {
@@ -2244,6 +2478,382 @@ class CliProvider {
     return count;
   }
 
+  buildStdioArgs(session, interactionMode) {
+    const args = [];
+    for (const arg of this.commandArgs) {
+      if (typeof arg === 'string' && arg.length > 0) {
+        args.push(arg);
+      }
+    }
+    if (this.cwdFlag.length > 0 && session.workspacePath.length > 0) {
+      args.push(this.cwdFlag);
+      args.push(session.workspacePath);
+    }
+    if (this.modelFlag.length > 0 && session.modelId.length > 0 && session.modelId !== 'configured') {
+      args.push(this.modelFlag);
+      args.push(session.modelId);
+    }
+    this.appendRuntimeModeArgs(args, session, {});
+    const modeArgs = interactionMode === 'plan' ? this.planArgs : this.goalArgs;
+    for (const arg of modeArgs) {
+      if (typeof arg === 'string' && arg.length > 0) {
+        args.push(arg);
+      }
+    }
+    return args;
+  }
+
+  ensureStdioSession(session, interactionMode, emit) {
+    const existing = this.stdioSessions.get(session.sessionId);
+    if (existing && existing.child) {
+      return existing;
+    }
+    const args = this.buildStdioArgs(session, interactionMode);
+    const child = spawn(this.command, args, {
+      cwd: session.workspacePath.length > 0 ? session.workspacePath : process.cwd(),
+      env: Object.assign({}, process.env, this.env),
+      shell: process.platform === 'win32' && !path.isAbsolute(this.command),
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+    const state = {
+      sessionId: session.sessionId,
+      child,
+      queue: Promise.resolve(),
+      current: null,
+      exited: false,
+      exitCode: null,
+      exitError: null,
+      lastError: '',
+      aborted: false,
+      sessionState: 'starting',
+      session,
+      pid: child.pid || 0,
+      startedAt: Date.now(),
+      lastActivityAt: Date.now(),
+      recentOutputTail: '',
+      ready: false,
+      readyTimer: null,
+      readyResolve: null,
+      readyReject: null,
+      readyPromise: null
+    };
+    state.readyPromise = new Promise((resolve, reject) => {
+      state.readyResolve = resolve;
+      state.readyReject = reject;
+    });
+    state.readyPromise.catch(() => {});
+    this.stdioSessions.set(session.sessionId, state);
+    this.activeRuns.set(session.sessionId, {
+      sessionId: session.sessionId,
+      child,
+      aborted: false,
+      abortReason: '',
+      runtimeMode: 'stdio'
+    });
+    child.stdout.on('data', (chunk) => {
+      this.handleStdioOutput(session, state, chunk, emit, false);
+    });
+    child.stderr.on('data', (chunk) => {
+      this.handleStdioOutput(session, state, chunk, emit, true);
+    });
+    child.on('error', (error) => {
+      state.exitError = createCliRuntimeError('STDIO_START_FAILED', error && error.message ? error.message : String(error), {
+        runtimeMode: 'stdio',
+        sessionState: 'failed',
+        exitCode: state.exitCode
+      });
+      state.exited = true;
+      state.sessionState = 'failed';
+      state.lastActivityAt = Date.now();
+      state.lastError = state.exitError.message;
+      this.applyRuntimeStatus(session);
+      this.rejectStdioReady(state, state.exitError);
+      this.finishStdioCurrent(state, state.exitError, true);
+    });
+    child.on('exit', (code) => {
+      state.exited = true;
+      state.exitCode = typeof code === 'number' ? code : 0;
+      state.lastActivityAt = Date.now();
+      if (state.aborted) {
+        state.sessionState = 'aborted';
+      } else if (state.exitCode === 0) {
+        state.sessionState = 'exited';
+      } else {
+        state.sessionState = 'failed';
+      }
+      if (state.exitCode !== 0 && state.lastError.length === 0) {
+        state.lastError = this.displayName + ' stdio session exited with code ' + String(state.exitCode);
+      }
+      if (this.activeRuns.get(session.sessionId) && this.activeRuns.get(session.sessionId).runtimeMode === 'stdio') {
+        this.activeRuns.delete(session.sessionId);
+      }
+      if (state.current) {
+        if (state.aborted) {
+          this.finishStdioCurrent(state, null, false);
+        } else if (state.exitError) {
+          this.finishStdioCurrent(state, state.exitError, true);
+        } else if (state.exitCode !== 0) {
+          state.lastError = this.displayName + ' stdio session exited with code ' + String(state.exitCode);
+          state.exitError = createCliRuntimeError('SESSION_EXITED', state.lastError, {
+            runtimeMode: 'stdio',
+            sessionState: state.sessionState,
+            exitCode: state.exitCode,
+            pid: state.pid || 0
+          });
+          this.finishStdioCurrent(state, state.exitError, true);
+        } else {
+          this.finishStdioCurrent(state, null, false);
+        }
+      }
+      if (!state.ready && state.sessionState !== 'aborted') {
+        this.rejectStdioReady(state, createCliRuntimeError('SESSION_EXITED', state.lastError || (this.displayName + ' stdio session exited.'), {
+          runtimeMode: 'stdio',
+          sessionState: state.sessionState,
+          exitCode: state.exitCode
+        }));
+      }
+      this.applyRuntimeStatus(session);
+    });
+    if (this.stdioReadyPattern.length > 0) {
+      state.readyTimer = setTimeout(() => {
+        const error = createCliRuntimeError('STARTUP_TIMEOUT', this.displayName + ' stdio startup timed out after ' + String(this.stdioStartupTimeoutMs) + 'ms', {
+          runtimeMode: 'stdio',
+          sessionState: 'failed',
+          exitCode: state.exitCode
+        });
+        state.sessionState = 'failed';
+        state.exitError = error;
+        state.lastError = error.message;
+        state.lastActivityAt = Date.now();
+        this.rejectStdioReady(state, error);
+        terminateChildProcess(child);
+        this.applyRuntimeStatus(session);
+      }, this.stdioStartupTimeoutMs);
+    } else {
+      this.markStdioReady(state);
+    }
+    if (typeof emit === 'function') {
+      emit(makeEvent(EventType.TOOL_OUTPUT, session.sessionId, {
+        toolCallId: this.id + '_cli',
+        name: this.id + '.cli',
+        text: this.displayName + ' stdio runtime started.\n'
+      }));
+    }
+    return state;
+  }
+
+  markStdioReady(state) {
+    if (!state || state.ready || state.exited) {
+      return;
+    }
+    state.ready = true;
+    state.sessionState = 'idle';
+    state.lastActivityAt = Date.now();
+    if (state.readyTimer !== null) {
+      clearTimeout(state.readyTimer);
+      state.readyTimer = null;
+    }
+    if (typeof state.readyResolve === 'function') {
+      state.readyResolve(state);
+    }
+    if (state.session) {
+      this.applyRuntimeStatus(state.session);
+    }
+  }
+
+  rejectStdioReady(state, error) {
+    if (!state || state.ready) {
+      return;
+    }
+    state.ready = true;
+    if (!state.exitError && error) {
+      state.exitError = error;
+    }
+    if (state.readyTimer !== null) {
+      clearTimeout(state.readyTimer);
+      state.readyTimer = null;
+    }
+    if (typeof state.readyReject === 'function') {
+      state.readyReject(error);
+    }
+  }
+
+  handleStdioOutput(session, state, chunk, emit, isStderr) {
+    const text = Buffer.from(chunk).toString('utf8');
+    if (text.length === 0) {
+      return;
+    }
+    state.lastActivityAt = Date.now();
+    state.recentOutputTail = appendRecentOutputTail(state.recentOutputTail, text);
+    if (state.sessionState === 'starting' && this.stdioReadyPattern.length > 0 && patternMatches(this.stdioReadyPattern, state.recentOutputTail)) {
+      this.markStdioReady(state);
+    }
+    if (this.stdioExitPattern.length > 0 && patternMatches(this.stdioExitPattern, text)) {
+      state.lastError = text.trim();
+    }
+    const current = state.current;
+    if (!current || current.settled) {
+      return;
+    }
+    if (isStderr) {
+      current.stderr = current.stderr + text;
+      emit(makeEvent(EventType.TOOL_OUTPUT, session.sessionId, {
+        toolCallId: this.id + '_cli',
+        name: this.id + '.cli',
+        text
+      }));
+    } else {
+      current.stdout = current.stdout + text;
+      emit(makeEvent(EventType.MESSAGE_DELTA, session.sessionId, {
+        role: 'assistant',
+        text,
+        contentKind: 'text'
+      }));
+    }
+    state.sessionState = 'busy';
+    this.applyRuntimeStatus(session);
+    this.armStdioIdleTimer(state);
+  }
+
+  armStdioIdleTimer(state) {
+    const current = state.current;
+    if (!current || current.settled) {
+      return;
+    }
+    if (current.idleTimer !== null) {
+      clearTimeout(current.idleTimer);
+    }
+    current.idleTimer = setTimeout(() => {
+      this.finishStdioCurrent(state, null, false);
+    }, this.stdioResponseIdleMs);
+  }
+
+  finishStdioCurrent(state, error, rejectOutput) {
+    const current = state.current;
+    if (!current || current.settled) {
+      return;
+    }
+    current.settled = true;
+    if (current.timeoutTimer !== null) {
+      clearTimeout(current.timeoutTimer);
+    }
+    if (current.idleTimer !== null) {
+      clearTimeout(current.idleTimer);
+    }
+    state.current = null;
+    if (!state.exited && !state.aborted) {
+      state.sessionState = 'idle';
+      state.lastActivityAt = Date.now();
+      if (state.session) {
+        this.applyRuntimeStatus(state.session);
+      }
+    }
+    if (rejectOutput && error) {
+      state.lastError = error && error.message ? error.message : String(error);
+      current.reject(error);
+      return;
+    }
+    current.resolve({
+      text: current.stdout,
+      stderr: current.stderr,
+      toolStatus: state.aborted ? 'cancelled' : 'completed',
+      skipAssistantCompletion: state.aborted
+    });
+  }
+
+  enqueueStdioRun(session, promptText, interactionMode, emit) {
+    const state = this.ensureStdioSession(session, interactionMode, emit);
+    state.queue = state.queue.catch(() => {}).then(() => {
+      return this.writeStdioPrompt(session, state, promptText, interactionMode);
+    });
+    return state.queue;
+  }
+
+  writeStdioPrompt(session, state, promptText, interactionMode) {
+    return state.readyPromise.then(() => new Promise((resolve, reject) => {
+      if (!state.child || state.exited) {
+        reject(state.exitError || createCliRuntimeError('SESSION_EXITED', this.displayName + ' stdio session is not running.', {
+          runtimeMode: 'stdio',
+          sessionState: state.sessionState || 'exited',
+          exitCode: state.exitCode
+        }));
+        return;
+      }
+      const effectivePrompt = this.buildPromptText(promptText, interactionMode);
+      const current = {
+        stdout: '',
+        stderr: '',
+        resolve,
+        reject,
+        idleTimer: null,
+        timeoutTimer: null,
+        settled: false
+      };
+      state.current = current;
+      state.sessionState = 'busy';
+      state.lastActivityAt = Date.now();
+      this.applyRuntimeStatus(session);
+      current.timeoutTimer = setTimeout(() => {
+        const error = createCliRuntimeError('STDIO_RESPONSE_TIMEOUT', this.displayName + ' stdio response timed out after ' + String(this.timeoutMs) + 'ms', {
+          runtimeMode: 'stdio',
+          sessionState: 'busy',
+          exitCode: state.exitCode
+        });
+        this.finishStdioCurrent(state, error, true);
+      }, this.timeoutMs);
+      try {
+        state.child.stdin.write(effectivePrompt + this.stdioPromptSuffix);
+      } catch (error) {
+        this.finishStdioCurrent(state, error, true);
+      }
+    }));
+  }
+
+  runStdioCli(session, promptText, interactionMode, emit) {
+    return this.enqueueStdioRun(session, promptText, interactionMode, emit);
+  }
+
+  async startInteractiveSession(sessionId, emit) {
+    const session = this.getSession(sessionId);
+    if (!session) {
+      throw createCliRuntimeError('SESSION_NOT_FOUND', 'Session not found: ' + sessionId, {
+        runtimeMode: this.runtimeMode,
+        sessionState: 'missing'
+      });
+    }
+    if (this.runtimeMode !== 'stdio') {
+      this.applyRuntimeStatus(session);
+      return this.runtimeStatusForSession(sessionId);
+    }
+    const state = this.ensureStdioSession(session, session.interactionMode || 'goal', emit);
+    await state.readyPromise;
+    this.applyRuntimeStatus(session);
+    return this.runtimeStatusForSession(sessionId);
+  }
+
+  sessionRuntimeDiagnostics(sessionId) {
+    const session = this.getSession(sessionId);
+    if (!session) {
+      return null;
+    }
+    this.applyRuntimeStatus(session);
+    const status = this.runtimeStatusForSession(session.sessionId);
+    return {
+      providerId: this.id,
+      sessionId: session.sessionId,
+      remoteSessionId: session.remoteSessionId || '',
+      runtimeMode: status.runtimeMode,
+      interactiveReady: status.interactiveReady,
+      sessionState: status.sessionState,
+      pid: status.pid || 0,
+      startedAt: status.startedAt || 0,
+      lastActivityAt: status.lastActivityAt || 0,
+      exitCode: status.exitCode,
+      lastError: status.lastError || '',
+      recentOutputTail: status.recentOutputTail || ''
+    };
+  }
+
   async abortSession(payload, emit) {
     const sessionId = readStringValue(payload, 'sessionId', '');
     const remoteSessionId = readStringValue(payload, 'remoteSessionId', '');
@@ -2253,9 +2863,27 @@ class CliProvider {
     }
     const session = this.getSession(effectiveSessionId);
     const runState = this.activeRuns.get(effectiveSessionId);
+    const stdioState = this.stdioSessions.get(effectiveSessionId);
     const pendingCount = this.abortPendingInteractionRuns(effectiveSessionId, emit);
     let terminated = false;
-    if (runState) {
+    let abortRuntimeStatus = null;
+    if (stdioState) {
+      stdioState.aborted = true;
+      stdioState.lastError = 'Session aborted.';
+      try {
+        if (stdioState.child && stdioState.child.stdin) {
+          stdioState.child.stdin.end();
+        }
+      } catch (_error) {
+        // Termination below still handles stubborn stdio children.
+      }
+      terminated = terminateChildProcess(stdioState.child);
+      this.finishStdioCurrent(stdioState, null, false);
+      await waitForChildProcessExit(stdioState.child, 1500);
+      abortRuntimeStatus = this.runtimeStatusForSession(effectiveSessionId);
+      this.stdioSessions.delete(effectiveSessionId);
+      this.activeRuns.delete(effectiveSessionId);
+    } else if (runState) {
       runState.aborted = true;
       runState.abortReason = 'user';
       terminated = terminateChildProcess(runState.child);
@@ -2263,18 +2891,58 @@ class CliProvider {
     if (session) {
       session.status = 'ready';
       session.updatedAt = Date.now();
+      if (abortRuntimeStatus) {
+        session.runtimeMode = abortRuntimeStatus.runtimeMode;
+        session.interactiveReady = abortRuntimeStatus.interactiveReady;
+        session.sessionState = abortRuntimeStatus.sessionState;
+        session.exitCode = abortRuntimeStatus.exitCode;
+        session.lastError = abortRuntimeStatus.lastError;
+      } else {
+        this.applyRuntimeStatus(session);
+      }
       if (typeof emit === 'function') {
         emit(makeEvent(EventType.SESSION_UPDATED, effectiveSessionId, { session }));
       }
     }
+    const runtimeStatus = abortRuntimeStatus || this.runtimeStatusForSession(effectiveSessionId);
     return {
-      status: runState || pendingCount > 0 ? 'aborted' : 'idle',
+      status: runState || stdioState || pendingCount > 0 ? 'aborted' : 'idle',
       providerId: this.id,
       sessionId: effectiveSessionId,
       remoteSessionId,
       terminated,
-      pendingCount
+      pendingCount,
+      runtimeMode: runtimeStatus.runtimeMode,
+      interactiveReady: runtimeStatus.interactiveReady,
+      sessionState: runtimeStatus.sessionState,
+      exitCode: runtimeStatus.exitCode,
+      lastError: runtimeStatus.lastError
     };
+  }
+
+  async shutdown(reason) {
+    const results = [];
+    for (const [sessionId, state] of this.stdioSessions.entries()) {
+      try {
+        if (state.child) {
+          terminateChildProcess(state.child);
+        }
+        results.push({ sessionId, status: 'terminated' });
+      } catch (error) {
+        results.push({ sessionId, status: 'failed', reason: error instanceof Error ? error.message : String(error) });
+      }
+    }
+    for (const [sessionId, runState] of this.activeRuns.entries()) {
+      if (runState && runState.child) {
+        terminateChildProcess(runState.child);
+      }
+      if (!this.stdioSessions.has(sessionId)) {
+        results.push({ sessionId, status: 'terminated' });
+      }
+    }
+    this.stdioSessions.clear();
+    this.activeRuns.clear();
+    return { status: 'completed', reason: reason || '', results };
   }
 
   buildPromptWithRequestResponse(promptText, pending, response) {
@@ -2307,6 +2975,7 @@ class CliProvider {
       list: true,
       import: true,
       resume: false,
+      attach: this.supportsInteractiveSessions,
       messages: true,
       update: false,
       delete: false,
@@ -2314,6 +2983,7 @@ class CliProvider {
       fork: false,
       share: false,
       revert: false,
+      interactive: this.supportsInteractiveSessions,
       todo: false,
       diff: false,
       command: true,
@@ -2323,18 +2993,40 @@ class CliProvider {
 
   async describe() {
     const available = await commandExists(this.command);
+    const declaredProfileCapabilities = this.capabilitySource === 'profile' && (
+      optionArrayHasExplicitItems(this.declaredModels) ||
+      optionArrayHasExplicitItems(this.declaredTools) ||
+      optionArrayHasExplicitItems(this.declaredSpeedModes) ||
+      optionArrayHasExplicitItems(this.declaredReasoningModes) ||
+      optionArrayHasExplicitItems(this.declaredInteractionModes)
+    );
+    const capabilitySource = declaredProfileCapabilities ? 'profile' : 'fallback';
+    const discoveryWarnings = [];
+    if (!available) {
+      discoveryWarnings.push(this.command + ' is not on PATH; using declared or fallback capability metadata.');
+    } else if (!declaredProfileCapabilities) {
+      discoveryWarnings.push(this.displayName + ' does not expose a reliable runtime discovery endpoint; using fallback capability metadata.');
+    }
+    const fallbackWarning = capabilitySource === 'fallback' ? 'Fallback metadata; runtime discovery is not available for this CLI provider.' : '';
     return {
       id: this.id,
       displayName: this.displayName,
       status: available ? 'available' : 'unavailable',
       description: this.description,
       endpoint: this.command,
+      runtimeMode: this.runtimeMode,
+      capabilitySource,
+      capabilityStatus: discoveryWarnings.length > 0 ? 'degraded' : 'ready',
+      lastDiscoveredAt: Date.now(),
+      discoveryWarnings,
+      discoveryErrors: [],
       capabilities: {
         streaming: this.jsonMode !== 'none',
         tools: this.tools.length > 0,
         previews: false,
         permissions: this.supportsPermissions,
         history: true,
+        interactiveSessions: this.supportsInteractiveSessions,
         modelSelection: this.modelFlag.length > 0,
         speedProfiles: false,
         workspaceAware: this.cwdFlag.length > 0,
@@ -2344,12 +3036,28 @@ class CliProvider {
         plans: this.supportsPlanMode,
         health: available ? this.command + ' is available' : this.command + ' is not on PATH'
       },
-      models: this.models,
-      speedModes: buildDefaultSpeedModes(),
-      reasoningModes: buildDefaultReasoningModes(),
-      tools: this.tools,
+      interactiveReady: this.supportsInteractiveSessions && available,
+      sessionState: this.runtimeMode === 'stdio' ? 'idle' : 'oneshot',
+      exitCode: null,
+      lastError: '',
+      models: withOptionSource(this.models, capabilitySource, fallbackWarning),
+      speedModes: withOptionSource(
+        this.declaredSpeedModes.length > 0 ? this.declaredSpeedModes : buildDefaultSpeedModes(),
+        this.declaredSpeedModes.length > 0 && capabilitySource === 'profile' ? 'profile' : 'fallback',
+        fallbackWarning
+      ),
+      reasoningModes: withOptionSource(
+        this.declaredReasoningModes.length > 0 ? this.declaredReasoningModes : buildDefaultReasoningModes(),
+        this.declaredReasoningModes.length > 0 && capabilitySource === 'profile' ? 'profile' : 'fallback',
+        fallbackWarning
+      ),
+      tools: withOptionSource(this.tools, capabilitySource, fallbackWarning),
       sessionFeatures: this.buildSessionFeatures(),
-      interactionModes: this.buildInteractionModes()
+      interactionModes: withOptionSource(
+        this.declaredInteractionModes.length > 0 ? this.declaredInteractionModes : this.buildInteractionModes(),
+        this.declaredInteractionModes.length > 0 && capabilitySource === 'profile' ? 'profile' : 'fallback',
+        fallbackWarning
+      )
     };
   }
 
@@ -2401,7 +3109,9 @@ class CliProvider {
     const sessionId = this.id === 'claude' ? createUuidSessionId(this.id) : createSessionId(this.id);
     const remoteSessionId = this.id === 'claude' ? remoteSessionIdFromLocalSessionId(this.id, sessionId) : sessionId;
     const requestedWorkspacePath = readStringValue(payload, 'workspacePath', '');
-    const workspacePath = requestedWorkspacePath.length > 0 ? requestedWorkspacePath : process.cwd();
+    const workspacePath = requestedWorkspacePath.length > 0
+      ? requestedWorkspacePath
+      : (this.defaultWorkspacePath.length > 0 ? this.defaultWorkspacePath : process.cwd());
     const requestedWorkspaceTitle = readStringValue(payload, 'workspaceTitle', '');
     const workspaceTitle = requestedWorkspaceTitle.length > 0 ? requestedWorkspaceTitle : path.basename(workspacePath);
     const modelId = readStringValue(payload, 'modelId', 'configured');
@@ -2423,12 +3133,21 @@ class CliProvider {
       messageCount: 0,
       status: 'ready',
       source: this.id,
+      runtimeMode: this.runtimeMode,
+      interactiveReady: this.supportsInteractiveSessions,
+      sessionState: this.runtimeMode === 'stdio' ? 'idle' : 'oneshot',
+      exitCode: null,
+      lastError: '',
+      pid: 0,
+      startedAt: 0,
+      lastActivityAt: 0,
+      recentOutputTail: '',
       createdAt: now,
       updatedAt: now
     };
     this.sessions.set(sessionId, session);
     this.messages.set(sessionId, []);
-    return session;
+    return this.applyRuntimeStatus(session);
   }
 
   getSession(sessionId) {
@@ -3137,7 +3856,7 @@ class CliProvider {
       merged.set(session.sessionId, session);
     }
     this.collectPersistentSessions(merged);
-    const sessions = Array.from(merged.values());
+    const sessions = Array.from(merged.values()).map((session) => this.applyRuntimeStatus(session));
     sessions.sort((left, right) => right.updatedAt - left.updatedAt);
     return sessions;
   }
@@ -3218,7 +3937,39 @@ class CliProvider {
     }));
 
     const promptText = buildPromptWithContext(text, payload, session);
-    const output = await this.runCli(session, promptText, interactionMode, emit);
+    let output;
+    try {
+      output = this.runtimeMode === 'stdio'
+        ? await this.runStdioCli(session, promptText, interactionMode, emit)
+        : await this.runCli(session, promptText, interactionMode, emit);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const code = error && typeof error.code === 'string' && error.code.length > 0 ? error.code : 'cli_runtime_failed';
+      session.status = 'ready';
+      session.updatedAt = Date.now();
+      this.applyRuntimeStatus(session);
+      session.lastError = message;
+      this.messages.set(sessionId, history);
+      emit(makeEvent(EventType.TOOL_COMPLETED, sessionId, {
+        toolCallId: this.id + '_cli',
+        status: 'failed',
+        error: {
+          code,
+          message,
+          runtimeMode: this.runtimeMode,
+          sessionState: session.sessionState,
+          exitCode: session.exitCode
+        }
+      }));
+      emit(makeEvent(EventType.SESSION_UPDATED, sessionId, { session }));
+      const wrapped = new Error(message);
+      wrapped.code = code;
+      wrapped.runtimeMode = this.runtimeMode;
+      wrapped.sessionState = session.sessionState;
+      wrapped.exitCode = session.exitCode;
+      wrapped.pid = session.pid || 0;
+      throw wrapped;
+    }
     this.ensureClaudeResumeScaffold(session, text);
     const assistantText = cliRunText(output).trim();
     const skipAssistantCompletion = cliRunSkipsAssistantCompletion(output);
@@ -3268,6 +4019,8 @@ class CliProvider {
     this.messages.set(sessionId, history);
     session.status = 'ready';
     session.updatedAt = Date.now();
+    session.lastError = '';
+    this.applyRuntimeStatus(session);
     emit(makeEvent(EventType.TOOL_COMPLETED, sessionId, {
       toolCallId: this.id + '_cli',
       status: toolStatus
@@ -3484,6 +4237,7 @@ class CliProvider {
       const args = this.buildArgs(session, effectivePrompt, interactionMode, runtimeOptions);
       const child = spawn(this.command, args, {
         cwd: session.workspacePath.length > 0 ? session.workspacePath : process.cwd(),
+        env: Object.assign({}, process.env, this.env),
         shell: process.platform === 'win32',
         stdio: ['pipe', 'pipe', 'pipe']
       });
@@ -4020,12 +4774,19 @@ class CodexCliProvider extends CliProvider {
       status: available ? 'available' : 'unavailable',
       description: this.description,
       endpoint: this.command,
+      runtimeMode: 'oneshot',
+      capabilitySource: discovery.capabilitySource,
+      capabilityStatus: discovery.capabilityStatus,
+      lastDiscoveredAt: discovery.lastDiscoveredAt,
+      discoveryWarnings: discovery.discoveryWarnings,
+      discoveryErrors: discovery.discoveryErrors,
       capabilities: {
         streaming: this.jsonMode !== 'none',
         tools: true,
         previews: false,
         permissions: false,
         history: true,
+        interactiveSessions: false,
         modelSelection: discovery.supportsModelSelection,
         speedProfiles: false,
         workspaceAware: discovery.supportsWorkspace,
@@ -4048,11 +4809,11 @@ class CodexCliProvider extends CliProvider {
         health: healthParts.join(' · ')
       },
       models: discovery.models,
-      speedModes: buildCodexSpeedModes(),
-      reasoningModes: discovery.reasoningModes.length > 0 ? discovery.reasoningModes : buildCodexReasoningModes(),
+      speedModes: withForcedOptionSource(buildCodexSpeedModes(), 'fallback', discovery.fallbackWarning),
+      reasoningModes: discovery.reasoningModes.length > 0 ? discovery.reasoningModes : withForcedOptionSource(buildCodexReasoningModes(), 'fallback', discovery.fallbackWarning),
       tools: discovery.tools,
       sessionFeatures: this.buildSessionFeatures(),
-      interactionModes: this.buildInteractionModes()
+      interactionModes: withForcedOptionSource(this.buildInteractionModes(), discovery.capabilitySource, discovery.fallbackWarning)
     };
   }
 
@@ -4069,6 +4830,8 @@ class CodexCliProvider extends CliProvider {
     let featureText = '';
     let explicitModels = cachedModels;
     let modelSource = cachedModels.length > 0 ? 'cache' : '';
+    const discoveryWarnings = [];
+    const discoveryErrors = [];
     if (available) {
       const [
         versionResult,
@@ -4090,8 +4853,23 @@ class CodexCliProvider extends CliProvider {
       const debugModels = debugModelsResult.ok ? parseCodexModelCatalogText(debugModelsResult.stdout) : [];
       if (debugModels.length > 0) {
         explicitModels = debugModels;
-        modelSource = 'debug models';
+        modelSource = 'runtime';
+      } else if (!debugModelsResult.ok && cachedModels.length > 0) {
+        discoveryWarnings.push('Codex debug models failed; using cached model metadata.');
+      } else if (!debugModelsResult.ok) {
+        discoveryWarnings.push('Codex debug models failed; using configured fallback model.');
       }
+      if (!rootHelpResult.ok) {
+        discoveryWarnings.push('Codex --help discovery failed: ' + rootHelpResult.error);
+      }
+      if (!execHelpResult.ok) {
+        discoveryWarnings.push('Codex exec --help discovery failed: ' + execHelpResult.error);
+      }
+      if (!featuresResult.ok) {
+        discoveryWarnings.push('Codex feature discovery failed: ' + featuresResult.error);
+      }
+    } else {
+      discoveryWarnings.push(this.command + ' is not on PATH; using configured fallback model.');
     }
     const orderedModels = [];
     const seenIds = new Set();
@@ -4118,14 +4896,27 @@ class CodexCliProvider extends CliProvider {
     } else if (orderedModels.length > 0) {
       configuredDisplayName = 'Configured (' + orderedModels[0].displayName + ')';
     }
-    const models = buildConfiguredModels(this.id, orderedModels, configuredDisplayName);
+    let capabilitySource = 'fallback';
+    if (modelSource === 'runtime' || modelSource === 'debug models') {
+      capabilitySource = 'runtime';
+    } else if (modelSource === 'cache') {
+      capabilitySource = 'cache';
+    }
+    const fallbackWarning = capabilitySource === 'fallback' ? 'Fallback metadata; Codex runtime discovery did not return a model catalog.' : '';
+    const models = withForcedOptionSource(buildConfiguredModels(this.id, orderedModels, configuredDisplayName), capabilitySource, fallbackWarning);
     const enabledFeatures = parseCodexFeatureFlags(featureText);
     const discovery = {
       version,
       modelSource,
+      capabilitySource,
+      capabilityStatus: discoveryWarnings.length > 0 || !available ? 'degraded' : 'ready',
+      lastDiscoveredAt: now,
+      discoveryWarnings,
+      discoveryErrors,
+      fallbackWarning,
       models,
-      reasoningModes: this.buildCodexReasoningModes(orderedModels),
-      tools: this.buildCodexToolOptions(rootHelp, execHelp, enabledFeatures),
+      reasoningModes: withForcedOptionSource(this.buildCodexReasoningModes(orderedModels), capabilitySource, fallbackWarning),
+      tools: withForcedOptionSource(this.buildCodexToolOptions(rootHelp, execHelp, enabledFeatures), capabilitySource, fallbackWarning),
       supportsModelSelection: this.modelFlag.length > 0 && (helpTextIncludes(rootHelp, '--model <model>') || helpTextIncludes(execHelp, '--model <model>') || orderedModels.length > 0),
       supportsWorkspace: this.cwdFlag.length > 0 && (helpTextIncludes(rootHelp, '--cd <dir>') || helpTextIncludes(execHelp, '--cd <dir>')),
       supportsSearch: helpTextIncludes(rootHelp, '--search'),
@@ -4412,8 +5203,66 @@ function createAntigravityProvider(config) {
   });
 }
 
+function createOpenClawProvider(config) {
+  return new CliProvider({
+    id: 'openclaw',
+    displayName: 'OpenClaw CLI',
+    description: 'Runs OpenClaw CLI through the local `openclaw agent --message` command.',
+    command: readStringValue(config, 'command', 'openclaw'),
+    commandArgs: splitArgs(readStringValue(config, 'args', 'agent --message')),
+    promptMode: 'arg',
+    modelFlag: readStringValue(config, 'modelFlag', ''),
+    cwdFlag: '',
+    jsonMode: 'none',
+    supportsGoalMode: true,
+    supportsPlanMode: false,
+    timeoutMs: readNumberValue(config, 'timeoutMs', DEFAULT_TIMEOUT_MS),
+    models: [
+      { id: 'configured', displayName: 'Configured Model' }
+    ],
+    tools: [
+      {
+        id: 'openclaw.cli',
+        displayName: 'OpenClaw CLI',
+        description: 'Runs OpenClaw in non-interactive agent mode.',
+        risk: 'write'
+      }
+    ]
+  });
+}
+
+function createHermesProvider(config) {
+  return new CliProvider({
+    id: 'hermes',
+    displayName: 'Hermes CLI',
+    description: 'Runs Nous Hermes Agent through `hermes chat --quiet -q`.',
+    command: readStringValue(config, 'command', 'hermes'),
+    commandArgs: splitArgs(readStringValue(config, 'args', 'chat --quiet -q')),
+    promptMode: 'arg',
+    modelFlag: '--model',
+    cwdFlag: '',
+    jsonMode: 'none',
+    supportsGoalMode: true,
+    supportsPlanMode: false,
+    timeoutMs: readNumberValue(config, 'timeoutMs', DEFAULT_TIMEOUT_MS),
+    models: [
+      { id: 'configured', displayName: 'Configured Model' }
+    ],
+    tools: [
+      {
+        id: 'hermes.cli',
+        displayName: 'Hermes CLI',
+        description: 'Runs Hermes Agent in quiet chat mode.',
+        risk: 'write'
+      }
+    ]
+  });
+}
+
 module.exports = {
   CliProvider,
+  createOpenClawProvider,
+  createHermesProvider,
   createCodexProvider,
   createClaudeProvider,
   createAntigravityProvider

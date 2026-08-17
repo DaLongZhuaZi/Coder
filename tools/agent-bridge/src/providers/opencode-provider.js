@@ -770,6 +770,83 @@ function normalizeTimestamp(value, fallbackValue) {
   return value;
 }
 
+function nonNegativeInteger(source, key) {
+  const value = readNumberValue(source, key, Number.NaN);
+  return Number.isSafeInteger(value) && value >= 0 ? value : undefined;
+}
+
+function nonNegativeNumber(source, key) {
+  const value = readNumberValue(source, key, Number.NaN);
+  return Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
+function normalizeOpenCodeUsagePart(part, remoteSessionId, eventId) {
+  const tokens = readObjectValue(part, 'tokens') || {};
+  const cache = readObjectValue(tokens, 'cache') || {};
+  const inputTokens = nonNegativeInteger(tokens, 'input');
+  const outputTokens = nonNegativeInteger(tokens, 'output');
+  const reasoningTokens = nonNegativeInteger(tokens, 'reasoning');
+  const cacheReadTokens = nonNegativeInteger(cache, 'read');
+  const cacheWriteTokens = nonNegativeInteger(cache, 'write');
+  let totalTokens = nonNegativeInteger(tokens, 'total');
+  const tokenValues = [inputTokens, outputTokens, reasoningTokens, cacheReadTokens, cacheWriteTokens];
+  if (totalTokens === undefined && inputTokens !== undefined && outputTokens !== undefined) {
+    totalTokens = inputTokens + outputTokens;
+  }
+  const cost = nonNegativeNumber(part, 'cost');
+  if (!tokenValues.some((value) => value !== undefined) && totalTokens === undefined && cost === undefined) {
+    return null;
+  }
+  const time = readObjectValue(part, 'time');
+  const occurredAt = new Date(normalizeTimestamp(
+    time ? readNumberValue(time, 'end', readNumberValue(time, 'updated', 0)) : 0,
+    Date.now()
+  )).toISOString();
+  const usage = {
+    eventId,
+    source: 'provider',
+    kind: 'turn',
+    estimated: false,
+    window: 'session',
+    occurredAt,
+    threadId: remoteSessionId
+  };
+  if (inputTokens !== undefined) usage.inputTokens = inputTokens;
+  if (outputTokens !== undefined) usage.outputTokens = outputTokens;
+  if (reasoningTokens !== undefined) usage.reasoningTokens = reasoningTokens;
+  if (cacheReadTokens !== undefined) usage.cacheReadTokens = cacheReadTokens;
+  if (cacheWriteTokens !== undefined) usage.cacheWriteTokens = cacheWriteTokens;
+  if (totalTokens !== undefined) usage.totalTokens = totalTokens;
+  if (cost !== undefined) {
+    usage.cost = cost;
+    const currency = readStringValue(part, 'currency', readStringValue(part, 'costCurrency', '')).trim().toUpperCase();
+    if (currency.length > 0) usage.currency = currency;
+  }
+  return usage;
+}
+
+function normalizeOpenCodeCompactionPart(part, remoteSessionId, eventId) {
+  const time = readObjectValue(part, 'time');
+  const usage = {
+    eventId,
+    source: 'provider',
+    kind: 'compaction',
+    estimated: false,
+    window: 'session',
+    occurredAt: new Date(normalizeTimestamp(
+      time ? readNumberValue(time, 'end', readNumberValue(time, 'updated', 0)) : 0,
+      Date.now()
+    )).toISOString(),
+    threadId: remoteSessionId,
+    reason: readStringValue(part, 'reason', readBooleanValue(part, 'auto', false) ? 'auto' : 'manual')
+  };
+  const beforeTokens = nonNegativeInteger(part, 'beforeTokens');
+  const afterTokens = nonNegativeInteger(part, 'afterTokens');
+  if (beforeTokens !== undefined) usage.beforeTokens = beforeTokens;
+  if (afterTokens !== undefined) usage.afterTokens = afterTokens;
+  return usage;
+}
+
 function normalizeMessageRole(raw) {
   let role = readStringValue(raw, 'role', '');
   if (role.length === 0) {
@@ -1189,6 +1266,9 @@ class OpenCodeProvider {
     this.password = config && typeof config.password === 'string' ? config.password : '';
     this.metadataPath = config && typeof config.metadataPath === 'string' ? config.metadataPath : defaultMetadataPath(this.id);
     this.databasePath = config && typeof config.databasePath === 'string' && config.databasePath.length > 0 ? config.databasePath : defaultDatabasePath(this.id);
+    this.usageEndpoint = config && typeof config.usageEndpoint === 'string' ? config.usageEndpoint : '';
+    this.usageEndpointEnv = config && typeof config.usageEndpointEnv === 'string' ? config.usageEndpointEnv : '';
+    this.usageEndpointTokenEnv = config && typeof config.usageEndpointTokenEnv === 'string' ? config.usageEndpointTokenEnv : '';
     this.requestTimeoutMs = config && typeof config.requestTimeoutMs === 'number' ? config.requestTimeoutMs : DEFAULT_REQUEST_TIMEOUT_MS;
     this.lightCapabilities = !config || config.lightCapabilities !== false;
     this.metadata = readMetadataFile(this.metadataPath);
@@ -1197,6 +1277,10 @@ class OpenCodeProvider {
     this.partTextOffsets = new Map();
     this.messageRoles = new Map();
     this.messageAgents = new Map();
+    this.emittedUsagePartIds = new Set();
+    this.emittedCompactionPartIds = new Set();
+    this.usageSequence = 0;
+    this.usageEventsAvailable = true;
   }
 
   async describe() {
@@ -1209,6 +1293,7 @@ class OpenCodeProvider {
       status: health.available ? 'available' : 'unavailable',
       description: this.description,
       endpoint: this.baseUrl,
+      runtimeMode: 'service',
       capabilities: {
         streaming: true,
         tools: true,
@@ -1216,6 +1301,7 @@ class OpenCodeProvider {
         permissions: true,
         authConfigured: this.password.length > 0,
         history: true,
+        interactiveSessions: true,
         modelSelection: true,
         speedProfiles: false,
         workspaceAware: true,
@@ -1228,6 +1314,7 @@ class OpenCodeProvider {
         search: true,
         shell: true,
         commands: true,
+        usageEvents: true,
         worktrees: true,
         mcp: true,
         health: health.detail
@@ -1240,11 +1327,13 @@ class OpenCodeProvider {
       sessionFeatures: {
         list: true,
         import: true,
-        resume: true,
+        resume: false,
+        attach: false,
         messages: true,
         update: true,
         delete: true,
         abort: true,
+        checkpointRestore: true,
         fork: true,
         share: true,
         revert: true,
@@ -1631,6 +1720,27 @@ class OpenCodeProvider {
       }
     }
     throw new Error('Session revert failed: ' + (lastError instanceof Error ? lastError.message : String(lastError)));
+  }
+
+  async captureRuntimeCheckpoint(payload) {
+    const sessionId = readStringValue(payload, 'sessionId', '');
+    const messages = await this.listMessages(sessionId);
+    const last = messages.length > 0 ? messages[messages.length - 1] : null;
+    const messageId = last && typeof last.id === 'string' ? last.id : '';
+    if (messageId.length === 0) {
+      return { status: 'unavailable', kind: 'opencode-message', token: null, reason: 'runtime_message_cursor_unavailable' };
+    }
+    return { status: 'captured', kind: 'opencode-message', token: { messageId }, reason: '' };
+  }
+
+  async restoreRuntimeCheckpoint(payload, emit) {
+    const token = payload && payload.runtimeToken && typeof payload.runtimeToken === 'object' ? payload.runtimeToken : null;
+    const messageId = token ? readStringValue(token, 'messageId', '') : '';
+    if (messageId.length === 0) {
+      throw new Error('OpenCode runtime checkpoint message id is unavailable.');
+    }
+    await this.revertSession(Object.assign({}, payload, { messageId }), emit);
+    return { status: 'restored', restored: true, reason: '', messageId };
   }
 
   async sendMessage(payload, emit) {
@@ -2158,7 +2268,60 @@ class OpenCodeProvider {
     }
     if (partType === 'tool') {
       this.emitToolPart(localId, part, emit);
+      return;
     }
+    if (partType === 'step-finish') {
+      this.emitUsagePart(localId, part, emit);
+      return;
+    }
+    if (partType === 'compaction') {
+      this.emitCompactionPart(localId, part, emit);
+    }
+  }
+
+  emitUsagePart(localId, part, emit) {
+    const session = this.sessions.get(localId);
+    if (!session) {
+      return;
+    }
+    const partId = readStringValue(part, 'id', '');
+    this.usageSequence += 1;
+    const identity = partId.length > 0 ? partId : String(this.usageSequence);
+    const key = localId + ':usage:' + identity;
+    if (this.emittedUsagePartIds.has(key)) {
+      return;
+    }
+    const usage = normalizeOpenCodeUsagePart(
+      part,
+      session.remoteSessionId,
+      'opencode:' + session.remoteSessionId + ':usage:' + identity
+    );
+    if (!usage) {
+      return;
+    }
+    this.emittedUsagePartIds.add(key);
+    emit(makeEvent(EventType.USAGE_UPDATED, localId, { usage }));
+  }
+
+  emitCompactionPart(localId, part, emit) {
+    const session = this.sessions.get(localId);
+    if (!session) {
+      return;
+    }
+    const partId = readStringValue(part, 'id', '');
+    this.usageSequence += 1;
+    const identity = partId.length > 0 ? partId : String(this.usageSequence);
+    const key = localId + ':compaction:' + identity;
+    if (this.emittedCompactionPartIds.has(key)) {
+      return;
+    }
+    this.emittedCompactionPartIds.add(key);
+    const usage = normalizeOpenCodeCompactionPart(
+      part,
+      session.remoteSessionId,
+      'opencode:' + session.remoteSessionId + ':compaction:' + identity
+    );
+    emit(makeEvent(EventType.USAGE_UPDATED, localId, { usage }));
   }
 
   deltaFromPartText(part) {
@@ -2522,5 +2685,7 @@ class OpenCodeProvider {
 }
 
 module.exports = {
-  OpenCodeProvider
+  OpenCodeProvider,
+  normalizeOpenCodeUsagePart,
+  normalizeOpenCodeCompactionPart
 };
