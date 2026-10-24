@@ -5,6 +5,7 @@ const net = require('net');
 const tls = require('tls');
 const { EventEmitter } = require('events');
 const { TextDecoder } = require('util');
+const { MASK_WORD_THRESHOLD, maskPayload } = require('./websocket-mask');
 
 const WEBSOCKET_GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11';
 const DEFAULT_MAX_FRAME_BYTES = 256 * 1024;
@@ -88,8 +89,12 @@ function encodeFrame(opcode, payload, options) {
   const mask = crypto.randomBytes(4);
   mask.copy(frame, offset);
   offset += 4;
-  for (let index = 0; index < source.length; index += 1) {
-    frame[offset + index] = source[index] ^ mask[index % 4];
+  if (source.length < MASK_WORD_THRESHOLD) {
+    for (let index = 0; index < source.length; index += 1) {
+      frame[offset + index] = source[index] ^ mask[index & 3];
+    }
+  } else {
+    maskPayload(source, mask, frame, offset);
   }
   return frame;
 }
@@ -258,8 +263,12 @@ class WebSocketFramePeer extends EventEmitter {
     const payload = Buffer.from(this.buffer.subarray(offset, offset + length));
     this.buffer = this.buffer.subarray(offset + length);
     if (mask) {
-      for (let index = 0; index < payload.length; index += 1) {
-        payload[index] = payload[index] ^ mask[index % 4];
+      if (payload.length < MASK_WORD_THRESHOLD) {
+        for (let index = 0; index < payload.length; index += 1) {
+          payload[index] ^= mask[index & 3];
+        }
+      } else {
+        maskPayload(payload, mask);
       }
     }
     this.handleFrame(opcode, fin, payload);

@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('crypto');
+const { MASK_WORD_THRESHOLD, maskPayload } = require('./websocket-mask');
 
 function createAcceptValue(key) {
   return crypto
@@ -101,8 +102,12 @@ class WebSocketConnection {
     this.buffer = this.buffer.subarray(offset + length);
 
     if (mask) {
-      for (let index = 0; index < payload.length; index += 1) {
-        payload[index] = payload[index] ^ mask[index % 4];
+      if (payload.length < MASK_WORD_THRESHOLD) {
+        for (let index = 0; index < payload.length; index += 1) {
+          payload[index] ^= mask[index & 3];
+        }
+      } else {
+        maskPayload(payload, mask);
       }
     }
 
